@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán của Lab: dự đoán Mua xe theo Tuổi và Thu nhập trên 1.000 mẫu GIẢ LẬP (np.random.seed(42), luật Tuổi nhân Thu nhập so với ngưỡng 60.000 kèm nhiễu). Kéo thanh trượt ccp_alpha trên đúng 23 mốc do cost_complexity_pruning_path sinh ra để xem độ chính xác trên tập kiểm tra thay đổi; xem animation dây chuyền cắt tỉa vẽ 23 cây THẬT trong tree_seq (một cây cho mỗi mốc α, từ 43 lá xuống 1 lá) và phép tính chi phí-phức tạp R_alpha(T) = R(T) + alpha nhân |T| với R(T) thật trong mảng impurities.">
+<title>Cây quyết định &amp; Cắt tỉa sau (Post-pruning, ccp_alpha) — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+@media(max-width:520px){.pill{white-space:normal;line-height:1.25}}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+td.up{color:var(--ok);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+/* Animation dây chuyền cắt tỉa (Tab 2): SVG cây vẽ từ tree_seq[k] */
+.treebox{background:var(--plot);border:1px solid var(--line);border-radius:14px;padding:6px;overflow-x:auto}
+#svgTree{width:100%;min-width:1042px;height:auto;display:block;background:transparent;border:0;border-radius:0}
+#svgTree .cap{fill:var(--mut);font-size:10.5px}
+#svgTree .capb{fill:var(--ink);font-size:11.5px;font-weight:700}
+#svgTree .nd{transition:opacity .5s ease,transform .5s ease;transform-box:fill-box;transform-origin:center}
+#svgTree .nd.off{opacity:0;transform:scale(.5)}
+#svgTree .ln2{stroke:var(--line2);stroke-width:1}
+#svgTree .bint{transition:opacity .45s ease}
+#svgTree .nd.lf .bint{opacity:0}
+#svgTree .bint rect{fill:var(--acc2);stroke:var(--line);stroke-width:1}
+#svgTree .bint text{fill:#eaf6ff;font-size:8px}
+#svgTree .bleaf{fill:var(--acc);stroke:var(--line2);stroke-width:1;opacity:0;transition:opacity .45s ease,fill .45s ease}
+#svgTree .nd.lf .bleaf{opacity:1}
+#svgTree .nd.cut .bleaf{fill:var(--cam)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 2 · Cây quyết định: Cắt tỉa sau (post-pruning)</span>
+<span class="pill a">Mô phỏng tương tác</span>
+<span class="pill mut">Dữ liệu GIẢ LẬP · random_state=42</span>
+</div>
+<h1><span class="gr">Cây quyết định &amp; Cắt tỉa sau (Post-pruning với ccp_alpha)</span></h1>
+<p class="lede">Bài toán của Lab: dự đoán Mua xe theo Tuổi và Thu nhập trên <b>1.000 mẫu GIẢ LẬP</b> (luật Tuổi × Thu nhập so với ngưỡng 60.000, cộng nhiễu). Cây Gini đầy đủ không cắt tỉa bị <b>quá khớp (overfitting)</b> — nó tách cây tới tận 43 lá để "học thuộc" cả nhiễu từ hai đặc trưng ngẫu nhiên. Kéo thanh trượt <code>ccp_alpha</code> trên đúng 23 mốc mà <code>cost_complexity_pruning_path</code> sinh ra để xem độ chính xác trên tập kiểm tra thay đổi, và bấm <b>Play</b> ở Tab 2 để xem <b>dây chuyền cắt tỉa</b> vẽ lại đúng 23 cây sklearn mà Lab xuất.</p>
+<p class="lede"><b>Quy tắc trung thực:</b> mọi con số dưới đây là <b>kết quả MỘT lần chạy Lab có <code>random_state=42</code></b> trên 1.000 mẫu giả lập — không phải số đo thực nghiệm và không phải cam kết "luôn đạt". Nhãn luôn ghi rõ bản chất: "độ chính xác trên tập kiểm tra của lần chạy Lab".</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Học thuộc hay học tổng quát?</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Dây chuyền cắt tỉa</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Phép tính cost-complexity &amp; SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Tương tác · kéo thanh trượt ccp_alpha</span>
+  <h2>Đường cong accuracy theo ccp_alpha — 23 mốc thật từ Lab</h2>
+  <div class="ctl">
+   <label for="alphaSel" class="note">Mốc ccp_alpha trên đường cong Lab (0 → 22): <b id="val1"></b></label>
+   <input id="alphaSel" type="range" min="0" max="22" step="1" value="17">
+   <button class="btn" id="btnDefault1" type="button">Về mốc tối ưu (17)</button>
+  </div>
+   <svg id="curve" viewBox="0 0 440 272" role="img" aria-label="Đường cong độ chính xác trên tập kiểm tra theo ccp_alpha với 23 mốc của Lab, mốc tối ưu 0,002916"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>R</mi><mi>α</mi></msub><mo stretchy="false">(</mo><mi>T</mi><mo stretchy="false">)</mo><mo>=</mo><mi>R</mi><mo stretchy="false">(</mo><mi>T</mi><mo stretchy="false">)</mo><mo>+</mo><mi>α</mi><mo form="prefix">|</mo><mi>T</mi><mo form="postfix">|</mo></math></div>
+  <p class="note">Mỗi lần kéo thanh trượt là một lần đọc lại chính xác cặp (ccp_alphas[i], accuracy_scores[i]) do Lab xuất: tại mỗi mốc, sklearn huấn luyện một cây có <code>ccp_alpha</code> đó rồi đánh giá trên tập kiểm tra 300 mẫu. Mốc #0 (α = 0) chính là cây đầy đủ không cắt tỉa; cắt quá tay (mốc cuối α = 0,194351) làm accuracy tụt còn 0,77. Muốn thấy <b>cây thật của chính mốc đang chọn</b> (23 cây trong <code>tree_seq</code>), bấm sang Tab 2.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái đang xem &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Animation · 23 cây THẬT trong <code>tree_seq</code> — một cây cho mỗi mốc α</span>
+ <h2>DÂY CHUYỀN CẮT TỈA — từ cây 43 lá thu dần còn 1 lá, đúng 23 mốc α của Lab</h2>
+ <div class="ctl">
+  <button class="btn cta" id="animPlay" type="button" aria-pressed="false">▶ Play</button>
+  <button class="btn" id="animPause" type="button">⏸ Tạm dừng</button>
+  <button class="btn" id="animStep" type="button">▸ Bước một mốc</button>
+  <button class="btn" id="animReset" type="button">↺ Chạy lại</button>
+ </div>
+ <div class="ctl">
+  <label for="alphaTree" class="note">Mốc ccp_alpha (0 → 22): <b id="valTree"></b></label>
+  <input id="alphaTree" type="range" min="0" max="22" step="1" value="0">
+ </div>
+ <div class="treebox"><svg id="svgTree" viewBox="0 0 1042 606" role="img" aria-label="Dây chuyền cắt tỉa: sơ đồ cây quyết định thật vẽ từ tree_seq của Lab, từ 43 lá xuống 1 lá theo 23 mốc ccp_alpha"></svg></div>
+ <p class="note">Điện thoại: kéo ngang trong khung để quét hết cây 43 lá. Nhãn nút tách = <b>tên cột của Lab</b> + ngưỡng <code>th</code> của <code>full_tree</code> (Lab xuất ở <b>4 chữ số</b>), <b>trang hiển thị làm tròn 1 chữ số</b> — giá trị 4 chữ số vẫn nằm nguyên trong <code>lab_data.js</code>. <code>NN1</code>/<code>NN2</code> là viết tắt của <code>Biến ngẫu nhiên 1</code>/<code>Biến ngẫu nhiên 2</code> — hai đặc trưng nhiễu Lab cố tình thêm vào. Ô vuông nhỏ = lá: mỗi lá dự đoán một lớp, Lab không xuất nhãn từng lá nên trang không bịa nhãn. <b>α trượt theo 23 mốc thật của Lab</b>: mỗi nấc thanh trượt nạp nguyên vẹn <code>tree_seq[k]</code>, không nội suy cây ở α nằm giữa hai mốc.</p>
+ <div class="stat" id="statTree"></div>
+ <table id="treeTable">
+  <thead><tr><th>Đại lượng của cây đang xem</th><th class="ro">Giá trị đọc thẳng từ Lab</th></tr></thead>
+  <tbody></tbody>
+ </table>
+ <p class="note" id="treeCheck"></p>
+</div>
+<div class="card">
+ <span class="eyebrow">Bảng đối chiếu · lần chạy Lab random_state=42</span>
+ <h2>Trước và sau cắt tỉa — mọi chỉ số trên tập kiểm tra 300 mẫu</h2>
+ <div class="stat" id="stat2"></div>
+ <table id="cmpTable">
+  <thead><tr><th>Chỉ số đánh giá</th><th class="ro">Cây ĐẦY ĐỦ (α = 0)</th><th class="ro">Cây CẮT TỈA (α = 0,002916)</th><th class="ro">Chênh lệch</th></tr></thead>
+  <tbody>
+   <tr><td>Độ sâu cây</td><td class="ro hi">10</td><td class="ro hi">5</td><td class="ro">-5</td></tr>
+   <tr><td>Số lá</td><td class="ro hi">43</td><td class="ro hi">10</td><td class="ro">-33</td></tr>
+   <tr><td>Độ chính xác (accuracy)</td><td class="ro hi">0,9233</td><td class="ro hi">0,9567</td><td class="ro up">+0,0333</td></tr>
+   <tr><td>Precision</td><td class="ro hi">0,9561</td><td class="ro hi">0,9823</td><td class="ro up">+0,0262</td></tr>
+   <tr><td>Recall</td><td class="ro hi">0,9437</td><td class="ro hi">0,9610</td><td class="ro up">+0,0173</td></tr>
+   <tr><td>F1-score</td><td class="ro hi">0,9499</td><td class="ro hi">0,9716</td><td class="ro up">+0,0217</td></tr>
+  </tbody>
+ </table>
+ <p class="note">Bốn chỉ số dưới đều là <b>độ chính xác trên tập kiểm tra của lần chạy Lab</b> (không phải sai số huấn luyện). Cột Chênh lệch = hiệu số hai cột bên, ghi rõ phép tính ở Tab 3. Hai hàng đầu (độ sâu, số lá) chính là đầu/cuối của dây chuyền ở trên: mốc #0 (sâu 10, 43 lá) và mốc #17 (sâu 5, 10 lá).</p>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Phép tính cầm tay · cost-complexity</span>
+ <h2>Chi phí của một cây = sai số huấn luyện + α × (số lá)</h2>
+ <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>R</mi><mi>α</mi></msub><mo stretchy="false">(</mo><mi>T</mi><mo stretchy="false">)</mo><mo>=</mo><mi>R</mi><mo stretchy="false">(</mo><mi>T</mi><mo stretchy="false">)</mo><mo>+</mo><mi>α</mi><mo form="prefix">|</mo><mi>T</mi><mo stretchy="false">|</mo></math></div>
+ <p class="note">Trong đó <math xmlns="http://www.w3.org/1998/Math/MathML"><mi>R</mi><mo stretchy="false">(</mo><mi>T</mi><mo stretchy="false">)</mo></math> là tổng sai số huấn luyện (độ sạch của các lá, sklearn gọi là impurity) trên 700 mẫu huấn luyện, và <math xmlns="http://www.w3.org/1998/Math/MathML"><mo form="prefix">|</mo><mi>T</mi><mo stretchy="false">|</mo></math> là số lá. <code>cost_complexity_pruning_path</code> duyệt các ngưỡng α hiệu dụng; Lab đã xuất sẵn 23 mốc α đó. Một nhánh con chỉ bị cắt khi phần impurity nó "cứu" được nhỏ hơn α cho mỗi lá bỏ đi.</p>
+ <p class="note"><b>Lab đã xuất đủ dữ liệu (2026-11-03)</b> nên trang tính <b>đủ hai vế</b> của công thức: <code>impurities</code> = 23 giá trị R(T) THẬT (một giá trị cho mỗi mốc α, export làm tròn 6 chữ số), <code>full_tree</code> = 85 node cây đầy đủ, <code>pruned_tree</code> = 19 node cây cắt tỉa tối ưu, <code>tree_seq</code> = 23 cây (một cây cho mỗi mốc α) — cả bốn có trong <code>lab_data.js</code> và <code>parity_source.json</code>. Ba dòng dưới là ba cây sklearn thật ở ba mốc α, không phải cây minh hoạ.</p>
+ <table id="costTable">
+  <thead><tr><th>Mốc α (cây sklearn thật, |T| = số lá của chính cây đó)</th><th class="ro">R(T) = impurities[k]</th><th class="ro">α·|T| (phép nhân ghi nguyên văn)</th><th class="ro">R_α(T) = R(T) + α·|T|</th></tr></thead>
+  <tbody id="costBody"></tbody>
+ </table>
+ <p class="note" id="costNote"></p>
+ <p class="note"><b>Chữ số làm tròn vs chữ số tính toán:</b> cột α hiển thị làm tròn 6 chữ số để dễ đọc, nhưng mọi phép nhân dùng <b>α nguyên vẹn</b> trong <code>ccp_alphas</code>. α nguyên vẹn của ba mốc trên: <code id="costPrec"></code></p>
+ <p class="note">Mọi dòng ở bảng kế tiếp là phép tính suy ra, ghi nguyên văn phép nhân để Giảng viên bấm lại bằng máy tính cầm tay.</p>
+ <table id="penTable">
+  <thead><tr><th>Đại lượng suy ra từ số Lab</th><th>Phép tính ghi nguyên văn</th><th class="ro">Kết quả</th></tr></thead>
+  <tbody>
+   <tr><td>Hình phạt α·|T| của cây ĐẦY ĐỦ (43 lá) tại α tối ưu</td><td><code>0,002916 × 43</code></td><td class="ro hi">0,1254</td></tr>
+   <tr><td>Hình phạt α·|T| của cây CẮT TỈA (10 lá) tại cùng α</td><td><code>0,002916 × 10</code></td><td class="ro hi">0,0292</td></tr>
+   <tr><td>Phần hình phạt cây cắt tỉa "rẻ hơn" cây đầy đủ</td><td><code>(43 - 10) × 0,002916 = 33 × 0,002916</code></td><td class="ro hi">0,0962</td></tr>
+   <tr><td>Độ chính xác tăng thêm (điểm phần trăm)</td><td><code>(0,9567 - 0,9233) × 100</code></td><td class="ro hi">3,33%</td></tr>
+   <tr><td>Số mẫu dự đoán ĐÚNG của cây đầy đủ (suy ra)</td><td><code>0,9233 × 300 = 276,99</code> (làm tròn từ 0,92333…)</td><td class="ro hi">≈ 277 mẫu</td></tr>
+   <tr><td>Số mẫu dự đoán ĐÚNG của cây cắt tỉa (suy ra)</td><td><code>0,9567 × 300 = 287,01</code> (làm tròn từ 0,95666…)</td><td class="ro hi">≈ 287 mẫu</td></tr>
+   <tr><td>Số mẫu đúng THÊM nhờ cắt tỉa (suy ra)</td><td><code>287 - 277</code></td><td class="ro hi">10 mẫu</td></tr>
+  </tbody>
+ </table>
+ <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>α</mi><mo stretchy="false">(</mo><mo form="prefix">|</mo><msub><mi>T</mi><mtext>đầy đủ</mtext></msub><mo form="postfix">|</mo><mo>-</mo><mo form="prefix">|</mo><msub><mi>T</mi><mtext>cắt tỉa</mtext></msub><mo stretchy="false">|</mo><mo stretchy="false">)</mo><mo>=</mo><mn>33</mn><mo>×</mo><mn>0,002916</mn><mo>=</mo><mn>0,0962</mn></math></div>
+</div>
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 03_decision_tree_post_pruning.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới tổng hợp đầy đủ các đại lượng mà <code>export_lab_data.py</code> chạy trực tiếp trên các ô code của <code>03_decision_tree_post_pruning.py</code> và xuất ra <code>lab_data.js</code> / <code>parity_source.json</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Số mẫu giả lập của Lab <span class="sub">(n_observations)</span></td><td class="ro hi">1.000</td></tr>
+<tr><td><code>[M02]</code> Ngưỡng luật sinh dữ liệu Tuổi × Thu nhập <span class="sub">(threshold)</span></td><td class="ro hi">60.000</td></tr>
+<tr><td><code>[M03]</code> Số mẫu tập huấn luyện <span class="sub">(train_size)</span></td><td class="ro hi">700</td></tr>
+<tr><td><code>[M04]</code> Số mẫu tập kiểm tra <span class="sub">(test_size)</span></td><td class="ro hi">300</td></tr>
+<tr><td><code>[M05]</code> Độ sâu cây đầy đủ trước cắt tỉa <span class="sub">(depth_full)</span></td><td class="ro hi">10</td></tr>
+<tr><td><code>[M06]</code> Số lá cây đầy đủ trước cắt tỉa <span class="sub">(leaves_full)</span></td><td class="ro hi">43</td></tr>
+<tr><td><code>[M07]</code> Độ sâu cây sau cắt tỉa <span class="sub">(depth_pruned)</span></td><td class="ro hi">5</td></tr>
+<tr><td><code>[M08]</code> Số lá cây sau cắt tỉa <span class="sub">(leaves_pruned)</span></td><td class="ro hi">10</td></tr>
+<tr><td><code>[M09]</code> Độ chính xác trên tập kiểm tra của cây đầy đủ <span class="sub">(accuracy_gini)</span></td><td class="ro hi">0,9233</td></tr>
+<tr><td><code>[M10]</code> Precision trên tập kiểm tra của cây đầy đủ <span class="sub">(precision_gini)</span></td><td class="ro hi">0,9561</td></tr>
+<tr><td><code>[M11]</code> Recall trên tập kiểm tra của cây đầy đủ <span class="sub">(recall_gini)</span></td><td class="ro hi">0,9437</td></tr>
+<tr><td><code>[M12]</code> F1-score trên tập kiểm tra của cây đầy đủ <span class="sub">(f1_gini)</span></td><td class="ro hi">0,9499</td></tr>
+<tr><td><code>[M13]</code> ccp_alpha tối ưu do Lab chọn (argmax accuracy) <span class="sub">(optimal_ccp_alpha)</span></td><td class="ro hi">0,002916</td></tr>
+<tr><td><code>[M14]</code> Độ chính xác trên tập kiểm tra của cây cắt tỉa <span class="sub">(accuracy_pruned)</span></td><td class="ro hi">0,9567</td></tr>
+<tr><td><code>[M15]</code> Precision trên tập kiểm tra của cây cắt tỉa <span class="sub">(precision_pruned)</span></td><td class="ro hi">0,9823</td></tr>
+<tr><td><code>[M16]</code> Recall trên tập kiểm tra của cây cắt tỉa <span class="sub">(recall_pruned)</span></td><td class="ro hi">0,9610</td></tr>
+<tr><td><code>[M17]</code> F1-score trên tập kiểm tra của cây cắt tỉa <span class="sub">(f1_pruned)</span></td><td class="ro hi">0,9716</td></tr>
+<tr><td><code>[M18]</code> Số mốc α trên đường cong ccp_alphas/accuracy_scores <span class="sub">(len)</span></td><td class="ro hi">23</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Trên đường cong 23 mốc ccp_alpha của Lab, độ chính xác trên tập kiểm tra đạt cao nhất (0,9567) ở mốc nào?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">α = 0,002916 — mốc #17</button><button class="opt" type="button" data-v="q1_2">α = 0 — cây lớn nhất, không cắt tỉa</button><button class="opt" type="button" data-v="q1_3">α = 0,194351 — mốc cuối</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Vì sao cây cắt tỉa (10 lá) đạt 0,9567 trên tập kiểm tra CAO HƠN cây đầy đủ (43 lá, 0,9233)?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Cây đầy đủ quá khớp (overfitting) cả nhiễu từ hai đặc trưng ngẫu nhiên; cắt tỉa giúp tổng quát hóa tốt hơn trên tập kiểm tra</button><button class="opt" type="button" data-v="q2_2">Vì ít lá luôn dự đoán đúng nhiều hơn trên mọi tập dữ liệu</button><button class="opt" type="button" data-v="q2_3">Vì lần chạy nào với dữ liệu nào cũng cho đúng các số này</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Với công thức R(T) + α|T| và α = 0,002916, phần hình phạt α|T| của cây đầy đủ (43 lá) lớn hơn của cây cắt tỉa (10 lá) bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">0,0962 — vì (43 - 10) × 0,002916 = 33 × 0,002916</button><button class="opt" type="button" data-v="q3_2">0,1254</button><button class="opt" type="button" data-v="q3_3">0,0292</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>03_decision_tree_post_pruning.py</code> (tem tái lập <code>random_state=42</code>).
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16,17,18,19,20,21,22,23,24,25,26],"vars":{"n_observations":1000,"threshold":60000,"accuracy_gini":0.9233333333,"precision_gini":0.9561403509,"recall_gini":0.9437229437,"f1_gini":0.9498910675,"optimal_ccp_alpha":0.0029157509157509173,"accuracy_pruned":0.9566666667,"precision_pruned":0.982300885,"recall_pruned":0.961038961,"f1_pruned":0.9715536105,"ccp_alphas":[0.0,0.0009523809523809524,0.0009523809523809524,0.0012087912087912088,0.0012601230968577925,0.001375661375661375,0.0013877551020408164,0.0015238095238095236,0.0017142857142857142,0.001714285714285715,0.0017410714285714286,0.0017752100840336127,0.0018425147836912542,0.002380952380952381,0.002430655763989097,0.0025,0.0025210084033613443,0.0029157509157509173,0.004073809523809524,0.009683304451844704,0.016701133786848066,0.03128706656325499,0.1943507202401344],"accuracy_scores":[0.9233333333,0.9233333333,0.9233333333,0.9233333333,0.9333333333,0.9366666667,0.9366666667,0.9366666667,0.94,0.9433333333,0.9433333333,0.9433333333,0.9433333333,0.9466666667,0.9533333333,0.9533333333,0.9533333333,0.9566666667,0.9533333333,0.94,0.9166666667,0.8466666667,0.77]},"derived":{"depth_full":10,"leaves_full":43,"depth_pruned":5,"leaves_pruned":10,"train_size":700,"test_size":300,"impurities":[0.0,0.001905,0.00381,0.008645,0.012425,0.015176,0.017952,0.019476,0.022904,0.024619,0.031583,0.033358,0.035201,0.037582,0.044873,0.047373,0.049894,0.055726,0.063874,0.08324,0.116642,0.179217,0.373567],"full_tree":{"cl":[1,2,-1,4,5,6,-1,-1,-1,10,11,12,-1,-1,15,-1,-1,-1,19,20,21,-1,23,24,-1,26,-1,-1,29,-1,-1,32,33,-1,35,36,37,-1,39,-1,-1,-1,-1,-1,45,46,47,-1,49,-1,51,52,-1,54,-1,56,-1,-1,59,-1,-1,62,63,-1,65,66,67,-1,-1,-1,71,-1,-1,-1,75,76,77,-1,79,-1,81,-1,-1,-1,-1],"cr":[18,3,-1,9,8,7,-1,-1,-1,17,14,13,-1,-1,16,-1,-1,-1,44,31,22,-1,28,25,-1,27,-1,-1,30,-1,-1,43,34,-1,42,41,38,-1,40,-1,-1,-1,-1,-1,74,61,48,-1,50,-1,58,53,-1,55,-1,57,-1,-1,60,-1,-1,73,64,-1,70,69,68,-1,-1,-1,72,-1,-1,-1,84,83,78,-1,80,-1,82,-1,-1,-1,-1],"ft":[1,1,-2,0,3,1,-2,-2,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,0,-2,1,-2,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,2,1,-2,3,-2,0,-2,-2,1,-2,-2,1,0,-2,3,2,3,-2,-2,-2,1,-2,-2,-2,1,0,0,-2,1,-2,1,-2,-2,-2,-2],"th":[1426.5,1040.5,-2.0,43.5,-43.7415,1293.0,-2.0,-2.0,-2.0,55.5,1216.0,48.1792,-2.0,-2.0,1417.0,-2.0,-2.0,-2.0,2012.0,34.5,-95.6279,-2.0,18.8004,30.5,-2.0,1853.0,-2.0,-2.0,26.5,-2.0,-2.0,44.5,-93.2509,-2.0,-3.394,1722.0,1473.5,-2.0,36.5,-2.0,-2.0,-2.0,-2.0,-2.0,25.5,2918.0,20.5,-2.0,2380.5,-2.0,-17.0358,2663.0,-2.0,-25.9097,-2.0,22.0,-2.0,-2.0,2836.5,-2.0,-2.0,3408.5,20.5,-2.0,30.4339,-18.4037,-27.4855,-2.0,-2.0,-2.0,3024.5,-2.0,-2.0,-2.0,2364.0,33.0,30.5,-2.0,2218.5,-2.0,2327.5,-2.0,-2.0,-2.0,-2.0],"ns":[700,144,84,60,35,2,1,1,33,25,14,6,5,1,8,7,1,11,556,87,33,1,32,27,21,6,5,1,5,3,2,54,17,1,16,10,6,2,4,1,3,4,6,37,469,77,17,5,12,2,10,5,2,3,1,2,1,1,5,4,1,60,15,2,13,11,3,2,1,8,2,1,1,45,392,42,7,4,3,1,2,1,1,35,350]},"pruned_tree":{"cl":[1,2,-1,4,-1,6,7,-1,-1,-1,11,12,-1,-1,15,16,-1,-1,-1],"cr":[10,3,-1,5,-1,9,8,-1,-1,-1,14,13,-1,-1,18,17,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,-2,-2,-2,1,0,-2,-2,0,1,-2,-2,-2],"th":[1426.5,1040.5,-2.0,43.5,-2.0,55.5,1216.0,-2.0,-2.0,-2.0,2012.0,34.5,-2.0,-2.0,25.5,2918.0,-2.0,-2.0,-2.0],"ns":[700,144,84,60,35,25,14,6,8,11,556,87,33,54,469,77,17,60,392]},"tree_seq":[{"a":0.0,"d":10,"l":43,"cl":[1,2,-1,4,5,6,-1,-1,-1,10,11,12,-1,-1,15,-1,-1,-1,19,20,21,-1,23,24,-1,26,-1,-1,29,-1,-1,32,33,-1,35,36,37,-1,39,-1,-1,-1,-1,-1,45,46,47,-1,49,-1,51,52,-1,54,-1,56,-1,-1,59,-1,-1,62,63,-1,65,66,67,-1,-1,-1,71,-1,-1,-1,75,76,77,-1,79,-1,81,-1,-1,-1,-1],"cr":[18,3,-1,9,8,7,-1,-1,-1,17,14,13,-1,-1,16,-1,-1,-1,44,31,22,-1,28,25,-1,27,-1,-1,30,-1,-1,43,34,-1,42,41,38,-1,40,-1,-1,-1,-1,-1,74,61,48,-1,50,-1,58,53,-1,55,-1,57,-1,-1,60,-1,-1,73,64,-1,70,69,68,-1,-1,-1,72,-1,-1,-1,84,83,78,-1,80,-1,82,-1,-1,-1,-1],"ft":[1,1,-2,0,3,1,-2,-2,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,0,-2,1,-2,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,2,1,-2,3,-2,0,-2,-2,1,-2,-2,1,0,-2,3,2,3,-2,-2,-2,1,-2,-2,-2,1,0,0,-2,1,-2,1,-2,-2,-2,-2]},{"a":0.000952,"d":9,"l":39,"cl":[1,2,-1,4,5,6,-1,-1,-1,10,11,12,-1,-1,15,-1,-1,-1,19,20,21,-1,23,24,-1,26,-1,-1,29,-1,-1,32,33,-1,35,36,37,-1,39,-1,-1,-1,-1,-1,45,46,47,-1,49,-1,51,52,-1,-1,55,-1,-1,58,59,-1,61,62,63,-1,-1,-1,67,-1,-1,-1,71,72,73,-1,-1,-1,-1],"cr":[18,3,-1,9,8,7,-1,-1,-1,17,14,13,-1,-1,16,-1,-1,-1,44,31,22,-1,28,25,-1,27,-1,-1,30,-1,-1,43,34,-1,42,41,38,-1,40,-1,-1,-1,-1,-1,70,57,48,-1,50,-1,54,53,-1,-1,56,-1,-1,69,60,-1,66,65,64,-1,-1,-1,68,-1,-1,-1,76,75,74,-1,-1,-1,-1],"ft":[1,1,-2,0,3,1,-2,-2,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,0,-2,1,-2,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,2,1,-2,-2,1,-2,-2,1,0,-2,3,2,3,-2,-2,-2,1,-2,-2,-2,1,0,0,-2,-2,-2,-2]},{"a":0.000952,"d":9,"l":39,"cl":[1,2,-1,4,5,6,-1,-1,-1,10,11,12,-1,-1,15,-1,-1,-1,19,20,21,-1,23,24,-1,26,-1,-1,29,-1,-1,32,33,-1,35,36,37,-1,39,-1,-1,-1,-1,-1,45,46,47,-1,49,-1,51,52,-1,-1,55,-1,-1,58,59,-1,61,62,63,-1,-1,-1,67,-1,-1,-1,71,72,73,-1,-1,-1,-1],"cr":[18,3,-1,9,8,7,-1,-1,-1,17,14,13,-1,-1,16,-1,-1,-1,44,31,22,-1,28,25,-1,27,-1,-1,30,-1,-1,43,34,-1,42,41,38,-1,40,-1,-1,-1,-1,-1,70,57,48,-1,50,-1,54,53,-1,-1,56,-1,-1,69,60,-1,66,65,64,-1,-1,-1,68,-1,-1,-1,76,75,74,-1,-1,-1,-1],"ft":[1,1,-2,0,3,1,-2,-2,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,0,-2,1,-2,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,2,1,-2,-2,1,-2,-2,1,0,-2,3,2,3,-2,-2,-2,1,-2,-2,-2,1,0,0,-2,-2,-2,-2]},{"a":0.001209,"d":9,"l":35,"cl":[1,2,-1,4,5,6,-1,-1,-1,10,11,12,-1,-1,15,-1,-1,-1,19,20,21,-1,23,24,-1,26,-1,-1,29,-1,-1,32,33,-1,35,36,37,-1,39,-1,-1,-1,-1,-1,45,46,47,-1,49,-1,51,52,-1,-1,55,-1,-1,58,59,-1,-1,-1,63,64,65,-1,-1,-1,-1],"cr":[18,3,-1,9,8,7,-1,-1,-1,17,14,13,-1,-1,16,-1,-1,-1,44,31,22,-1,28,25,-1,27,-1,-1,30,-1,-1,43,34,-1,42,41,38,-1,40,-1,-1,-1,-1,-1,62,57,48,-1,50,-1,54,53,-1,-1,56,-1,-1,61,60,-1,-1,-1,68,67,66,-1,-1,-1,-1],"ft":[1,1,-2,0,3,1,-2,-2,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,0,-2,1,-2,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,2,1,-2,-2,1,-2,-2,1,0,-2,-2,-2,1,0,0,-2,-2,-2,-2]},{"a":0.00126,"d":9,"l":32,"cl":[1,2,-1,4,5,6,-1,-1,-1,10,11,12,-1,-1,15,-1,-1,-1,19,20,21,-1,23,24,-1,26,-1,-1,29,-1,-1,32,33,-1,35,36,37,-1,39,-1,-1,-1,-1,-1,45,46,47,-1,49,-1,51,52,-1,-1,55,-1,-1,58,59,-1,-1,-1,-1],"cr":[18,3,-1,9,8,7,-1,-1,-1,17,14,13,-1,-1,16,-1,-1,-1,44,31,22,-1,28,25,-1,27,-1,-1,30,-1,-1,43,34,-1,42,41,38,-1,40,-1,-1,-1,-1,-1,62,57,48,-1,50,-1,54,53,-1,-1,56,-1,-1,61,60,-1,-1,-1,-1],"ft":[1,1,-2,0,3,1,-2,-2,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,0,-2,1,-2,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,2,1,-2,-2,1,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.001376,"d":9,"l":30,"cl":[1,2,-1,4,5,6,-1,-1,-1,10,11,12,-1,-1,15,-1,-1,-1,19,20,21,-1,23,-1,25,-1,-1,28,29,-1,31,32,33,-1,35,-1,-1,-1,-1,-1,41,42,43,-1,45,-1,47,48,-1,-1,51,-1,-1,54,55,-1,-1,-1,-1],"cr":[18,3,-1,9,8,7,-1,-1,-1,17,14,13,-1,-1,16,-1,-1,-1,40,27,22,-1,24,-1,26,-1,-1,39,30,-1,38,37,34,-1,36,-1,-1,-1,-1,-1,58,53,44,-1,46,-1,50,49,-1,-1,52,-1,-1,57,56,-1,-1,-1,-1],"ft":[1,1,-2,0,3,1,-2,-2,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,2,1,-2,-2,1,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.001388,"d":9,"l":28,"cl":[1,2,-1,4,-1,6,7,8,-1,-1,11,-1,-1,-1,15,16,17,-1,19,-1,21,-1,-1,24,25,-1,27,28,29,-1,31,-1,-1,-1,-1,-1,37,38,39,-1,41,-1,43,44,-1,-1,47,-1,-1,50,51,-1,-1,-1,-1],"cr":[14,3,-1,5,-1,13,10,9,-1,-1,12,-1,-1,-1,36,23,18,-1,20,-1,22,-1,-1,35,26,-1,34,33,30,-1,32,-1,-1,-1,-1,-1,54,49,40,-1,42,-1,46,45,-1,-1,48,-1,-1,53,52,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,2,1,-2,-2,1,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.001524,"d":9,"l":27,"cl":[1,2,-1,4,-1,6,7,8,-1,-1,11,-1,-1,-1,15,16,17,-1,19,-1,21,-1,-1,24,25,-1,27,28,29,-1,31,-1,-1,-1,-1,-1,37,38,39,-1,41,-1,43,-1,45,-1,-1,48,49,-1,-1,-1,-1],"cr":[14,3,-1,5,-1,13,10,9,-1,-1,12,-1,-1,-1,36,23,18,-1,20,-1,22,-1,-1,35,26,-1,34,33,30,-1,32,-1,-1,-1,-1,-1,52,47,40,-1,42,-1,44,-1,46,-1,-1,51,50,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,2,-2,1,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.001714,"d":9,"l":25,"cl":[1,2,-1,4,-1,6,7,8,-1,-1,11,-1,-1,-1,15,16,17,-1,19,-1,21,-1,-1,24,25,-1,27,28,29,-1,31,-1,-1,-1,-1,-1,37,38,39,-1,41,-1,-1,44,45,-1,-1,-1,-1],"cr":[14,3,-1,5,-1,13,10,9,-1,-1,12,-1,-1,-1,36,23,18,-1,20,-1,22,-1,-1,35,26,-1,34,33,30,-1,32,-1,-1,-1,-1,-1,48,43,40,-1,42,-1,-1,47,46,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,1,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.001714,"d":9,"l":24,"cl":[1,2,-1,4,-1,6,7,8,-1,-1,11,-1,-1,-1,15,16,17,-1,19,-1,21,-1,-1,24,25,-1,27,28,29,-1,31,-1,-1,-1,-1,-1,37,38,39,-1,-1,42,43,-1,-1,-1,-1],"cr":[14,3,-1,5,-1,13,10,9,-1,-1,12,-1,-1,-1,36,23,18,-1,20,-1,22,-1,-1,35,26,-1,34,33,30,-1,32,-1,-1,-1,-1,-1,46,41,40,-1,-1,45,44,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,-2,0,-2,-2,0,2,-2,3,1,1,-2,0,-2,-2,-2,-2,-2,0,1,0,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.001741,"d":6,"l":20,"cl":[1,2,-1,4,-1,6,7,8,-1,-1,11,-1,-1,-1,15,16,17,-1,19,-1,21,-1,-1,24,25,-1,-1,-1,29,30,31,-1,-1,34,35,-1,-1,-1,-1],"cr":[14,3,-1,5,-1,13,10,9,-1,-1,12,-1,-1,-1,28,23,18,-1,20,-1,22,-1,-1,27,26,-1,-1,-1,38,33,32,-1,-1,37,36,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,-2,0,-2,-2,0,2,-2,-2,-2,0,1,0,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.001775,"d":6,"l":19,"cl":[1,2,-1,4,-1,6,7,8,-1,-1,11,-1,-1,-1,15,16,17,-1,19,-1,21,-1,-1,24,-1,-1,27,28,29,-1,-1,32,33,-1,-1,-1,-1],"cr":[14,3,-1,5,-1,13,10,9,-1,-1,12,-1,-1,-1,26,23,18,-1,20,-1,22,-1,-1,25,-1,-1,36,31,30,-1,-1,35,34,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,-2,0,-2,-2,0,-2,-2,0,1,0,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.001843,"d":6,"l":18,"cl":[1,2,-1,4,-1,6,7,8,-1,-1,11,-1,-1,-1,15,16,17,-1,19,-1,21,-1,-1,-1,25,26,27,-1,-1,30,31,-1,-1,-1,-1],"cr":[14,3,-1,5,-1,13,10,9,-1,-1,12,-1,-1,-1,24,23,18,-1,20,-1,22,-1,-1,-1,34,29,28,-1,-1,33,32,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,2,-2,-2,1,-2,-2,-2,1,0,2,-2,3,-2,0,-2,-2,-2,0,1,0,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.002381,"d":6,"l":17,"cl":[1,2,-1,4,-1,6,7,-1,9,-1,-1,-1,13,14,15,-1,17,-1,19,-1,-1,-1,23,24,25,-1,-1,28,29,-1,-1,-1,-1],"cr":[12,3,-1,5,-1,11,8,-1,10,-1,-1,-1,22,21,16,-1,18,-1,20,-1,-1,-1,32,27,26,-1,-1,31,30,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,-2,1,-2,-2,-2,1,0,2,-2,3,-2,0,-2,-2,-2,0,1,0,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.002431,"d":6,"l":14,"cl":[1,2,-1,4,-1,6,7,-1,9,-1,-1,-1,13,14,-1,-1,17,18,19,-1,-1,22,23,-1,-1,-1,-1],"cr":[12,3,-1,5,-1,11,8,-1,10,-1,-1,-1,16,15,-1,-1,26,21,20,-1,-1,25,24,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,-2,1,-2,-2,-2,1,0,-2,-2,0,1,0,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.0025,"d":6,"l":13,"cl":[1,2,-1,4,-1,6,7,-1,-1,-1,11,12,-1,-1,15,16,17,-1,-1,20,21,-1,-1,-1,-1],"cr":[10,3,-1,5,-1,9,8,-1,-1,-1,14,13,-1,-1,24,19,18,-1,-1,23,22,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,-2,-2,-2,1,0,-2,-2,0,1,0,-2,-2,1,0,-2,-2,-2,-2]},{"a":0.002521,"d":6,"l":12,"cl":[1,2,-1,4,-1,6,7,-1,-1,-1,11,12,-1,-1,15,16,-1,18,19,-1,-1,-1,-1],"cr":[10,3,-1,5,-1,9,8,-1,-1,-1,14,13,-1,-1,22,17,-1,21,20,-1,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,-2,-2,-2,1,0,-2,-2,0,1,-2,1,0,-2,-2,-2,-2]},{"a":0.002916,"d":5,"l":10,"cl":[1,2,-1,4,-1,6,7,-1,-1,-1,11,12,-1,-1,15,16,-1,-1,-1],"cr":[10,3,-1,5,-1,9,8,-1,-1,-1,14,13,-1,-1,18,17,-1,-1,-1],"ft":[1,1,-2,0,-2,0,1,-2,-2,-2,1,0,-2,-2,0,1,-2,-2,-2]},{"a":0.004074,"d":4,"l":8,"cl":[1,2,-1,4,-1,-1,7,8,-1,-1,11,12,-1,-1,-1],"cr":[6,3,-1,5,-1,-1,10,9,-1,-1,14,13,-1,-1,-1],"ft":[1,1,-2,0,-2,-2,1,0,-2,-2,0,1,-2,-2,-2]},{"a":0.009683,"d":3,"l":6,"cl":[1,2,-1,4,-1,-1,7,8,-1,-1,-1],"cr":[6,3,-1,5,-1,-1,10,9,-1,-1,-1],"ft":[1,1,-2,0,-2,-2,1,0,-2,-2,-2]},{"a":0.016701,"d":3,"l":4,"cl":[1,-1,3,4,-1,-1,-1],"cr":[2,-1,6,5,-1,-1,-1],"ft":[1,-2,1,0,-2,-2,-2]},{"a":0.031287,"d":1,"l":2,"cl":[1,-1,-1],"cr":[2,-1,-1],"ft":[1,-2,-2]},{"a":0.194351,"d":0,"l":1,"cl":[-1],"cr":[-1],"ft":[-2]}]}};
+const V = LAB.vars;
+const D = LAB.derived;
+const KEYS = ["n_observations", "threshold", "train_size", "test_size", "depth_full", "leaves_full", "depth_pruned", "leaves_pruned", "accuracy_gini", "precision_gini", "recall_gini", "f1_gini", "optimal_ccp_alpha", "accuracy_pruned", "precision_pruned", "recall_pruned", "f1_pruned", "ccp_alphas", "accuracy_scores"];
+const LABELS = {"n_observations": "Số mẫu giả lập của Lab", "threshold": "Ngưỡng luật sinh dữ liệu Tuổi × Thu nhập", "train_size": "Số mẫu tập huấn luyện", "test_size": "Số mẫu tập kiểm tra", "depth_full": "Độ sâu cây đầy đủ trước cắt tỉa", "leaves_full": "Số lá cây đầy đủ trước cắt tỉa", "depth_pruned": "Độ sâu cây sau cắt tỉa", "leaves_pruned": "Số lá cây sau cắt tỉa", "accuracy_gini": "Độ chính xác trên tập kiểm tra của cây đầy đủ", "precision_gini": "Precision trên tập kiểm tra của cây đầy đủ", "recall_gini": "Recall trên tập kiểm tra của cây đầy đủ", "f1_gini": "F1-score trên tập kiểm tra của cây đầy đủ", "optimal_ccp_alpha": "ccp_alpha tối ưu do Lab chọn (argmax accuracy)", "accuracy_pruned": "Độ chính xác trên tập kiểm tra của cây cắt tỉa", "precision_pruned": "Precision trên tập kiểm tra của cây cắt tỉa", "recall_pruned": "Recall trên tập kiểm tra của cây cắt tỉa", "f1_pruned": "F1-score trên tập kiểm tra của cây cắt tỉa", "ccp_alphas": "23 mốc ccp_alpha từ cost_complexity_pruning_path", "accuracy_scores": "23 lần đánh giá accuracy trên tập kiểm tra"};
+const FB = {1:{"q1_1":["Đúng! Trong 23 giá trị của accuracy_scores, cao nhất là 0,9567 tại mốc #17 với ccp_alpha = 0,002916 (đúng số optimal_ccp_alpha của Lab).",1],"q1_2":["Sai: mốc #0 (α = 0) là cây đầy đủ 43 lá, accuracy tập kiểm tra chỉ 0,9233.",0],"q1_3":["Sai: mốc cuối 0,194351 cắt quá tay, accuracy tụt về 0,77.",0]},2:{"q2_1":["Chính xác: cây 43 lá 'học thuộc' cả nhiễu từ hai đặc trưng ngẫu nhiên; cây 10 lá tổng quát hơn, accuracy tập kiểm tra tăng từ 0,9233 lên 0,9567 (+0,0333, tức 10 trong 300 mẫu).",1],"q2_2":["Sai: ít lá làm sai số HUẤN LUYỆN tăng; chỉ tiêu trên đây là tập KIỂM TRA của lần chạy Lab.",0],"q2_3":["Sai: đây là kết quả MỘT lần chạy có random_state=42 trên dữ liệu giả lập — đổi seed/số mẫu, số sẽ đổi.",0]},3:{"q3_1":["Đúng: (43 - 10) × 0,002916 = 33 × 0,002916 = 0,0962 — cây cắt tỉa rẻ hơn đúng 0,0962 tiền phạt tại α tối ưu.",1],"q3_2":["Sai: 0,1254 = 0,002916 × 43 là hình phạt của CẢ cây đầy đủ, không phải mức chênh.",0],"q3_3":["Sai: 0,0292 = 0,002916 × 10 là hình phạt của cây cắt tỉa.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const fvi = (x, nd = 2) => {
+  const s = x < 0 ? '-' : '';
+  const t = (Math.round(Math.abs(x) * 10 ** nd) / 10 ** nd).toFixed(nd);
+  const p = t.split('.');
+  return s + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (p[1] ? ',' + p[1] : '');
+};
+const dec = k => (k === 'optimal_ccp_alpha' || k === 'ccp_alphas') ? 6
+  : (k.startsWith('accuracy') || k.startsWith('precision') || k.startsWith('recall') || k.startsWith('f1')) ? 4 : 0;
+
+const A = V.ccp_alphas, S = V.accuracy_scores, N = A.length;
+const BEST = S.indexOf(Math.max.apply(null, S));
+
+function renderTab1(){
+  const i = +$('#alphaSel').value;
+  $('#val1').textContent = '#' + i;
+  const X = k => 46 + k * (415 - 46) / (N - 1);
+  const Y = a => 226 - (a - 0.74) / (0.98 - 0.74) * 190;
+  let svg = '<line class="ln" x1="40" y1="232" x2="425" y2="232"/><line class="ln" x1="40" y1="232" x2="40" y2="26"/>';
+  svg += '<text class="ax" x="8" y="130" transform="rotate(-90 8 130)" text-anchor="middle" style="font-size:10px">Accuracy tập kiểm tra</text>';
+  [0.75, 0.8, 0.85, 0.9, 0.95].forEach(t => {
+    svg += `<text class="ax" x="36" y="${(Y(t) + 3).toFixed(1)}" text-anchor="end" style="font-size:9px">${esc(fvi(t, 2))}</text>`;
+    svg += `<line class="ln" x1="40" y1="${Y(t).toFixed(1)}" x2="425" y2="${Y(t).toFixed(1)}" opacity=".35"/>`;
+  });
+  for (let k = 0; k < N; k += 2) svg += `<text class="ax" x="${X(k).toFixed(1)}" y="246" text-anchor="middle" style="font-size:9px">${k}</text>`;
+  svg += `<text class="ax" x="232" y="262" text-anchor="middle">Mốc ccp_alpha #0 → #${N - 1} (đường cong cost-complexity của Lab)</text>`;
+  svg += `<line x1="${X(i).toFixed(1)}" y1="26" x2="${X(i).toFixed(1)}" y2="232" stroke="var(--cam)" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+  const pts = S.map((a, k) => `${X(k).toFixed(1)},${Y(a).toFixed(1)}`).join(' ');
+  svg += `<polyline fill="none" stroke="var(--acc)" stroke-width="2.5" points="${pts}"/>`;
+  S.forEach((a, k) => {
+    const sel = k === i, best = k === BEST;
+    svg += `<circle cx="${X(k).toFixed(1)}" cy="${Y(a).toFixed(1)}" r="${sel ? 6 : 3}" fill="${sel ? 'var(--cam)' : 'var(--acc)'}" stroke="var(--plot)" stroke-width="1.5"/>`;
+    if (best) svg += `<text class="ax" x="${X(k).toFixed(1)}" y="${(Y(a) - 10).toFixed(1)}" text-anchor="middle" style="font-weight:700">α* = ${esc(fvi(A[k], 6))}</text>`;
+  });
+  svg += `<text class="ax" x="425" y="16" text-anchor="end" style="font-weight:700">Mốc #${i}: α = ${esc(fvi(A[i], 6))} · accuracy = ${esc(fvi(S[i], 4))}</text>`;
+  $('#curve').innerHTML = svg;
+  $('#stat1').innerHTML = [
+    [String(N), 'Số mốc α trên đường cong'],
+    [fvi(A[i], 6), 'α tại mốc đang chọn'],
+    [fvi(S[i], 4), 'accuracy kiểm tra tại mốc'],
+    [fvi(V.optimal_ccp_alpha, 6), 'ccp_alpha tối ưu (Lab)']
+  ].map(([b, sp]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(sp)}</span></div>`).join('');
+  $('#liveTable tbody').innerHTML = [
+    [LABELS.n_observations + ' (n_observations)', fvi(V.n_observations, dec('n_observations'))],
+    [LABELS.train_size + ' (train_size)', fvi(D.train_size, 0)],
+    [LABELS.test_size + ' (test_size)', fvi(D.test_size, 0)],
+    [`ccp_alpha tại mốc #${i} (ccp_alphas)`, fvi(A[i], 6)],
+    [`Độ chính xác trên tập kiểm tra tại mốc #${i}`, fvi(S[i], 4)],
+    [LABELS.optimal_ccp_alpha + ' (optimal_ccp_alpha)', fvi(V.optimal_ccp_alpha, 6)],
+    [LABELS.accuracy_pruned + ' (accuracy_pruned)', fvi(V.accuracy_pruned, 4)]
+  ].map(([a, b]) => `<tr><td>${esc(a)}</td><td class="ro hi">${esc(b)}</td></tr>`).join('');
+  $('#insight1').innerHTML = i === 0
+    ? `Mốc #0: α = 0 — chính là cây đầy đủ ${D.leaves_full} lá (sâu ${D.depth_full}); accuracy kiểm tra ${esc(fvi(S[0], 4))}. Cây tách tới tận lá để "học thuộc" cả ${D.train_size} mẫu huấn luyện, gồm cả nhiễu.`
+    : i === BEST
+      ? `Mốc #${BEST}: α = ${esc(fvi(A[BEST], 6))} đạt accuracy kiểm tra cao nhất ${esc(fvi(S[BEST], 4))} — cao hơn cây đầy đủ ${esc(fvi(S[BEST] - S[0], 4))}. Đây là điểm cắt tỉa tối ưu của lần chạy Lab.`
+      : i > BEST
+        ? `Mốc #${i}: cắt quá tay so với mốc tối ưu #${BEST} (${esc(fvi(A[BEST], 6))}) — accuracy kiểm tra tụt còn ${esc(fvi(S[i], 4))}.`
+        : `Mốc #${i}: chưa cắt tới ngưỡng tối ưu #${BEST}; accuracy kiểm tra ${esc(fvi(S[i], 4))}.`;
+}
+
+function renderTab2() {
+  renderTree();
+  $('#stat2').innerHTML = [
+    [fvi(D.depth_full, 0), 'Độ sâu cây đầy đủ (mốc #0)'],
+    [fvi(D.leaves_full, 0), 'Số lá cây đầy đủ (mốc #0)'],
+    [fvi(D.depth_pruned, 0), 'Độ sâu cây cắt tỉa (mốc #17)'],
+    [fvi(D.leaves_pruned, 0), 'Số lá cây cắt tỉa (mốc #17)']
+  ].map(([b, sp]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(sp)}</span></div>`).join('');
+}
+// ================= Tab 2: DAY CHUYEN CAT TIA (23 cay THAT trong tree_seq) =================
+const FEAT = ["Tuổi", "Thu nhập", "Biến ngẫu nhiên 1", "Biến ngẫu nhiên 2"];  // dung thu tu cot X cua Lab
+const TAG = ["Tuổi", "Thu nhập", "NN1", "NN2"];
+const FT = D.full_tree, SEQ = D.tree_seq;
+const COL = 94, BW = 86, BH = 12, ROW = 13, X0 = 8, Y0 = 40;
+const f1 = x => (Math.round(x * 10) / 10).toFixed(1).replace('.', ',');   // nguong: 1 chu so thap phan
+
+function layoutFull() {
+  const n = FT.cl.length, dep = new Array(n), slot = new Array(n), par = new Array(n).fill(-1);
+  let leaves = 0;
+  const walk = (i, d) => {
+    dep[i] = d;
+    if (FT.cl[i] < 0) { slot[i] = leaves++; }
+    else { walk(FT.cl[i], d + 1); walk(FT.cr[i], d + 1); par[FT.cl[i]] = i; par[FT.cr[i]] = i;
+           slot[i] = (slot[FT.cl[i]] + slot[FT.cr[i]]) / 2; }
+  };
+  walk(0, 0);
+  return { n, dep, slot, par, leaves };
+}
+const L = layoutFull();
+const NX = i => X0 + L.dep[i] * COL;
+const NY = i => Y0 + L.slot[i] * ROW;
+
+// map node cua cay tree_seq[k] -> node cua full_tree (quyet dong doi tu goc; cat tia chi
+// cat di ca nhanh nen nut giu lai giung nguyen nut cha/con cua full_tree).
+function mapSeq(k) {
+  const t = SEQ[k], rev = new Array(L.n).fill(-1);
+  let cnt = 0, badFt = 0;
+  const st = [[0, 0]];
+  while (st.length) {
+    const [j, i] = st.pop();
+    rev[i] = j; cnt++;
+    if (t.cl[j] >= 0) {
+      if (t.ft[j] !== FT.ft[i]) badFt++;
+      st.push([t.cl[j], FT.cl[i]], [t.cr[j], FT.cr[i]]);
+    }
+  }
+  return { t, rev, cnt, badFt, ok: badFt === 0 && cnt === t.cl.length };
+}
+const MAPS = SEQ.map((_, k) => mapSeq(k));
+const TH_OK = MAPS.every(m => m.ok);   // nguong chi duoc ve khi khop full_tree (khong doan)
+
+function buildTreeSvg() {
+  let g = '<text id="treeCap" class="capb" x="10" y="16"></text>' +
+          '<text id="treeSub" class="cap" x="1032" y="16" text-anchor="end">23 mốc α thật của Lab · không nội suy</text>';
+  for (let i = 0; i < L.n; i++) {
+    let b = '';
+    if (i > 0) {
+      const p = L.par[i];
+      b += '<line class="ln2" x1="' + (NX(p) + BW).toFixed(1) + '" y1="' + NY(p).toFixed(1) +
+           '" x2="' + NX(i).toFixed(1) + '" y2="' + NY(i).toFixed(1) + '"/>';
+    }
+    const lbl = FT.ft[i] >= 0 && TH_OK ? TAG[FT.ft[i]] + ' \u2264 ' + f1(FT.th[i]) : '';
+    b += '<g class="bint"><rect x="' + NX(i) + '" y="' + (NY(i) - BH / 2).toFixed(1) + '" width="' + BW +
+         '" height="' + BH + '" rx="4"/><text x="' + (NX(i) + BW / 2).toFixed(1) + '" y="' +
+         (NY(i) + 3).toFixed(1) + '" text-anchor="middle">' + esc(lbl) + '</text></g>';
+    b += '<rect class="bleaf" x="' + (NX(i) + BW / 2 - 13).toFixed(1) + '" y="' + (NY(i) - 4.5).toFixed(1) +
+         '" width="26" height="9" rx="4"/>';
+    g += '<g class="nd" data-i="' + i + '">' + b + '</g>';
+  }
+  $('#svgTree').innerHTML = g;
+  return [...$('#svgTree').querySelectorAll('.nd')];
+}
+let K = 0, TIMER = null, NODES = null;
+
+function setK(n) {
+  K = Math.max(0, Math.min(N - 1, n));
+  $('#alphaTree').value = String(K);
+  renderTree();
+}
+function renderTree() {
+  if (!NODES) NODES = buildTreeSvg();
+  const m = MAPS[K], t = m.t;
+  let leaves = 0, maxd = 0, drawn = 0;
+  const feats = {};
+  for (let i = 0; i < L.n; i++) {
+    const j = m.rev[i], on = j >= 0, lf = on && t.cl[j] < 0, el = NODES[i];
+    if (on) {
+      drawn++;
+      if (lf) leaves++;
+      else { maxd = Math.max(maxd, L.dep[i]); feats[FT.ft[i]] = (feats[FT.ft[i]] || 0) + 1; }
+    }
+    el.classList.toggle('off', !on);
+    el.classList.toggle('lf', lf);
+    el.classList.toggle('cut', lf && FT.cl[i] >= 0);
+  }
+  $('#valTree').textContent = '#' + K + ' · α = ' + fvi(A[K], 6);
+  $('#treeCap').textContent = 'Mốc #' + K + ' · α = ' + fvi(A[K], 6) + ' · cây ' + t.cl.length +
+    ' node · sâu ' + t.d + ' · ' + t.l + ' lá · accuracy kiểm tra ' + fvi(S[K], 4);
+  $('#statTree').innerHTML = [
+    [fvi(A[K], 6), 'ccp_alpha mốc #' + K],
+    [String(t.d), 'Độ sâu cây (tree_seq)'],
+    [String(t.l), 'Số lá cây (tree_seq)'],
+    [fvi(S[K], 4), 'Accuracy tập kiểm tra']
+  ].map(([b, sp]) => '<div class="chip"><b>' + esc(b) + '</b><span>' + esc(sp) + '</span></div>').join('');
+  const pen = A[K] * t.l;
+  $('#treeTable tbody').innerHTML = [
+    ['ccp_alpha tại mốc #' + K + ' (ccp_alphas)', fvi(A[K], 6)],
+    ['Độ sâu (tree_seq[' + K + '].d)', String(t.d)],
+    ['Số lá |T| (tree_seq[' + K + '].l)', String(t.l)],
+    ['Số node của cây (tree_seq[' + K + '].cl)', String(t.cl.length)],
+    ['Độ chính xác trên tập kiểm tra (accuracy_scores[' + K + '])', fvi(S[K], 4)],
+    ['R(T) = impurities[' + K + ']', fvi(D.impurities[K], 6)],
+    ['α·|T| = ' + fvi(A[K], 6) + ' × ' + t.l, fvi(pen, 6)],
+    ['R_α(T) = R(T) + α·|T|', fvi(D.impurities[K] + pen, 6)],
+    ['Thuộc tính tách trong cây này', Object.keys(feats).sort((x, y) => x - y)
+      .map(f => FEAT[f] + ' ×' + feats[f]).join(' · ') || '(cây chỉ còn 1 lá)']
+  ].map(([a, b]) => '<tr><td>' + esc(a) + '</td><td class="ro hi">' + esc(b) + '</td></tr>').join('');
+  const okL = leaves === t.l, okD = maxd === t.d;
+  $('#treeCheck').innerHTML =
+    '<b>Tự kiểm tra trang</b> (không tin số vẽ ra, chỉ tin số của Lab): node vẽ ' + drawn + ' = ' +
+    esc(String(t.cl.length)) + ' node của <code>tree_seq[' + K + ']</code> · lá vẽ ' + leaves +
+    ' = <code>tree_seq[' + K + '].l</code> = ' + t.l + ' ' + (okL ? '✓' : '✗') +
+    ' · sâu vẽ ' + maxd + ' = <code>tree_seq[' + K + '].d</code> = ' + t.d + ' ' + (okD ? '✓' : '✗') +
+    ' · <code>tree_seq[0].l</code> = ' + SEQ[0].l + ' = <code>leaves_full</code> = ' + D.leaves_full +
+    ' và <code>tree_seq[22].l</code> = ' + SEQ[22].l + ' · ngưỡng hiển thị ' +
+    (TH_OK ? 'khớp <code>full_tree.th</code> trên cả 23 cây ✓' : 'KHÔNG khớp full_tree → đã ẩn ngưỡng');
+}
+function playAnim() {
+  if (TIMER) return;
+  if (K >= N - 1) setK(0);
+  TIMER = setInterval(() => { if (K >= N - 1) { pauseAnim(); return; } setK(K + 1); }, 900);
+  $('#animPlay').setAttribute('aria-pressed', 'true');
+}
+function pauseAnim() {
+  if (TIMER) clearInterval(TIMER);
+  TIMER = null;
+  $('#animPlay').setAttribute('aria-pressed', 'false');
+}
+
+// ================= Tab 3: R_alpha(T) bang SO THAT (impurities + |T| cua chinh cay) =========
+function renderTab3() {
+  const rows = [[0, 'Cây ĐẦY ĐỦ, không cắt tỉa'], [BEST, 'Cây CẮT TỈA TỐI ƯU của Lab'], [N - 1, 'Cây bị cắt quá tay (chỉ còn 1 lá)']];
+  $('#costBody').innerHTML = rows.map(([k, name]) => {
+    const imp = D.impurities[k], l = SEQ[k].l, pen = A[k] * l;
+    return '<tr><td><b>#' + k + '</b> ' + esc(name) + '<br><span class="sub">α = ' + esc(fvi(A[k], 6)) +
+      ' · |T| = ' + l + ' lá</span></td><td class="ro hi">' + esc(fvi(imp, 6)) + '</td><td class="ro">' +
+      esc(fvi(A[k], 6) + ' × ' + l + ' = ' + fvi(pen, 6)) + '</td><td class="ro hi">' + esc(fvi(imp + pen, 6)) + '</td></tr>';
+  }).join('');
+  const rawvi = x => String(x).replace('.', ',');
+  $('#costPrec').textContent = [0, BEST, N - 1].map(k => '#' + k + ': α = ' + rawvi(A[k]) +
+    ' → α × ' + SEQ[k].l + ' = ' + rawvi(A[k] * SEQ[k].l)).join(' · ');
+  const impB = D.impurities[BEST], penB = A[BEST] * SEQ[BEST].l, penF = A[BEST] * D.leaves_full;
+  $('#costNote').innerHTML =
+    '<b>Vì sao R(T) = 0 ở mốc #0?</b> Cây đầy đủ có ' + D.leaves_full + ' lá trên ' + D.train_size +
+    ' mẫu huấn luyện, trung bình <code>' + D.train_size + ' / ' + D.leaves_full + ' = ' +
+    esc(fvi(D.train_size / D.leaves_full, 2)) + '</code> mẫu mỗi lá; <code>impurities[0] = 0</code> nghĩa là ' +
+    '<b>mọi lá đều thuần nhất</b> — cây đã nhớ hết ' + D.train_size + ' mẫu huấn luyện, nên sai số huấn luyện ' +
+    'R(T) = 0 và chi phí chỉ còn là tiền phạt hình phạt.';
+  $('#costNote').innerHTML += ' <b>Kiểm tra cầm tay tại α tối ưu ' + esc(fvi(A[BEST], 6)) +
+    '</b> (kết quả làm tròn 4 chữ số để bấm lại bằng máy tính cầm tay): cây đầy đủ <code>' +
+    esc(fvi(D.impurities[0], 4)) + ' + ' + esc(fvi(A[BEST], 6)) + ' × ' + D.leaves_full + ' = ' +
+    esc(fvi(D.impurities[0] + penF, 4)) + '</code> · cây cắt tỉa <code>' + esc(fvi(impB, 4)) + ' + ' +
+    esc(fvi(A[BEST], 6)) + ' × ' + SEQ[BEST].l + ' = ' + esc(fvi(impB + penB, 4)) + '</code> → sklearn bỏ ' +
+    (D.leaves_full - SEQ[BEST].l) + ' lá vì cây cắt tỉa RẺ hơn ' +
+    esc(fvi((D.impurities[0] + penF) - (impB + penB), 4)) + ' tại cùng α. Bảng trên giữ 6 chữ số và nhân với α ' +
+    'nguyên vẹn (dòng "Chữ số làm tròn vs chữ số tính toán" bên dưới).';
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#alphaSel').oninput = renderTab1;
+$('#alphaTree').oninput = () => { pauseAnim(); setK(+$('#alphaTree').value); };
+$('#animPlay').onclick = playAnim;
+$('#animPause').onclick = pauseAnim;
+$('#animStep').onclick = () => { pauseAnim(); setK(K >= N - 1 ? N - 1 : K + 1); };
+$('#animReset').onclick = () => { pauseAnim(); setK(0); };
+$('#btnDefault1').onclick = () => { $('#alphaSel').value = BEST; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#alphaSel').value = BEST;
+  pauseAnim(); K = 0;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); renderTab3(); wireQuiz();
+</script>
+</body>
+</html>

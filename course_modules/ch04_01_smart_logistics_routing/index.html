@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Dự báo xác suất giao hàng trễ hạn trên 1.000 đơn hàng online giao liên tỉnh (bộ dữ liệu mô phỏng của Lab) từ 4 đặc trưng: Khoảng cách vận chuyển (km), Số điểm trung chuyển (Hubs), Thời tiết xấu (mưa lớn/ngập đường) và Khối lượng hàng hóa (kg). Phân tích mức độ quan trọng của từng đặc trưng (Feature Importance) bằng mô hình Random Forest để hỗ trợ ra quyết định can thiệp chủ động.">
+<title>Dự báo Rủi ro Giao hàng Trễ hạn — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 4 · Ứng dụng AI trong giao nhận hàng (đặt hàng online)</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Dự báo Rủi ro Giao hàng Trễ hạn</span></h1>
+<p class="lede">Bài toán thực tế: Dự báo xác suất giao hàng trễ hạn trên 1.000 đơn hàng online giao liên tỉnh (bộ dữ liệu mô phỏng của Lab) từ 4 đặc trưng: Khoảng cách vận chuyển (km), Số điểm trung chuyển (Hubs), Thời tiết xấu (mưa lớn/ngập đường) và Khối lượng hàng hóa (kg). Phân tích mức độ quan trọng của từng đặc trưng (Feature Importance) bằng mô hình Random Forest để hỗ trợ ra quyết định can thiệp chủ động.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>Mô phỏng tương tác trên dữ liệu mẫu của Lab</h2>
+  <div class="ctl">
+   <label for="kmSel" class="note">Khoảng cách giao hàng (km): <b id="val1"></b></label>
+   <input id="kmSel" type="range" min="100" max="1800" step="50" value="1200">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (1200)</button>
+  </div>
+  <svg id="plot" viewBox="0 0 440 270" role="img" aria-label="Mức quan trọng của bốn đặc trưng theo Random Forest và xác suất trễ theo khoảng cách đang chọn"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>z</mi><mo>=</mo><mo>&#8722;</mo><mn>2,5</mn><mo>+</mo><mn>0,0012</mn><mi>d</mi><mo>+</mo><mn>0,7</mn><mi>h</mi><mo>+</mo><mn>1,8</mn><mi>w</mi><mo>+</mo><mn>0,02</mn><mi>m</mi></math></div>
+  <p class="note">Bốn thanh ngang là mức quan trọng của từng đặc trưng (Random Forest); thanh màu hổ phách là xác suất trễ P của đơn hàng 2 hub, 15 kg, thời tiết tốt tại khoảng cách đang chọn — tính đúng theo hàm logit trong tệp <code>01_du_bao_rui_ro_giao_hang_tre_hen.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích độ nhạy · Đường cong tham số</span>
+  <h2>Đường cong đáp ứng theo tham số thứ hai</h2>
+  <div class="ctl">
+   <label for="hubSel" class="note">Số điểm trung chuyển (Hubs): <b id="val2"></b></label>
+   <input id="hubSel" type="range" min="0" max="4" step="1" value="2">
+  </div>
+  <svg id="curve" viewBox="0 0 440 250" role="img" aria-label="Đường cong xác suất trễ theo khoảng cách cho thời tiết tốt và mưa lớn"></svg>
+  <p class="note">Đường cong P trễ theo khoảng cách tính trực tiếp từ các hệ số logit của Lab cho đơn hàng 15 kg với số hub đang chọn: nét liền — thời tiết tốt, nét đứt — mưa lớn (w = 1). Hai điểm tròn là đơn hàng mẫu 1.200 km.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>P</mi><mtext>trễ</mtext></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><mo>exp</mo><mo>(</mo><mo>&#8722;</mo><mi>z</mi><mo>)</mo></mrow></mfrac></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_du_bao_rui_ro_giao_hang_tre_hen.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_du_bao_rui_ro_giao_hang_tre_hen.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Tổng số đơn hàng online giao liên tỉnh trong tập dữ liệu mô phỏng <span class="sub">(n_orders_log)</span></td><td class="ro hi">1000</td></tr>
+<tr><td><code>[M02]</code> Tỷ lệ đơn hàng bị giao trễ hạn trong toàn bộ mẫu (%) <span class="sub">(delay_rate_pct)</span></td><td class="ro hi">55,7</td></tr>
+<tr><td><code>[M03]</code> Độ chính xác dự báo của Random Forest trên tập kiểm tra Test (%) <span class="sub">(test_acc_pct)</span></td><td class="ro hi">63,6</td></tr>
+<tr><td><code>[M04]</code> Tỷ trọng đóng góp của Khoảng cách vận chuyển (%) <span class="sub">(imp_dist_pct)</span></td><td class="ro hi">43,25</td></tr>
+<tr><td><code>[M05]</code> Tỷ trọng đóng góp của Số điểm trung chuyển (%) <span class="sub">(imp_hubs_pct)</span></td><td class="ro hi">11,43</td></tr>
+<tr><td><code>[M06]</code> Tỷ trọng đóng góp của biến Thời tiết xấu (%) <span class="sub">(imp_weather_pct)</span></td><td class="ro hi">10,58</td></tr>
+<tr><td><code>[M07]</code> Tỷ trọng đóng góp của Khối lượng hàng hóa (%) <span class="sub">(imp_weight_pct)</span></td><td class="ro hi">34,74</td></tr>
+<tr><td><code>[M08]</code> Hệ số chặn cơ sở b0 trong hàm logit rủi ro <span class="sub">(b0_risk)</span></td><td class="ro hi">-2,5</td></tr>
+<tr><td><code>[M09]</code> Hệ số tác động của mỗi km khoảng cách <span class="sub">(w_km_risk)</span></td><td class="ro hi">0,0012</td></tr>
+<tr><td><code>[M10]</code> Hệ số tác động của mỗi điểm trung chuyển (Hub) <span class="sub">(w_hub_risk)</span></td><td class="ro hi">0,7</td></tr>
+<tr><td><code>[M11]</code> Hệ số tác động khi gặp Thời tiết xấu (mưa lớn, ngập đường) <span class="sub">(w_weather_risk)</span></td><td class="ro hi">1,8</td></tr>
+<tr><td><code>[M12]</code> Hệ số tác động của mỗi kg khối lượng hàng hóa <span class="sub">(w_ton_risk)</span></td><td class="ro hi">0,02</td></tr>
+<tr><td><code>[M13]</code> Điểm logit z của chuyến hàng 1200km, 2 hub, 15 kg khi thời tiết tốt <span class="sub">(z_sample_good)</span></td><td class="ro hi">0,64</td></tr>
+<tr><td><code>[M14]</code> Xác suất trễ hạn khi thời tiết tốt (%) <span class="sub">(p_sample_good_pct)</span></td><td class="ro hi">65,48</td></tr>
+<tr><td><code>[M15]</code> Điểm logit z của cùng chuyến hàng khi gặp mưa lớn (weather = 1) <span class="sub">(z_sample_storm)</span></td><td class="ro hi">2,44</td></tr>
+<tr><td><code>[M16]</code> Xác suất trễ hạn vọt lên khi gặp mưa lớn (%) <span class="sub">(p_sample_storm_pct)</span></td><td class="ro hi">91,98</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Theo kết quả phân tích Feature Importance của mô hình Random Forest trên 1.000 đơn hàng, hai đặc trưng liên tục nào đóng góp tỷ trọng lớn nhất vào sự biến thiên rủi ro?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Khoảng cách vận chuyển (43,25%) và Khối lượng hàng hóa (34,74%)</button><button class="opt" type="button" data-v="q1_2">Chỉ có Thời tiết xấu (100%)</button><button class="opt" type="button" data-v="q1_3">Tất cả 4 đặc trưng đều bằng 25,0%</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Với chuyến hàng 1.200 km, 2 điểm trung chuyển, nặng 15 kg: khi thời tiết tốt xác suất trễ là 65,48% (z = 0,64). Nếu gặp mưa lớn (w = 1, hệ số +1,8), xác suất trễ tăng lên bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Tăng vọt lên 91,98% (với z = 2,44)</button><button class="opt" type="button" data-v="q2_2">Giảm xuống còn 20,0%</button><button class="opt" type="button" data-v="q2_3">Giữ nguyên 65,48%</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Từ mô hình dự báo rủi ro trễ hạn này, đơn vị giao hàng nên ra quyết định can thiệp (Prescriptive Analytics) như thế nào?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Chủ động gộp tuyến để giảm số điểm trung chuyển (Hub) và chọn phương thức vận chuyển ít chịu ảnh hưởng của thời tiết cho các đơn hàng đi xa trong mùa mưa lớn</button><button class="opt" type="button" data-v="q3_2">Tăng thêm điểm trung chuyển khi trời mưa lớn</button><button class="opt" type="button" data-v="q3_3">Chỉ giao hàng dưới 50 km</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_du_bao_rui_ro_giao_hang_tre_hen.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10,11],"vars":{"n_orders_log":1000,"delay_rate_pct":55.7,"test_acc_pct":63.6,"imp_dist_pct":43.25,"imp_hubs_pct":11.43,"imp_weather_pct":10.58,"imp_weight_pct":34.74,"b0_risk":-2.5,"w_km_risk":0.0012,"w_hub_risk":0.7,"w_weather_risk":1.8,"w_ton_risk":0.02,"z_sample_good":0.64,"p_sample_good_pct":65.48,"z_sample_storm":2.44,"p_sample_storm_pct":91.98},"derived":{}};
+const V = LAB.vars;
+const viNum = (x, nd) => { const a = Math.abs(+x).toFixed(nd).split('.'); a[0] = a[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.'); return (x < 0 ? '-' : '') + a[0] + (a[1] ? ',' + a[1] : ''); };
+const FB = {1:{"q1_1":["\u0110\u00fang! Kho\u1ea3ng c\u00e1ch (43,25%) v\u00e0 Kh\u1ed1i l\u01b0\u1ee3ng (34,74%) chi\u1ebfm g\u1ea7n 78% kh\u1ea3 n\u0103ng ph\u00e2n t\u00e1ch c\u1ee7a c\u00e1c n\u00fat c\u00e2y, ti\u1ebfp theo l\u00e0 S\u1ed1 \u0111i\u1ec3m trung chuy\u1ec3n (11,43%) v\u00e0 Th\u1eddi ti\u1ebft x\u1ea5u (10,58%).",1],"q1_2":["Sai: Th\u1eddi ti\u1ebft x\u1ea5u l\u00e0 bi\u1ebfn nh\u1ecb ph\u00e2n n\u00ean d\u00f9 h\u1ec7 s\u1ed1 nh\u1ea3y logit l\u1edbn (+1,8), t\u1ed5ng m\u1ee9c gi\u1ea3m Gini qua c\u00e1c nh\u00e1nh c\u00e2y l\u00e0 10,58%.",0],"q1_3":["Sai.",0]},2:{"q2_1":["Ch\u00ednh x\u00e1c! z_storm = 0,64 + 1,80 = 2,44 => P = 1 / (1 + e^-2,44) = 91,98%.",1],"q2_2":["Sai: th\u1eddi ti\u1ebft x\u1ea5u l\u00e0m t\u0103ng r\u1ee7i ro tr\u1ec5 h\u1eb9n.",0],"q2_3":["Sai.",0]},3:{"q3_1":["\u0110\u00fang! Gi\u1ea3m t\u1eeb 2 hub v\u1ec1 0 hub gi\u00fap gi\u1ea3m ngay 1,4 \u0111\u01a1n v\u1ecb logit r\u1ee7i ro.",1],"q3_2":["Sai: m\u1ed7i hub l\u00e0m t\u0103ng th\u00eam +0,7 \u0111i\u1ec3m logit r\u1ee7i ro.",0],"q3_3":["Sai.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function renderTab1(){
+  const km = +$('#kmSel').value;
+  $('#val1').textContent = String(km);
+  const z = V.b0_risk + V.w_km_risk * km + V.w_hub_risk * 2 + V.w_ton_risk * 15;
+  const p = 100 / (1 + Math.exp(-z));
+  $('#stat1').innerHTML = [
+    [viNum(V.n_orders_log, 0), 'Tổng số đơn hàng trong mẫu'],
+    [viNum(V.delay_rate_pct, 1) + '%', 'Tỷ lệ đơn bị trễ toàn mẫu (%)'],
+    [viNum(V.test_acc_pct, 1) + '%', 'Độ chính xác Random Forest trên Test (%)'],
+    [viNum(p, 2) + '%', 'P trễ tại khoảng cách đang chọn (%)']
+  ].map(c => `<div class="chip"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></div>`).join('');
+  const feats = [
+    ['Khoảng cách', V.imp_dist_pct],
+    ['Khối lượng', V.imp_weight_pct],
+    ['Trung chuyển', V.imp_hubs_pct],
+    ['Thời tiết', V.imp_weather_pct]
+  ];
+  let svg = '<text class="ax" x="12" y="18" font-weight="700">Mức quan trọng của đặc trưng — Random Forest (%)</text>';
+  feats.forEach((f, i) => {
+    const y = 30 + i * 30, w = Math.max(2, f[1] / 50 * 260);
+    svg += `<text class="ax" x="104" y="${y + 15}" text-anchor="end">${esc(f[0])}</text>`;
+    svg += `<rect x="110" y="${y}" width="${w.toFixed(1)}" height="20" rx="4" fill="${i === 0 ? 'var(--acc)' : 'var(--new)'}" opacity=".9"/>`;
+    svg += `<text class="ax" x="${(115 + w).toFixed(1)}" y="${y + 15}">${esc(viNum(f[1], 2))}%</text>`;
+  });
+  svg += '<line class="ln" x1="110" y1="26" x2="110" y2="154"/>';
+  svg += `<text class="ax" x="12" y="178">Đơn hàng đang khảo sát: ${esc(viNum(km, 0))} km · 2 hub · 15 kg · thời tiết tốt</text>`;
+  svg += `<text class="ax" x="12" y="205">P trễ</text>`;
+  svg += '<rect x="110" y="192" width="260" height="18" rx="6" fill="var(--line2)" opacity=".4"/>';
+  svg += `<rect x="110" y="192" width="${(p / 100 * 260).toFixed(1)}" height="18" rx="6" fill="var(--cam)"/>`;
+  svg += `<text class="ax" x="110" y="234">z = ${esc(viNum(z, 2))} ⇒ P(trễ) = ${esc(viNum(p, 2))}% theo hàm logit của Lab</text>`;
+  $('#plot').innerHTML = svg;
+  const rows = [
+    ['Hệ số chặn cơ sở b0 của hàm logit', viNum(V.b0_risk, 1)],
+    ['Hệ số của mỗi km khoảng cách', viNum(V.w_km_risk, 4)],
+    ['Hệ số của mỗi điểm trung chuyển', viNum(V.w_hub_risk, 1)],
+    ['Hệ số khi gặp thời tiết xấu', viNum(V.w_weather_risk, 1)],
+    ['Hệ số của mỗi kg khối lượng', viNum(V.w_ton_risk, 2)],
+    ['Điểm logit z tại khoảng cách đang chọn', viNum(z, 2)]
+  ];
+  $('#liveTable tbody').innerHTML = rows.map(r => `<tr><td>${esc(r[0])}</td><td class="ro hi">${esc(r[1])}</td></tr>`).join('');
+  $('#insight1').innerHTML = `Tại mốc ${esc(viNum(km, 0))} km (2 hub, 15 kg, thời tiết tốt), hàm logit của Lab cho z = <b>${esc(viNum(z, 2))}</b> và xác suất trễ P = <b>${esc(viNum(p, 2))}%</b> — so với mức trễ nền ${(esc(viNum(V.delay_rate_pct, 1)))}% của toàn mẫu.`;
+}
+
+function renderTab2(){
+  const h = +$('#hubSel').value;
+  $('#val2').textContent = String(h);
+  const D0 = 100, D1 = 1800, X0 = 55, X1 = 415, Y0 = 210, Y1 = 30;
+  const px = d => X0 + (d - D0) / (D1 - D0) * (X1 - X0);
+  const py = pp => Y0 - pp / 100 * (Y0 - Y1);
+  const zAt = (d, w) => V.b0_risk + V.w_km_risk * d + V.w_hub_risk * h + V.w_ton_risk * 15 + V.w_weather_risk * w;
+  const curve = w => {
+    const pts = [];
+    for (let i = 0; i <= 24; i++){
+      const d = D0 + (D1 - D0) * i / 24;
+      pts.push(px(d).toFixed(1) + ',' + py(100 / (1 + Math.exp(-zAt(d, w)))).toFixed(1));
+    }
+    return pts.join(' ');
+  };
+  const zg = zAt(1200, 0), zs = zAt(1200, 1);
+  const pg = 100 / (1 + Math.exp(-zg)), ps = 100 / (1 + Math.exp(-zs));
+  let svg = `<line class="ln" x1="${X0}" y1="${Y0}" x2="${X1}" y2="${Y0}"/><line class="ln" x1="${X0}" y1="${Y0}" x2="${X0}" y2="${Y1}"/>`;
+  [0, 50, 100].forEach(t => { svg += `<text class="ax" x="48" y="${py(t) + 4}" text-anchor="end">${t}</text>`; });
+  [100, 1000, 1800].forEach(d => { svg += `<text class="ax" x="${px(d).toFixed(0)}" y="226" text-anchor="middle">${esc(viNum(d, 0))}</text>`; });
+  svg += `<text class="ax" x="${((X0 + X1) / 2).toFixed(0)}" y="244" text-anchor="middle">Khoảng cách giao hàng (km)</text>`;
+  svg += `<text class="ax" x="8" y="20">P trễ (%)</text>`;
+  svg += `<text x="120" y="18" fill="var(--acc)" font-size="12">Nét liền: thời tiết tốt (w = 0)</text>`;
+  svg += `<text x="282" y="18" fill="var(--táo)" font-size="12">Nét đứt: mưa lớn (w = 1)</text>`;
+  svg += `<polyline fill="none" stroke="var(--acc)" stroke-width="3" points="${curve(0)}"/>`;
+  svg += `<polyline fill="none" stroke="var(--táo)" stroke-width="3" stroke-dasharray="6 4" points="${curve(1)}"/>`;
+  svg += `<circle cx="${px(1200).toFixed(1)}" cy="${py(pg).toFixed(1)}" r="7" fill="var(--acc)" stroke="#070E1A" stroke-width="2"/>`;
+  svg += `<circle cx="${px(1200).toFixed(1)}" cy="${py(ps).toFixed(1)}" r="7" fill="var(--táo)" stroke="#070E1A" stroke-width="2"/>`;
+  svg += `<text x="${(px(1200) - 8).toFixed(1)}" y="${(py(pg) + 24).toFixed(1)}" fill="var(--acc)" font-weight="700" font-size="13">${esc(viNum(pg, 2))}%</text>`;
+  svg += `<text x="${(px(1200) + 12).toFixed(1)}" y="${(py(ps) - 10).toFixed(1)}" fill="var(--táo)" font-weight="700" font-size="13">${esc(viNum(ps, 2))}%</text>`;
+  $('#curve').innerHTML = svg;
+  $('#stat2').innerHTML = [
+    [viNum(zg, 2), 'Điểm logit z tại 1.200 km · thời tiết tốt'],
+    [viNum(pg, 2) + '%', 'P trễ tại 1.200 km · thời tiết tốt'],
+    [viNum(zs, 2), 'Điểm logit z tại 1.200 km · mưa lớn'],
+    [viNum(ps, 2) + '%', 'P trễ tại 1.200 km · mưa lớn']
+  ].map(c => `<div class="chip"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></div>`).join('');
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#kmSel').oninput = renderTab1;
+$('#hubSel').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#kmSel').value = 1200; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#kmSel').value = 1200;
+  $('#hubSel').value = 2;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

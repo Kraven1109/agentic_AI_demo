@@ -1,0 +1,141 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>Mario Kart GP — UTH Three.js Edition</title>
+  <meta name="description" content="Trò chơi đua xe Mario Kart đồ họa 3D đỉnh cao sử dụng Three.js chạy mượt mà trên nền tảng web">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <div id="game-container">
+    <!-- 3D Three.js WebGL Canvas -->
+    <canvas id="webgl-canvas"></canvas>
+
+    <!-- Speed Lines FX Canvas -->
+    <canvas id="fx-canvas"></canvas>
+
+    <!-- HUD Overlay -->
+    <div id="hud">
+      <!-- Top Row -->
+      <div class="hud-top">
+        <!-- Item Box Slot -->
+        <div class="item-slot-wrapper">
+          <div id="item-slot" class="item-slot">
+            <img id="item-icon" class="item-icon" src="" alt="">
+          </div>
+          <div id="item-prompt" class="item-prompt">EMPTY</div>
+        </div>
+
+        <!-- Center Top: Coins & Lap Timer -->
+        <div class="hud-center-top">
+          <div class="coin-display">
+            <span class="coin-icon"></span>
+            <span id="coin-count">0</span>
+          </div>
+          <div id="timer-display" class="timer-display">00:00.00</div>
+        </div>
+
+        <!-- Right Top: Lap Counter & Huge Rank -->
+        <div class="hud-right">
+          <div id="lap-box" class="lap-box">LAP 1/3</div>
+          <div class="rank-container">
+            <span id="rank-number" class="rank-number">1</span>
+            <span id="rank-suffix" class="rank-suffix">st</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Action Notification Banner (Drift Boost / Hazards) -->
+      <div id="action-banner" class="action-notification"></div>
+
+      <!-- Bottom Row -->
+      <div class="hud-bottom">
+        <!-- Speedometer & Drift Spark Meter -->
+        <div class="speedo-container">
+          <div class="speedo-top">
+            <span id="speedo-value" class="speedo-value">0</span>
+            <span class="speedo-unit">KM/H</span>
+          </div>
+          <div class="drift-meter-bar">
+            <div id="drift-fill" class="drift-fill"></div>
+          </div>
+        </div>
+
+        <!-- Minimap Radar -->
+        <div class="minimap-container">
+          <canvas id="minimap-canvas" width="170" height="170"></canvas>
+        </div>
+      </div>
+    </div>
+
+    <!-- Top Action Buttons -->
+    <div class="top-actions">
+      <button id="btn-audio" class="icon-btn" title="Bật/Tắt Âm thanh">🔊</button>
+      <button id="btn-camera" class="icon-btn" title="Đổi Góc nhìn Camera">📹</button>
+      <button id="btn-restart" class="icon-btn" title="Chơi lại">🔄</button>
+    </div>
+
+    <!-- Center Banner (3-2-1-GO Traffic Light & Text) -->
+    <div id="center-banner">
+      <div class="traffic-light">
+        <div id="light-1" class="light-dot red"></div>
+        <div id="light-2" class="light-dot red"></div>
+        <div id="light-3" class="light-dot red"></div>
+      </div>
+      <div id="countdown-text" class="countdown-text">3</div>
+    </div>
+
+    <!-- Control Hints -->
+    <div class="control-hints">
+      ⌨️ WASD/Phím mũi tên: Lái & Tăng tốc | Space/Shift: Drift (Tích Mini-Turbo) | E/Enter: Dùng Item | C: Đổi Camera
+    </div>
+
+    <!-- Mobile Touch Controls -->
+    <div id="touch-controls">
+      <div class="touch-cluster">
+        <div id="btn-left" class="touch-btn">◀</div>
+        <div id="btn-right" class="touch-btn">▶</div>
+      </div>
+      <div class="touch-cluster">
+        <div id="btn-item" class="touch-btn btn-item">ITEM</div>
+        <div id="btn-drift" class="touch-btn btn-drift">DRIFT</div>
+        <div id="btn-brake" class="touch-btn">▼</div>
+        <div id="btn-gas" class="touch-btn">▲</div>
+      </div>
+    </div>
+
+    <!-- Post-Race Finish Podium Leaderboard Modal -->
+    <div id="finish-modal" class="overlay-modal">
+      <div class="modal-card">
+        <h2 class="modal-title">RACE FINISHED!</h2>
+        <table class="leaderboard-table">
+          <thead>
+            <tr>
+              <th>Hạng</th>
+              <th>Tay đua</th>
+              <th>Thời gian</th>
+            </tr>
+          </thead>
+          <tbody id="leaderboard-body">
+            <!-- Dynamic rows -->
+          </tbody>
+        </table>
+        <button id="btn-play-again" class="btn-arcade" onclick="window.game.restartRace()">CHƠI LẠI (REPLAY)</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Game Scripts -->
+  <script src="lib/three.min.js"></script>
+  <script src="js/textures.js"></script>
+  <script src="js/audio.js"></script>
+  <script src="js/kart.js"></script>
+  <script src="js/track.js"></script>
+  <script src="js/physics.js"></script>
+  <script src="js/items.js"></script>
+  <script src="js/ai.js"></script>
+  <script src="js/game.js"></script>
+  <a href="../../index.html" style="position:fixed;bottom:12px;left:12px;z-index:9999;padding:6px 12px;border-radius:999px;background:rgba(15,23,42,.88);border:1px solid rgba(56,189,248,.45);color:#38bdf8;font:600 12px/1.2 system-ui,sans-serif;text-decoration:none;backdrop-filter:blur(6px)">← All Demos</a>
+</body>
+</html>

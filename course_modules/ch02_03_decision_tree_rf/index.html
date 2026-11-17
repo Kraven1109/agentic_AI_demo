@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Dự đoán quyết định Mua xe (nhãn 1) hay Không mua xe (nhãn 0) của 16 khách hàng dựa trên 2 đặc trưng: Độ tuổi và Thu nhập hàng tháng (USD). Khám phá cách Cây quyết định chọn ngưỡng cắt tối ưu bằng Chỉ số Gini (Gini Impurity) hoặc Độ lợi thông tin (Information Gain), và cách Rừng ngẫu nhiên kết hợp 100 cây để chống quá khớp.">
+<title>Cây Quyết định (Chỉ số Gini / IG) & Học tổ hợp Random Forest — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 2 · Cây Quyết định & Rừng Ngẫu nhiên</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Cây Quyết định (Chỉ số Gini / IG) & Học tổ hợp Random Forest</span></h1>
+<p class="lede">Bài toán thực tế: Dự đoán quyết định Mua xe (nhãn 1) hay Không mua xe (nhãn 0) của 16 khách hàng dựa trên 2 đặc trưng: Độ tuổi và Thu nhập hàng tháng (USD). Khám phá cách Cây quyết định chọn ngưỡng cắt tối ưu bằng Chỉ số Gini (Gini Impurity) hoặc Độ lợi thông tin (Information Gain), và cách Rừng ngẫu nhiên kết hợp 100 cây để chống quá khớp.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>Mô phỏng tương tác trên dữ liệu thực nghiệm của Lab</h2>
+  <div class="ctl">
+   <label for="incSel" class="note">Ngưỡng tách Thu nhập ($): <b id="val1"></b></label>
+   <input id="incSel" type="range" min="800" max="2200" step="50" value="1150">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (1150)</button>
+  </div>
+   <svg id="plot" viewBox="0 0 440 356" role="img" aria-label="Phân tách 16 khách hàng theo ngưỡng thu nhập và chỉ số Gini các nhánh"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>Gini</mi><mo>(</mo><mi>S</mi><mo>)</mo><mo>=</mo><mn>1</mn><mo>&#8722;</mo><munderover><mo>&#8721;</mo><mrow><mi>k</mi><mo>=</mo><mn>1</mn></mrow><mi>C</mi></munderover><msubsup><mi>p</mi><mi>k</mi><mn>2</mn></msubsup></math></div>
+  <p class="note">Kéo thanh trượt hoặc bấm nút mặc định để đối chiếu trực tiếp với các mốc tính toán trong tệp <code>01_decision_tree_and_random_forest.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích độ nhạy · Đường cong tham số</span>
+   <h2>Độ chính xác theo độ sâu cây &amp; xác suất bỏ phiếu của Rừng ngẫu nhiên</h2>
+  <div class="ctl">
+   <label for="depSel" class="note">Độ sâu tối đa của cây (max_depth): <b id="val2"></b></label>
+   <input id="depSel" type="range" min="1" max="3" step="1" value="3">
+  </div>
+   <svg id="curve" viewBox="0 0 440 276" role="img" aria-label="Độ chính xác của cây quyết định theo max_depth và xác suất Rừng ngẫu nhiên"></svg>
+   <p class="note">Đường cong nối ba giá trị tính lại từ Lab cho cây quyết định theo max_depth (93,75% → 100,0% → 100,0%) và tỉ lệ bỏ phiếu "Mua" của Rừng ngẫu nhiên 100 cây, trích từ <code>01_decision_tree_and_random_forest.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>&#916;Gini</mi><mo>=</mo><mi>Gini</mi><mo>(</mo><mi>S</mi><mo>)</mo><mo>&#8722;</mo><mfrac><mrow><mo>|</mo><msub><mi>S</mi><mi>L</mi></msub><mo>|</mo></mrow><mrow><mo>|</mo><mi>S</mi><mo>|</mo></mrow></mfrac><mi>Gini</mi><mo>(</mo><msub><mi>S</mi><mi>L</mi></msub><mo>)</mo><mo>&#8722;</mo><mfrac><mrow><mo>|</mo><msub><mi>S</mi><mi>R</mi></msub><mo>|</mo></mrow><mrow><mo>|</mo><mi>S</mi><mo>|</mo></mrow></mfrac><mi>Gini</mi><mo>(</mo><msub><mi>S</mi><mi>R</mi></msub><mo>)</mo></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_decision_tree_and_random_forest.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_decision_tree_and_random_forest.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Tổng số mẫu khách hàng trong bảng Lab <span class="sub">(n_samples_dt)</span></td><td class="ro hi">16</td></tr>
+<tr><td><code>[M02]</code> Số khách hàng quyết định Mua xe (Label = 1) <span class="sub">(n_yes)</span></td><td class="ro hi">9</td></tr>
+<tr><td><code>[M03]</code> Số khách hàng Không mua xe (Label = 0) <span class="sub">(n_no)</span></td><td class="ro hi">7</td></tr>
+<tr><td><code>[M04]</code> Chỉ số Gini (Gini Impurity) tại nút gốc <span class="sub">(gini_root)</span></td><td class="ro hi">0,4922</td></tr>
+<tr><td><code>[M05]</code> Entropy thông tin tại nút gốc (bit) <span class="sub">(entropy_root)</span></td><td class="ro hi">0,9887</td></tr>
+<tr><td><code>[M06]</code> Ngưỡng tách Thu nhập tối ưu đầu tiên (USD) <span class="sub">(split_income_thr)</span></td><td class="ro hi">1150</td></tr>
+<tr><td><code>[M07]</code> Số mẫu nhánh trái (Thu nhập <= 1150 USD) <span class="sub">(n_left)</span></td><td class="ro hi">6</td></tr>
+<tr><td><code>[M08]</code> Số mẫu nhánh phải (Thu nhập > 1150 USD) <span class="sub">(n_right)</span></td><td class="ro hi">10</td></tr>
+<tr><td><code>[M09]</code> Chỉ số Gini nhánh trái (thuần khiết 100% Không mua) <span class="sub">(gini_left)</span></td><td class="ro hi">0,0</td></tr>
+<tr><td><code>[M10]</code> Chỉ số Gini nhánh phải <span class="sub">(gini_right)</span></td><td class="ro hi">0,18</td></tr>
+<tr><td><code>[M11]</code> Chỉ số Gini bình quân gia quyền sau khi tách <span class="sub">(gini_after)</span></td><td class="ro hi">0,1125</td></tr>
+<tr><td><code>[M12]</code> Độ giảm chỉ số Gini (Gini Gain) <span class="sub">(gini_gain)</span></td><td class="ro hi">0,3797</td></tr>
+<tr><td><code>[M13]</code> Độ lợi thông tin (Information Gain - bit) <span class="sub">(info_gain)</span></td><td class="ro hi">0,6956</td></tr>
+<tr><td><code>[M14]</code> Độ chính xác Cây quyết định tại max_depth = 1 (%) <span class="sub">(acc_depth1_pct)</span></td><td class="ro hi">93,75</td></tr>
+<tr><td><code>[M15]</code> Độ chính xác Cây quyết định tại max_depth = 2 (%) <span class="sub">(acc_depth2_pct)</span></td><td class="ro hi">100,0</td></tr>
+<tr><td><code>[M16]</code> Độ chính xác Cây quyết định tại max_depth = 3 (%) <span class="sub">(acc_depth3_pct)</span></td><td class="ro hi">100,0</td></tr>
+<tr><td><code>[M17]</code> Số lượng cây trong Rừng ngẫu nhiên (Random Forest) <span class="sub">(n_trees_rf)</span></td><td class="ro hi">100</td></tr>
+<tr><td><code>[M18]</code> Xác suất Rừng ngẫu nhiên dự đoán mẫu (28 tuổi, 1800$) Mua xe (%) <span class="sub">(prob_rf_yes_pct)</span></td><td class="ro hi">49,0</td></tr>
+<tr><td><code>[M19]</code> Độ quan trọng đặc trưng Độ tuổi (%) <span class="sub">(imp_age_pct)</span></td><td class="ro hi">46,45</td></tr>
+<tr><td><code>[M20]</code> Độ quan trọng đặc trưng Thu nhập (%) <span class="sub">(imp_income_pct)</span></td><td class="ro hi">53,55</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Tại nút gốc gồm 16 khách hàng (9 Có mua, 7 Không mua), chỉ số Gini (Gini Impurity) bằng bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Gini = 0,4922 (gần mức hỗn loạn cực đại 0,50)</button><button class="opt" type="button" data-v="q1_2">Gini = 0,0000 (nút thuần khiết hoàn toàn)</button><button class="opt" type="button" data-v="q1_3">Gini = 0,9887</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Vì sao nhánh trái (Thu nhập <= 1150 USD, gồm 6 khách hàng) có Gini = 0,0?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Vì cả 6 khách hàng trong nhánh này đều Không mua xe (thuần khiết 100%)</button><button class="opt" type="button" data-v="q2_2">Vì nhánh trái không có khách hàng nào</button><button class="opt" type="button" data-v="q2_3">Vì số người Mua và Không mua bằng nhau</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Rừng ngẫu nhiên (Random Forest) khắc phục nhược điểm quá khớp (overfitting) của một Cây quyết định đơn lẻ bằng cách nào?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Kết hợp dự đoán của 100 cây độc lập huấn luyện trên các mẫu Bootstrap và tập con đặc trưng (Bagging)</button><button class="opt" type="button" data-v="q3_2">Tăng độ sâu của 1 cây duy nhất lên vô hạn</button><button class="opt" type="button" data-v="q3_3">Bỏ qua đặc trưng Thu nhập</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_decision_tree_and_random_forest.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10,11,12,13],"vars":{"n_samples_dt":16,"n_yes":9,"n_no":7,"gini_root":0.4922,"entropy_root":0.9887,"split_income_thr":1150,"n_left":6,"n_right":10,"gini_left":0.0,"gini_right":0.18,"gini_after":0.1125,"gini_gain":0.3797,"info_gain":0.6956,"acc_depth1_pct":93.75,"acc_depth2_pct":100.0,"acc_depth3_pct":100.0,"n_trees_rf":100,"prob_rf_yes_pct":49.0,"imp_age_pct":46.45,"imp_income_pct":53.55,"dt_rows":[{"age":25,"inc":1800,"y":0},{"age":35,"inc":2000,"y":1},{"age":45,"inc":1500,"y":1},{"age":20,"inc":1000,"y":0},{"age":30,"inc":1200,"y":1},{"age":50,"inc":800,"y":0},{"age":40,"inc":1600,"y":1},{"age":23,"inc":950,"y":0},{"age":33,"inc":1400,"y":1},{"age":55,"inc":1900,"y":1},{"age":28,"inc":1050,"y":0},{"age":38,"inc":1350,"y":1},{"age":48,"inc":2200,"y":1},{"age":22,"inc":900,"y":0},{"age":31,"inc":1750,"y":1},{"age":52,"inc":1100,"y":0}]},"derived":{}};
+const V = LAB.vars;
+const KEYS = ["n_samples_dt", "n_yes", "n_no", "gini_root", "entropy_root", "split_income_thr", "n_left", "n_right", "gini_left", "gini_right", "gini_after", "gini_gain", "info_gain", "acc_depth1_pct", "acc_depth2_pct", "acc_depth3_pct", "n_trees_rf", "prob_rf_yes_pct", "imp_age_pct", "imp_income_pct"];
+const LABELS = {"n_samples_dt": "Tổng số mẫu khách hàng trong bảng Lab", "n_yes": "Số khách hàng quyết định Mua xe (Label = 1)", "n_no": "Số khách hàng Không mua xe (Label = 0)", "gini_root": "Chỉ số Gini (Gini Impurity) tại nút gốc", "entropy_root": "Entropy thông tin tại nút gốc (bit)", "split_income_thr": "Ngưỡng tách Thu nhập tối ưu đầu tiên (USD)", "n_left": "Số mẫu nhánh trái (Thu nhập <= 1150 USD)", "n_right": "Số mẫu nhánh phải (Thu nhập > 1150 USD)", "gini_left": "Chỉ số Gini nhánh trái (thuần khiết 100% Không mua)", "gini_right": "Chỉ số Gini nhánh phải", "gini_after": "Chỉ số Gini bình quân gia quyền sau khi tách", "gini_gain": "Độ giảm chỉ số Gini (Gini Gain)", "info_gain": "Độ lợi thông tin (Information Gain - bit)", "acc_depth1_pct": "Độ chính xác Cây quyết định tại max_depth = 1 (%)", "acc_depth2_pct": "Độ chính xác Cây quyết định tại max_depth = 2 (%)", "acc_depth3_pct": "Độ chính xác Cây quyết định tại max_depth = 3 (%)", "n_trees_rf": "Số lượng cây trong Rừng ngẫu nhiên (Random Forest)", "prob_rf_yes_pct": "Xác suất Rừng ngẫu nhiên dự đoán mẫu (28 tuổi, 1800$) Mua xe (%)", "imp_age_pct": "Độ quan trọng đặc trưng Độ tuổi (%)", "imp_income_pct": "Độ quan trọng đặc trưng Thu nhập (%)"};
+const FB = {1:{"q1_1":["\u0110\u00fang! Gini = 1 - (9/16)^2 - (7/16)^2 = 0,4922.",1],"q1_2":["Sai: Gini = 0 ch\u1ec9 x\u1ea3y ra khi 100% m\u1eabu thu\u1ed9c c\u00f9ng 1 l\u1edbp (nh\u01b0 nh\u00e1nh tr\u00e1i Thu nh\u1eadp <= 1150$).",0],"q1_3":["Nh\u1ea7m sang gi\u00e1 tr\u1ecb Entropy = 0,9887 bit.",0]},2:{"q2_1":["Ch\u00ednh x\u00e1c! p_No = 6/6 = 1, p_Yes = 0 => Gini = 1 - 1^2 - 0^2 = 0.",1],"q2_2":["Sai: nh\u00e1nh tr\u00e1i c\u00f3 6 kh\u00e1ch h\u00e0ng.",0],"q2_3":["Sai: khi 50-50 th\u00ec Gini = 0,50.",0]},3:{"q3_1":["\u0110\u00fang! V\u1edbi m\u1eabu m\u1edbi (28 tu\u1ed5i, 1800$), 100 c\u00e2y bi\u1ec3u quy\u1ebft cho x\u00e1c su\u1ea5t 49,0% C\u00f3 mua thay v\u00ec k\u1ebft lu\u1eadn c\u1ef1c \u0111oan c\u1ee7a 1 c\u00e2y \u0111\u01a1n l\u1ebb.",1],"q3_2":["Sai: t\u0103ng max_depth kh\u00f4ng gi\u1edbi h\u1ea1n l\u00e0m c\u00e2y h\u1ecdc v\u1eb9t nhi\u1ec5u.",0],"q3_3":["Sai: Thu nh\u1eadp \u0111\u00f3ng g\u00f3p t\u1edbi 53,55% \u0111\u1ed9 quan tr\u1ecdng \u0111\u1eb7c tr\u01b0ng.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const ROWS = V.dt_rows;
+const fmtVI = (x, d) => Number(x.toFixed(d)).toFixed(d).replace('.', ',');
+const giniOf = set => {
+  if (!set.length) return 0;
+  const p1 = set.filter(r => r.y === 1).length / set.length;
+  return 1 - p1 * p1 - (1 - p1) * (1 - p1);
+};
+
+function renderTab1(){
+  const v1 = +$('#incSel').value;
+  $('#val1').textContent = String(v1);
+  const L = ROWS.filter(r => r.inc <= v1), R = ROWS.filter(r => r.inc > v1);
+  const gL = giniOf(L), gR = giniOf(R);
+  const gA = (L.length * gL + R.length * gR) / ROWS.length;
+  const gGain = V.gini_root - gA;
+  $('#stat1').innerHTML = [
+    ['split_income_thr', String(v1)],
+    ['n_left', String(L.length)],
+    ['n_right', String(R.length)],
+    ['gini_after', fmtVI(gA, 4)],
+  ].map(([k, val]) => `<div class="chip"><b>${esc(val)}</b><span>${esc(LABELS[k])}</span></div>`).join('');
+  const x0 = 52, x1 = 412, ya0 = 30, ya1 = 192;
+  const xp = a => x0 + (a - 18) * (x1 - x0) / (57 - 18);
+  const yp = inc => ya1 - (inc - 700) * (ya1 - ya0) / (2300 - 700);
+  let svg = `<rect x="58" y="10" width="11" height="11" rx="2" fill="var(--ok)"/>` +
+    `<text class="ax" x="74" y="19">Mua (nhãn 1) — ${V.n_yes} khách</text>` +
+    `<rect x="212" y="10" width="11" height="11" rx="2" fill="var(--táo)"/>` +
+    `<text class="ax" x="228" y="19">Không mua (nhãn 0) — ${V.n_no} khách</text>`;
+  [800, 1200, 1600, 2000].forEach(t => {
+    svg += `<line class="ln" x1="${x0}" y1="${yp(t).toFixed(1)}" x2="${x1}" y2="${yp(t).toFixed(1)}" opacity=".5"/>`;
+    svg += `<text class="ax" x="${x0 - 4}" y="${(yp(t) + 4).toFixed(1)}" text-anchor="end">${t}$</text>`;
+  });
+  [20, 30, 40, 50].forEach(t => svg += `<text class="ax" x="${xp(t).toFixed(1)}" y="${ya1 + 14}" text-anchor="middle">${t}t</text>`);
+  svg += `<text class="ax" x="${x1}" y="${ya1 + 27}" text-anchor="end" font-size="11">Ngang: tuổi · Dọc: thu nhập/tháng</text>`;
+  svg += `<line class="ln" x1="${x0}" y1="${ya0 - 6}" x2="${x0}" y2="${ya1}"/>`;
+  const yt = yp(v1);
+  svg += `<rect x="${x0}" y="${yt.toFixed(1)}" width="${x1 - x0}" height="${(ya1 - yt).toFixed(1)}" fill="var(--cam)" opacity=".07"/>`;
+  ROWS.forEach(r => {
+    svg += `<circle cx="${xp(r.age).toFixed(1)}" cy="${yp(r.inc).toFixed(1)}" r="4.5" fill="${r.y === 1 ? 'var(--ok)' : 'var(--táo)'}" opacity=".9"/>`;
+  });
+  svg += `<line x1="${x0}" y1="${yt.toFixed(1)}" x2="${x1}" y2="${yt.toFixed(1)}" stroke="var(--cam)" stroke-width="2.5" stroke-dasharray="5 4"/>`;
+  svg += `<text x="${x1}" y="${(yt - 7).toFixed(1)}" text-anchor="end" fill="var(--cam)" font-size="12" font-weight="700">Tách: Thu nhập ≤ ${v1}$ (vùng tô)</text>`;
+  const gB = V.gini_root;
+  const bars = [
+    ['Gini gốc', '(' + ROWS.length + ' mẫu)', gB, 'var(--acc)'],
+    ['Gini nhánh trái', '(' + L.length + ' mẫu)', gL, 'var(--ok)'],
+    ['Gini nhánh phải', '(' + R.length + ' mẫu)', gR, 'var(--cam)'],
+    ['Gini sau tách', '(bq quân)', gA, 'var(--new)'],
+  ];
+  const base = 322, sc = 110 / 0.55;
+  svg += `<line class="ln" x1="40" y1="${base}" x2="415" y2="${base}"/>`;
+  bars.forEach(([lab, sub, val, col], i) => {
+    const bx = 66 + i * 92, bh = Math.max(2, val * sc);
+    svg += `<rect x="${bx}" y="${(base - bh).toFixed(1)}" width="52" height="${bh.toFixed(1)}" rx="5" fill="${col}" opacity=".88"/>`;
+    svg += `<text x="${bx + 26}" y="${(base - bh - 6).toFixed(1)}" text-anchor="middle" fill="var(--ink)" font-size="11" font-weight="700">${fmtVI(val, 4)}</text>`;
+    svg += `<text class="ax" x="${bx + 26}" y="${base + 13}" text-anchor="middle" font-size="10">${lab}</text>`;
+    svg += `<text class="ax" x="${bx + 26}" y="${base + 25}" text-anchor="middle" font-size="10">${sub}</text>`;
+  });
+  $('#plot').innerHTML = svg;
+  $('#liveTable tbody').innerHTML = [
+    ['Khách hàng Mua xe (nhãn 1)', String(V.n_yes)],
+    ['Khách hàng Không mua xe (nhãn 0)', String(V.n_no)],
+    ['Chỉ số Gini tại nút gốc (Gini Impurity)', fmtVI(V.gini_root, 4)],
+    ['Entropy thông tin tại nút gốc (bit)', fmtVI(V.entropy_root, 4)],
+    [`Gini nhánh trái (đang tách tại ${v1}$)`, fmtVI(gL, 4)],
+    ['Gini nhánh phải', fmtVI(gR, 4)],
+    ['Độ giảm chỉ số Gini sau tách (Gini Gain)', fmtVI(gGain, 4)],
+    ['Độ lợi thông tin (Information Gain, bit)', fmtVI(V.info_gain, 4)],
+  ].map(([lab, val]) => `<tr><td>${esc(lab)}</td><td class="ro hi">${esc(val)}</td></tr>`).join('');
+  $('#insight1').innerHTML = `Ngưỡng đang chọn <b>${esc(v1)}$</b> → nhánh trái ${L.length} mẫu (Gini ${fmtVI(gL, 4)}), nhánh phải ${R.length} mẫu (Gini ${fmtVI(gR, 4)}), Gini Gain ${fmtVI(gGain, 4)}. Ngưỡng tối ưu Lab tìm ra là <b>${esc(V.split_income_thr)}$</b> (Gini Gain ${fmtVI(V.gini_gain, 4)}) — nhánh trái khi đó thuần khiết 100% Không mua.`;
+}
+
+function renderTab2(){
+  const d = +$('#depSel').value;
+  $('#val2').textContent = String(d);
+  const accOf = k => k === 1 ? V.acc_depth1_pct : (k === 2 ? V.acc_depth2_pct : V.acc_depth3_pct);
+  const accFmt = k => k === 1 ? fmtVI(V.acc_depth1_pct, 2) : fmtVI(accOf(k), 1);
+  const xp2 = k => 95 + (k - 1) * 135;
+  const yp2 = a => 196 - (a - 88) * 162 / 14;
+  let svg = '';
+  [90, 95, 100].forEach(t => {
+    svg += `<line class="ln" x1="70" y1="${yp2(t).toFixed(1)}" x2="392" y2="${yp2(t).toFixed(1)}" opacity=".5"/>`;
+    svg += `<text class="ax" x="66" y="${(yp2(t) + 4).toFixed(1)}" text-anchor="end">${t}</text>`;
+  });
+  svg += `<line class="ln" x1="70" y1="34" x2="70" y2="196"/>`;
+  svg += `<line class="ln" x1="70" y1="196" x2="392" y2="196"/>`;
+  svg += `<text class="ax" transform="rotate(-90 22 115)" x="22" y="115" text-anchor="middle">Độ chính xác (%)</text>`;
+  [1, 2, 3].forEach(k => {
+    svg += `<text class="ax" x="${xp2(k)}" y="212" text-anchor="middle">depth ${k}</text>`;
+  });
+  const pts = [1, 2, 3].map(k => `${xp2(k)},${yp2(accOf(k)).toFixed(1)}`);
+  svg += `<polyline fill="none" stroke="var(--acc)" stroke-width="3" points="${pts.join(' ')}"/>`;
+  [1, 2, 3].forEach(k => {
+    svg += `<circle cx="${xp2(k)}" cy="${yp2(accOf(k)).toFixed(1)}" r="5.5" fill="var(--acc)"/>`;
+    svg += `<text x="${xp2(k)}" y="${(yp2(accOf(k)) - 10).toFixed(1)}" text-anchor="middle" fill="var(--ink)" font-size="11" font-weight="700">${accFmt(k)}%</text>`;
+  });
+  const sel = [1, 2, 3].includes(d) ? d : 3;
+  const sx = xp2(sel), sy = yp2(accOf(sel));
+  svg += `<line x1="${sx}" y1="${(sy + 9).toFixed(1)}" x2="${sx}" y2="196" stroke="var(--cam)" stroke-width="2" stroke-dasharray="5 4"/>`;
+  svg += `<circle cx="${sx}" cy="${sy.toFixed(1)}" r="9" fill="var(--cam)" stroke="#070E1A" stroke-width="2"/>`;
+  svg += `<text x="392" y="26" text-anchor="end" fill="var(--cam)" font-size="12" font-weight="700">Đang chọn max_depth = ${sel} → độ chính xác ${accFmt(sel)}%</text>`;
+  svg += `<text class="ax" x="231" y="230" text-anchor="middle">Độ sâu tối đa của cây (max_depth) — điểm tính lại từ Lab</text>`;
+  const pr = V.prob_rf_yes_pct, trackX = 128, trackW = 200;
+  svg += `<rect x="${trackX}" y="240" width="${trackW}" height="13" rx="6" fill="var(--line2)" opacity=".45"/>`;
+  svg += `<rect x="${trackX}" y="240" width="${(pr * trackW / 100).toFixed(1)}" height="13" rx="6" fill="var(--ok)" opacity=".9"/>`;
+  svg += `<text class="ax" x="10" y="250" text-anchor="start">Rừng ${V.n_trees_rf} cây:</text>`;
+  svg += `<text x="${trackX + trackW + 8}" y="251" fill="var(--ok)" font-size="12" font-weight="700">${fmtVI(pr, 1)}%</text>`;
+  svg += `<text class="ax" x="128" y="268" text-anchor="start">bỏ phiếu "Mua" cho khách hàng mẫu (28 tuổi, 1800$)</text>`;
+  $('#curve').innerHTML = svg;
+  $('#stat2').innerHTML = [
+    ['Độ sâu cây đang chọn (max_depth)', String(sel)],
+    ['Độ chính xác của cây tại độ sâu này (%)', accFmt(sel)],
+    ['n_trees_rf', String(V.n_trees_rf)],
+    ['prob_rf_yes_pct', fmtVI(V.prob_rf_yes_pct, 1) + '%'],
+  ].map(([k, val]) => `<div class="chip"><b>${esc(val)}</b><span>${esc(LABELS[k] || k)}</span></div>`).join('');
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#incSel').oninput = renderTab1;
+$('#depSel').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#incSel').value = 1150; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#incSel').value = 1150;
+  $('#depSel').value = 3;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

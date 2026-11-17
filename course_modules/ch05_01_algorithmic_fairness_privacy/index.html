@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Kiểm toán tính công bằng của mô hình AI xét duyệt tự động 600 hồ sơ ứng tuyển việc làm. Khi dữ liệu lịch sử chứa thiên kiến vùng miền (`Khu_Vuc`), mô hình gây bất lợi cho ứng viên nông thôn. Thực hành tính tỷ số Tác động Bất cân xứng (Disparate Impact — DI) theo Quy tắc 4/5 (ngưỡng 0,80) và kiểm chứng sự phục hồi tính công bằng sau khi loại bỏ biến nhạy cảm để chỉ xét duyệt dựa trên Kinh nghiệm và Điểm kiểm tra.">
+<title>Kiểm toán Thiên vị AI theo Quy tắc 4/5 (Disparate Impact) & Khử Thiên kiến — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 5 · Đạo đức AI, Công bằng Thuật toán & Quyền riêng tư</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Kiểm toán Thiên vị AI theo Quy tắc 4/5 (Disparate Impact) & Khử Thiên kiến</span></h1>
+<p class="lede">Bài toán thực tế: Kiểm toán tính công bằng của mô hình AI xét duyệt tự động 600 hồ sơ ứng tuyển việc làm. Khi dữ liệu lịch sử chứa thiên kiến vùng miền (`Khu_Vuc`), mô hình gây bất lợi cho ứng viên nông thôn. Thực hành tính tỷ số Tác động Bất cân xứng (Disparate Impact — DI) theo Quy tắc 4/5 (ngưỡng 0,80) và kiểm chứng sự phục hồi tính công bằng sau khi loại bỏ biến nhạy cảm để chỉ xét duyệt dựa trên Kinh nghiệm và Điểm kiểm tra.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>Mô phỏng tương tác trên dữ liệu thực nghiệm của Lab</h2>
+  <div class="ctl">
+   <label for="biasSel" class="note">Hệ số thiên kiến b của biến nhạy cảm <code>Khu_Vuc</code> trong công thức xét duyệt lịch sử (−4,0 + 0,3·Kinh_Nghiem + 0,05·Điểm + b·Khu_Vuc): <b id="val1"></b></label>
+   <input id="biasSel" type="range" min="0.0" max="2.5" step="0.1" value="1.2">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định Lab (1,2)</button>
+  </div>
+  <svg id="plot" viewBox="0 0 440 282" role="img" aria-label="Bốn cột tỷ lệ duyệt nhóm Nông thôn và Đô thị trước và sau khử thiên vị, kèm đường ngưỡng an toàn 4 phần năm"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>DI</mi><mo>=</mo><mfrac><mrow><mi>P</mi><mo>(</mo><mover><mi>Y</mi><mo>^</mo></mover><mo>=</mo><mn>1</mn><mo>&#8739;</mo><mtext>Nhóm yếu thế</mtext><mo>)</mo></mrow><mrow><mi>P</mi><mo>(</mo><mover><mi>Y</mi><mo>^</mo></mover><mo>=</mo><mn>1</mn><mo>&#8739;</mo><mtext>Nhóm ưu thế</mtext><mo>)</mo></mrow></mfrac><mo>&#8805;</mo><mn>0,80</mn></math></div>
+  <p class="note">Bốn cột là tỷ lệ duyệt của 600 hồ sơ theo Lab: cột mờ là khi mô hình đã loại biến nhạy cảm <code>Khu_Vuc</code>; nét đứt là ngưỡng an toàn 4/5 bằng 80% mức duyệt của nhóm Đô thị. Kéo thanh trượt để xem ngưỡng năng lực quyết định dịch chuyển.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích độ nhạy · Đường cong theo hệ số thiên kiến</span>
+  <h2>Tác động Bất cân xứng (DI) trước / sau khử thiên vị so với Quy tắc 4/5</h2>
+  <p class="note">Đồ thị tính lại DI = (tỷ lệ duyệt Nông thôn) / (tỷ lệ duyệt Đô thị) khi hệ số thiên kiến b của <code>Khu_Vuc</code> chạy trọn miền khảo sát 0 ÷ 2,5 (thanh trượt ở tab 1). Đường xanh ngang là DI sau khi loại <code>Khu_Vuc</code> — không đổi theo b; nét đứt hổ phách là ngưỡng Quy tắc 4/5.</p>
+  <svg id="curve" viewBox="0 0 440 250" role="img" aria-label="Đường cong Disparate Impact theo hệ số thiên kiến b so với DI sau khử thiên vị và ngưỡng 4 phần năm"></svg>
+  <p class="note" id="insight2"></p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>&#916;DI</mi><mo>=</mo><msub><mi>DI</mi><mtext>sau khử thiên vị</mtext></msub><mo>&#8722;</mo><msub><mi>DI</mi><mtext>ban đầu</mtext></msub><mo>=</mo><mn>0,9823</mn><mo>&#8722;</mo><mn>0,9180</mn></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_kiem_tra_thien_vi_ai_bias_audit.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_kiem_tra_thien_vi_ai_bias_audit.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Tổng số hồ sơ ứng viên được kiểm toán <span class="sub">(n_applicants_audit)</span></td><td class="ro hi">600</td></tr>
+<tr><td><code>[M02]</code> Tỷ lệ duyệt của nhóm Nông thôn (Khu_Vuc = 0) trước khi khử thiên vị (%) <span class="sub">(rate_unpriv_pct)</span></td><td class="ro hi">91,8</td></tr>
+<tr><td><code>[M03]</code> Tỷ lệ duyệt của nhóm Đô thị (Khu_Vuc = 1) trước khi khử thiên vị (%) <span class="sub">(rate_priv_pct)</span></td><td class="ro hi">100,0</td></tr>
+<tr><td><code>[M04]</code> Chỉ số Disparate Impact khi mô hình dùng biến nhạy cảm Khu_Vuc <span class="sub">(di_biased)</span></td><td class="ro hi">0,918</td></tr>
+<tr><td><code>[M05]</code> Ngưỡng an toàn tối thiểu theo Quy tắc Bốn Phần Năm (4/5 = 0,80) <span class="sub">(four_fifths_rule)</span></td><td class="ro hi">0,8</td></tr>
+<tr><td><code>[M06]</code> Tỷ lệ duyệt nhóm Nông thôn sau khi loại bỏ biến Khu_Vuc (%) <span class="sub">(rate_unpriv_fair_pct)</span></td><td class="ro hi">97,13</td></tr>
+<tr><td><code>[M07]</code> Tỷ lệ duyệt nhóm Đô thị sau khi loại bỏ biến Khu_Vuc (%) <span class="sub">(rate_priv_fair_pct)</span></td><td class="ro hi">98,88</td></tr>
+<tr><td><code>[M08]</code> Chỉ số Disparate Impact sau khi khử thiên vị (tiệm cận công bằng 1,0) <span class="sub">(di_fair)</span></td><td class="ro hi">0,9823</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Theo Quy tắc Bốn Phần Năm (Four-Fifths Rule / Disparate Impact), một hệ thống AI xét duyệt tuyển dụng hoặc tín dụng bị coi là có hành vi phân biệt đối xử bất hợp pháp khi nào?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Khi tỷ số Disparate Impact = (Tỷ lệ duyệt nhóm yếu thế) / (Tỷ lệ duyệt nhóm ưu thế) nhỏ hơn 0,80 (80%)</button><button class="opt" type="button" data-v="q1_2">Khi tỷ số Disparate Impact bằng 1,00</button><button class="opt" type="button" data-v="q1_3">Khi mô hình sử dụng Hồi quy Logistic</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Trong bài thực hành với 600 hồ sơ ứng viên, sau khi loại bỏ đặc trưng nhạy cảm `Khu_Vuc` và chỉ xét duyệt dựa trên `Kinh_Nghiem` và `Diem_Sat_Hach`, chỉ số Disparate Impact cải thiện như thế nào?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Tăng từ 0,918 lên 0,9823 (tỷ lệ duyệt hai nhóm đạt 97,13% và 98,88%, gần như công bằng tuyệt đối)</button><button class="opt" type="button" data-v="q2_2">Giảm xuống 0,20</button><button class="opt" type="button" data-v="q2_3">Không thay đổi gì</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Để bảo vệ quyền riêng tư dữ liệu cá nhân (theo Nghị định 13/2023/NĐ-CP và GDPR) khi chia sẻ dữ liệu hồ sơ ứng viên cho nhóm nghiên cứu, biện pháp nào là bắt buộc?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Ẩn danh hóa định danh cá nhân (CCCD, số điện thoại, địa chỉ nhà) và tổng hợp dữ liệu trước khi huấn luyện</button><button class="opt" type="button" data-v="q3_2">Công khai số CCCD và số điện thoại của toàn bộ 600 ứng viên lên mạng</button><button class="opt" type="button" data-v="q3_3">Xóa cột Điểm kiểm tra nhưng giữ nguyên tên thật và số điện thoại</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_kiem_tra_thien_vi_ai_bias_audit.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10,11,12,13],"vars":{"n_applicants_audit":600,"rate_unpriv_pct":91.8,"rate_priv_pct":100.0,"di_biased":0.918,"four_fifths_rule":0.8,"rate_unpriv_fair_pct":97.13,"rate_priv_fair_pct":98.88,"di_fair":0.9823},"derived":{}};
+const V = LAB.vars;
+const FB = {1:{"q1_1":["Ch\u00ednh x\u00e1c! N\u1ebfu nh\u00f3m \u01b0u th\u1ebf \u0111\u01b0\u1ee3c duy\u1ec7t 100% th\u00ec nh\u00f3m y\u1ebfu th\u1ebf ph\u1ea3i \u0111\u1ea1t t\u1ed1i thi\u1ec3u 80% m\u1edbi qua ng\u01b0\u1ee1ng 0,80.",1],"q1_2":["Sai: DI = 1,00 l\u00e0 tr\u1ea1ng th\u00e1i c\u00e2n b\u1eb1ng ho\u00e0n h\u1ea3o gi\u1eefa hai nh\u00f3m.",0],"q1_3":["Sai: thi\u00ean v\u1ecb \u0111\u1ebfn t\u1eeb d\u1eef li\u1ec7u l\u1ecbch s\u1eed v\u00e0 \u0111\u1eb7c tr\u01b0ng nh\u1ea1y c\u1ea3m, kh\u00f4ng ph\u1ea3i do b\u1ea3n th\u00e2n h\u00e0m Sigmoid.",0]},2:{"q2_1":["\u0110\u00fang! \u0110\u00e1nh gi\u00e1 \u0111\u00fang n\u0103ng l\u1ef1c th\u1ef1c ch\u1ea5t gi\u00fap thu h\u1eb9p kho\u1ea3ng c\u00e1ch ch\u00eanh l\u1ec7ch v\u00f9ng mi\u1ec1n t\u1eeb 8,2% xu\u1ed1ng ch\u1ec9 c\u00f2n 1,75%.",1],"q2_2":["Sai.",0],"q2_3":["Sai.",0]},3:{"q3_1":["Ch\u00ednh x\u00e1c! Kh\u00f4ng bao gi\u1edd \u0111\u01b0a d\u1eef li\u1ec7u \u0111\u1ecbnh danh c\u00e1 nh\u00e2n th\u00f4 l\u00ean c\u00e1c c\u00f4ng c\u1ee5 AI \u0111\u00e1m m\u00e2y c\u00f4ng c\u1ed9ng.",1],"q3_2":["Sai: vi ph\u1ea1m nghi\u00eam tr\u1ecdng ph\u00e1p lu\u1eadt v\u1ec1 b\u1ea3o v\u1ec7 d\u1eef li\u1ec7u c\u00e1 nh\u00e2n.",0],"q3_3":["Sai.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function vfmt(x, d){
+  const av = Math.abs(x);
+  const [ip, fp] = av.toFixed(d).split('.');
+  return (x < 0 ? '-' : '') + ip.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (fp ? ',' + fp : '');
+}
+const B_LAB = 1.2;
+const RATE_SLOPE = (V.rate_unpriv_pct - V.rate_priv_pct) / B_LAB;
+function rateAt(th){
+  return Math.max(0, Math.min(100, V.rate_priv_pct + RATE_SLOPE * (th - (4.0 - B_LAB))));
+}
+function simAt(b){
+  const rb = rateAt(4.0), ub = rateAt(4.0 - b);
+  return { rb, ub, di: ub > 1e-9 ? rb / ub : 0 };
+}
+
+function renderTab1(){
+  const b = +$('#biasSel').value;
+  $('#val1').textContent = vfmt(b, 1);
+  const s = simAt(b);
+  const rbF = V.rate_unpriv_fair_pct, ubF = V.rate_priv_fair_pct;
+  const limit = V.four_fifths_rule * s.ub;
+  $('#stat1').innerHTML = [
+    [vfmt(V.n_applicants_audit, 0), 'Hồ sơ ứng viên kiểm toán'],
+    [vfmt(s.rb, 1) + '%', 'Nông thôn duyệt — trước (%)'],
+    [vfmt(s.ub, 1) + '%', 'Đô thị duyệt — trước (%)'],
+    [vfmt(s.di, 3), 'DI — mô hình dùng Khu_Vuc']
+  ].map(([val, lab]) => `<div class="chip"><b>${esc(val)}</b><span>${esc(lab)}</span></div>`).join('');
+  const Y = p => 16 + (100 - p) * 1.84;
+  let svg = `<line class="ln" x1="40" y1="200" x2="414" y2="200"/>`;
+  for (const gy of [100, 50]){
+    svg += `<line class="ln" x1="40" y1="${Y(gy)}" x2="414" y2="${Y(gy)}" stroke-dasharray="2 4"/>`;
+    svg += `<text class="ax" x="8" y="${Y(gy) + 4}">${gy}%</text>`;
+  }
+  const bars = [
+    ['Nông thôn', 'trước', s.rb, 'var(--táo)', 58, 0.9, 1],
+    ['Đô thị', 'trước', s.ub, 'var(--acc)', 136, 0.9, 1],
+    ['Nông thôn', 'sau', rbF, 'var(--táo)', 248, 0.45, 2],
+    ['Đô thị', 'sau', ubF, 'var(--acc)', 326, 0.45, 2]
+  ];
+  for (const [g1, g2, v, col, x, op, nd] of bars){
+    const y = Y(v), cx = x + 31;
+    const bad = (g2 === 'trước') && v < limit;
+    svg += `<rect x="${x}" y="${y.toFixed(1)}" width="62" height="${(200 - y).toFixed(1)}" rx="5" fill="${col}" fill-opacity="${op}"${bad ? ' stroke="var(--táo)" stroke-width="2.5"' : ''}/>`;
+    svg += `<text class="ax" x="${cx}" y="${(y - 6).toFixed(1)}" text-anchor="middle">${vfmt(v, nd)}</text>`;
+    svg += `<text class="ax" x="${cx}" y="218" text-anchor="middle">${g1}</text>`;
+    svg += `<text class="ax" x="${cx}" y="232" text-anchor="middle">${g2}</text>`;
+  }
+  const yl = Y(limit);
+  svg += `<line x1="40" y1="${yl.toFixed(1)}" x2="414" y2="${yl.toFixed(1)}" stroke="var(--cam)" stroke-width="2" stroke-dasharray="6 4"/>`;
+  svg += `<text class="ax" x="414" y="${(yl - 6).toFixed(1)}" text-anchor="end" fill="var(--cam)">Ngưỡng 4/5 = ${vfmt(limit, 1)}% mức Đô thị</text>`;
+  svg += `<text class="ax" x="127" y="256" text-anchor="middle">Mô hình dùng Khu_Vuc</text>`;
+  svg += `<text class="ax" x="317" y="256" text-anchor="middle">Mô hình đã loại Khu_Vuc</text>`;
+  svg += `<text class="ax" x="40" y="12">Tỷ lệ duyệt (%)</text>`;
+  $('#plot').innerHTML = svg;
+  $('#liveTable tbody').innerHTML = [
+    ['Số hồ sơ ứng viên được kiểm toán', vfmt(V.n_applicants_audit, 0)],
+    ['Tỷ lệ duyệt nhóm Nông thôn — trước (%)', vfmt(s.rb, 1)],
+    ['Tỷ lệ duyệt nhóm Đô thị — trước (%)', vfmt(s.ub, 1)],
+    ['Tỷ số DI — mô hình dùng Khu_Vuc', vfmt(s.di, 3)],
+    ['Ngưỡng an toàn theo Quy tắc Bốn Phần Năm', vfmt(V.four_fifths_rule, 2)],
+    ['Tỷ lệ duyệt nhóm Nông thôn — sau (%)', vfmt(rbF, 2)],
+    ['Tỷ lệ duyệt nhóm Đô thị — sau (%)', vfmt(ubF, 2)],
+    ['Tỷ số DI — sau khi khử thiên vị', vfmt(V.di_fair, 4)]
+  ].map(([lab, val]) => `<tr><td>${esc(lab)}</td><td class="ro hi">${esc(val)}</td></tr>`).join('');
+  const viol = s.di < V.four_fifths_rule;
+  $('#insight1').innerHTML = `Tại b = <b>${vfmt(b, 1)}</b>: ngưỡng năng lực quyết định dịch thành Nông thôn phải đạt <b>4,0 điểm</b> trong khi Đô thị chỉ cần <b>${vfmt(4 - b, 1)} điểm</b> (chênh đúng bằng b). DI = <b>${vfmt(s.di, 3)}</b> — ${viol ? '<b>dưới ngưỡng 0,80: VI PHẠM Quy tắc 4/5!</b>' : 'trên ngưỡng 0,80 nhưng khoảng cách hai nhóm vẫn là ' + vfmt(s.ub - s.rb, 1) + ' điểm %'}; sau khi loại <code>Khu_Vuc</code>, DI = <b>${vfmt(V.di_fair, 4)}</b> và khoảng cách co còn ${vfmt(ubF - rbF, 2)} điểm %.`;
+}
+
+function renderTab2(){
+  const b = +$('#biasSel').value;
+  const s = simAt(b);
+  const X = bb => 52 + (bb / 2.5) * 348;
+  const Y2 = di => 218 - ((di - 0.75) / 0.30) * 190;
+  let pts = [];
+  for (let bb = 0; bb <= 2.5001; bb += 0.05){
+    const di = simAt(bb).di;
+    pts.push(`${X(bb).toFixed(1)},${Y2(Math.max(0.75, Math.min(1.05, di))).toFixed(1)}`);
+  }
+  const yFair = Y2(V.di_fair), yRule = Y2(V.four_fifths_rule);
+  let svg = `<line class="ln" x1="46" y1="${Y2(0.75)}" x2="414" y2="${Y2(0.75)}"/>`;
+  for (const gy of [1.0, 0.9, 0.8]){
+    svg += `<line class="ln" x1="46" y1="${Y2(gy).toFixed(1)}" x2="414" y2="${Y2(gy).toFixed(1)}" stroke-dasharray="2 4"/>`;
+    svg += `<text class="ax" x="6" y="${(Y2(gy) + 4).toFixed(1)}">${vfmt(gy, 2).replace(/,00$/, ',0')}</text>`;
+  }
+  svg += `<line x1="46" y1="${yRule.toFixed(1)}" x2="414" y2="${yRule.toFixed(1)}" stroke="var(--cam)" stroke-width="2" stroke-dasharray="6 4"/>`;
+  svg += `<text class="ax" x="414" y="${(yRule - 6).toFixed(1)}" text-anchor="end" fill="var(--cam)">Quy tắc 4/5 = ${vfmt(V.four_fifths_rule, 2)}</text>`;
+  svg += `<line x1="46" y1="${yFair.toFixed(1)}" x2="414" y2="${yFair.toFixed(1)}" stroke="var(--ok)" stroke-width="2"/>`;
+  svg += `<text class="ax" x="414" y="${(yFair - 6).toFixed(1)}" text-anchor="end" fill="var(--ok)">DI sau khử thiên vị = ${vfmt(V.di_fair, 4)}</text>`;
+  svg += `<polyline fill="none" stroke="var(--acc)" stroke-width="3" points="${pts.join(' ')}"/>`;
+  svg += `<text class="ax" x="52" y="24" fill="var(--acc)">DI khi mô hình còn dùng Khu_Vuc</text>`;
+  const mx = X(b), my = Y2(Math.max(0.75, Math.min(1.05, s.di)));
+  svg += `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="7" fill="var(--cam)" stroke="var(--bg)" stroke-width="2"/>`;
+  svg += `<text class="ax" x="${Math.min(mx, 340).toFixed(1)}" y="${(my - 12).toFixed(1)}" text-anchor="${b >= 2 ? 'end' : 'middle'}">b = ${vfmt(b, 1)} · DI = ${vfmt(s.di, 3)}</text>`;
+  for (const bt of [0, 1.2, 2.5]){
+    svg += `<text class="ax" x="${X(bt).toFixed(1)}" y="236" text-anchor="middle">b = ${vfmt(bt, 1)}${bt === B_LAB ? ' (Lab)' : ''}</text>`;
+  }
+  $('#curve').innerHTML = svg;
+  $('#stat2').innerHTML = [
+    [vfmt(s.di, 3), 'DI — dùng Khu_Vuc (b = ' + vfmt(b, 1) + ')'],
+    [vfmt(V.di_fair, 4), 'DI — đã loại Khu_Vuc'],
+    [vfmt(V.four_fifths_rule, 2), 'Ngưỡng Quy tắc 4/5'],
+    [vfmt(V.di_fair - s.di, 4), 'ΔDI (sau − trước)']
+  ].map(([val, lab]) => `<div class="chip"><b>${esc(val)}</b><span>${esc(lab)}</span></div>`).join('');
+  $('#insight2').innerHTML = `Đường cong tính trực tiếp từ dữ liệu Lab: khi b = 0 (dữ liệu lịch sử công bằng) DI = ${vfmt(simAt(0).di, 3)}; tại mức của Lab b = ${vfmt(B_LAB, 1)}, DI = <b>${vfmt(s.di, 3)}</b>. Khử <code>Khu_Vuc</code> nâng DI lên <b>${vfmt(V.di_fair, 4)}</b> — tiệm cận công bằng 1,0 và nằm trên ngưỡng ${vfmt(V.four_fifths_rule, 2)}.`;
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+const renderAll = () => { renderTab1(); renderTab2(); };
+$('#biasSel').oninput = renderAll;
+$('#btnDefault1').onclick = () => { $('#biasSel').value = 1.2; renderAll(); };
+$('#resetHero').onclick = () => {
+  $('#biasSel').value = 1.2;
+  renderAll();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

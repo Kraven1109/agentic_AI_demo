@@ -1,0 +1,562 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài học tương tác: số hóa giọng nói thành waveform (tần số lấy mẫu 16.000 Hz, 3 giây = 48.000 mẫu, tần số cơ bản f₀ = 150 Hz), phổ tần số và Log-Mel Spectrogram 80 kênh — đầu vào của Whisper, cùng 3 phân đoạn phiên âm và phụ đề .srt do Lab sinh ra từ kịch bản phiên âm mẫu; khối Dạng sóng chạy vẽ lại mảng env do Lab xuất với đầu phát quét theo thời gian.">
+<title>Số hóa giọng nói, Phổ Mel &amp; Phụ đề .srt với Whisper — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);max-width:100%}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.banner{border:1px solid rgba(251,191,36,.45);background:rgba(251,191,36,.10);color:var(--cam);
+border-radius:12px;padding:10px 13px;font-size:.95em;margin:8px 0}
+pre.srt{background:var(--plot);border:1px solid var(--line);border-radius:12px;padding:12px 14px;margin:8px 0;
+overflow-x:auto;font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.9em;white-space:pre-wrap;
+color:var(--ink)}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+.segs{display:grid;gap:8px;grid-template-columns:repeat(auto-fit,minmax(178px,1fr));margin:10px 0 4px}
+.seg{border:1px solid var(--line2);border-radius:12px;padding:9px 11px;background:var(--panel2);opacity:.5}
+.seg b{display:block;font-size:.9em;font-variant-numeric:tabular-nums}
+.seg em{display:block;font-style:normal;font-size:.93em;margin-top:3px}
+.seg i{display:block;color:var(--mut);font-size:.78em;font-style:normal;margin-top:3px}
+.seg.on{opacity:1;border-color:var(--cam);box-shadow:inset 0 0 0 1px var(--cam);background:rgba(251,191,36,.14)}
+.seg.far{opacity:.34}
+.harm{margin-top:8px}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 3 · AI tạo sinh: Xử lý âm thanh &amp; Whisper</span>
+<span class="pill a">Tín hiệu tổng hợp · Kịch bản phiên âm mẫu</span>
+</div>
+<h1><span class="gr">Số hóa giọng nói, Phổ Mel &amp; Phụ đề .srt với Whisper</span></h1>
+<p class="lede">Whisper "nghe" bằng cách nào? Bài học dựng lại từng bước của bài thực hành <code>01_speech_to_text_whisper.py</code>: sóng âm tổng hợp (f_s = 16.000 Hz, 3,0 giây = 48.000 mẫu, f₀ = 150 Hz), phổ hài âm và Log-Mel Spectrogram 80 kênh làm đầu vào, rồi 3 phân đoạn phiên âm kèm phụ đề .srt. Lưu ý trung thực: Lab chạy trong môi trường không cài <code>whisper</code>, nên văn bản phiên âm là <b>kịch bản mẫu ghi sẵn trong <code>.py</code></b>, không phải kết quả Whisper nhận dạng giọng nói thật.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Số hóa giọng nói</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Phổ tần số &amp; 80 kênh Mel</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Phiên âm &amp; phụ đề .srt</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt f₀ để quan sát</span>
+  <h2>Sóng âm TỔNG HỢP dựng đúng công thức của Lab</h2>
+  <div class="ctl">
+   <label for="f0Sel" class="note">f₀ — tần số cơ bản (mặc định Lab): <b id="val1"></b></label>
+   <input id="f0Sel" type="range" min="60" max="400" step="5" value="150">
+   <label for="fsSel" class="note">f_s — tần số lấy mẫu (mặc định Lab): <b id="val2"></b></label>
+   <input id="fsSel" type="range" min="8000" max="48000" step="1000" value="16000">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định của Lab</button>
+  </div>
+   <svg id="waveSvg" viewBox="0 0 440 260" role="img" aria-label="Waveform tín hiệu tổng hợp của Lab trong 0,1 giây đầu, vẽ lại khi đổi tần số cơ bản f0"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>x</mi><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><mn>0,5</mn><mspace width="0.15em"></mspace><mi>sin</mi><mo>(</mo><mn>2</mn><mi>π</mi><mspace width="0.15em"></mspace><msub><mi>f</mi><mn>0</mn></msub><mspace width="0.15em"></mspace><mi>t</mi><mo>)</mo><mo>+</mo><mn>0,3</mn><mspace width="0.15em"></mspace><mi>sin</mi><mo>(</mo><mn>2</mn><mi>π</mi><mo>&#183;</mo><mn>2</mn><mspace width="0.15em"></mspace><msub><mi>f</mi><mn>0</mn></msub><mspace width="0.15em"></mspace><mi>t</mi><mo>)</mo><mo>+</mo><mn>0,2</mn><mspace width="0.15em"></mspace><mi>sin</mi><mo>(</mo><mn>2</mn><mi>π</mi><mo>&#183;</mo><mn>3</mn><mspace width="0.15em"></mspace><msub><mi>f</mi><mn>0</mn></msub><mspace width="0.15em"></mspace><mi>t</mi><mo>)</mo></math></div>
+  <p class="note">Cảnh giác với tên gọi: đây là <b>tín hiệu TỔNG HỢP do Lab tự tạo bằng công thức trên</b> (cộng ba hài âm 0,5/0,3/0,2 rồi nhân biến điệu biên độ 1,5 Hz) — <b>không phải ghi âm giọng nói thật</b>, và trang này không phát lại bất kỳ âm thanh nào. Hình vẽ lấy 0,1 giây đầu của tín hiệu (như ô vẽ <code>ax1.plot(t[:1600], ...)</code> trong Lab: đúng 1.600 điểm ở tần số lấy mẫu chuẩn). Kéo <b>f_s</b> để thấy tổng số điểm lấy mẫu đổi theo công thức N = f_s × thời lượng: ở mặc định của Lab, N = 16.000 × 3,0 = 48.000 mẫu. Kéo <b>f₀</b> để thấy số điểm lấy mẫu trên mỗi chu kỳ sóng (f_s ÷ f₀) và mật độ sóng đổi theo. Kiểm tra cầm tay với định lý Nyquist: tái tạo riêng âm cơ bản 150 Hz đã cần f_s ≥ 2 × 150 = 300 Hz — Lab lấy mẫu 16.000 Hz, cách rất xa ngưỡng này.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái số hóa &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+<div class="card" id="animCard">
+ <span class="eyebrow">Animation · Dạng sóng chạy · mảng env do Lab xuất</span>
+ <h2>Dạng sóng chạy: đầu phát quét qua toàn bộ thời lượng của Lab</h2>
+ <div class="banner">⚠ Hai dòng trung thực của khối này: (1) đường sóng vẽ từ mảng <code>env</code> do Lab xuất —
+  đó là <b>tín hiệu TỔNG HỢP do Lab sinh</b> (sóng cơ bản f₀ + họa âm 2·f₀, 3·f₀ + bao đạn biên độ trong <code>.py</code>),
+  <b>không phải ghi âm giọng nói thật</b>, và trang không phát ra loa bất kỳ âm thanh nào;
+  (2) <code>transcription</code> (3 phân đoạn + phụ đề <code>.srt</code>) là <b>kịch bản phiên âm mẫu</b> ghi sẵn trong
+  <code>.py</code> vì môi trường repo không cài <code>whisper</code> — việc một phân đoạn sáng lên chỉ minh hoạ mốc
+  thời gian của kịch bản, không phải Whisper đang nhận dạng.</div>
+ <div class="ctl">
+  <button class="btn cta" id="animPlay" type="button" aria-pressed="false">▶ Phát</button>
+  <button class="btn" id="animPause" type="button">⏸ Tạm dừng</button>
+  <button class="btn" id="animStep" type="button">Bước một khung</button>
+  <button class="btn" id="animRestart" type="button">↺ Chạy lại</button>
+  <label class="note" for="animSpeed">Tốc độ:</label>
+  <select id="animSpeed">
+   <option value="0.5">×0,5</option>
+   <option value="1" selected>×1</option>
+   <option value="2">×2</option>
+  </select>
+  <label class="note" for="animScrub">Kéo đầu phát</label>
+  <input id="animScrub" type="range" min="0" max="3" step="0.005" value="0">
+  <input id="animHarm" type="checkbox">
+  <label class="note" for="animHarm">Hiện từng thành phần</label>
+ </div>
+ <svg id="animSvg" viewBox="0 0 440 232" role="img" aria-label="Dạng sóng chạy vẽ từ mảng env do Lab xuất: 600 điểm trên trục thời gian 0 đến 3 giây, đầu phát quét theo thời gian, dải phân đoạn kịch bản sáng khi đầu phát đi vào"></svg>
+ <p class="note" id="animCaption"></p>
+ <div class="stat" id="animStat"></div>
+ <div class="segs" id="animSegs"></div>
+ <p class="note" id="animSegLine"></p>
+ <p class="note" id="animReadout"></p>
+ <p class="note">Đối chiếu trung thực: bảng phân đoạn ở tab 03 trải tới mốc 7,80 giây trong khi tín hiệu tổng hợp của
+  Lab chỉ dài 3,0 giây — nên đầu phát không bao giờ đi vào phân đoạn 3 (bắt đầu 5,20 giây). Lab không ràng buộc
+  timestamp của kịch bản với độ dài tín hiệu; trang vẽ đúng những gì Lab xuất, không chỉnh cho "khớp".</p>
+ <div id="harmBox"></div>
+ <p class="note" id="animHarmNote"></p>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phổ tần số · Ba hài âm của tín hiệu tổng hợp</span>
+  <h2>Từ sóng âm sang phổ: Whisper nhìn bằng ảnh phổ, không nhìn sóng</h2>
+   <svg id="specSvg" viewBox="0 0 440 250" role="img" aria-label="Phổ tần số với ba vạch hài tại 150 Hz, 300 Hz và 450 Hz trải trên trục thời gian 0 đến 3 giây"></svg>
+   <p class="note">Ba vạch phổ nằm đúng tại f₀ = 150 Hz (biên độ 0,5), 2·f₀ = 300 Hz (0,3) và 3·f₀ = 450 Hz (0,2) — trích nguyên từ công thức mục 1 của Lab, trải đều trên trục thời gian 0–3 giây. Biến điệu biên độ 1,5 Hz khiến độ đậm của vạch thay đổi theo nhịp. Đây là phổ của tín hiệu tổng hợp, không phải phổ ghi âm thật.</p>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>f</mi><mi>s</mi></msub><mo>&#8805;</mo><mn>2</mn><mspace width="0.2em"></mspace><msub><mi>f</mi><mrow><mi>max</mi></mrow></msub><mspace width="0.8em"></mspace><mo>&#8658;</mo><mspace width="0.4em"></mspace><msub><mi>f</mi><mi>s</mi></msub><mo>/</mo><mn>2</mn><mo>=</mo><mn>8.000</mn><mspace width="0.3em"></mspace><mi>H</mi><mi>z</mi></math></div>
+  <p class="note">Định lý Nyquist–Shannon: tần số lấy mẫu phải ≥ 2 lần tần số cao nhất. Với f_s = 16.000 Hz, trần tái tạo được (tần số Nyquist) là 16.000 ÷ 2 = 8.000 Hz. Phép thử cầm tay: âm cơ bản f₀ = 150 Hz đòi hỏi f_s ≥ 2 × 150 = 300 Hz; hài cao nhất 3·f₀ = 450 Hz đòi hỏi 2 × 450 = 900 Hz — Lab dùng 16.000 Hz nên cả ba hài đều nằm rất xa dưới ngưỡng.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Đầu vào thật sự của Whisper</span>
+  <h2>Log-Mel Spectrogram 80 kênh</h2>
+  <svg id="melSvg" viewBox="0 0 440 96" role="img" aria-label="Minh họa dải bộ lọc Mel phủ lên dải tần số, Whisper dùng 80 kênh"></svg>
+  <p class="note">Mục 2 của Lab ghi rõ: <i>"Whisper không nhìn vào dạng sóng 1D mà chuyển sóng âm thành ảnh quang phổ Mel 80 kênh (80-channel Log-Mel Spectrogram)"</i>. Dải tần số được gom qua 80 bộ lọc Mel (tark density cao ở tần số thấp — nơi tai người và giọng nói tinh nhất), rồi lấy log biên độ. Ảnh phổ 2D này (trục thời gian × 80 kênh tần số) chính là "hình ảnh" mà Encoder của Transformer Whisper ăn vào.</p>
+  <div class="stat" id="stat2"></div>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phiên âm · Bảng phân đoạn &amp; phụ đề .srt</span>
+  <h2>Ba phân đoạn phiên âm và tệp phụ đề Lab sinh ra</h2>
+  <div class="banner">⚠ Dòng bắt buộc về tính trung thực: Đây là <b>kịch bản phiên âm mẫu</b> ghi trong tệp <code>.py</code> của Lab (môi trường chạy Lab không cài <code>whisper</code>), <b>KHÔNG phải kết quả Whisper nhận dạng trên giọng nói thật</b>. Ô mã trong Lab thử <code>import whisper</code>; khi thất bại, hàm <code>transcribe_speech()</code> trả về sẵn kịch bản 3 phân đoạn này (pipeline dự phòng).</div>
+  <table id="segTable">
+   <thead><tr><th>Phân đoạn</th><th class="ro">Bắt đầu (s)</th><th class="ro">Kết thúc (s)</th><th>Văn bản</th></tr></thead>
+   <tbody></tbody>
+  </table>
+  <p class="note">Bảng dựng nguyên văn từ <code>transcription.segments</code> trong <code>lab_data.js</code>.</p>
+  <div class="eyebrow" style="margin-top:14px">Xem nội dung tệp subtitles_uth.srt Lab sinh ra</div>
+  <pre class="srt" id="srtBox"></pre>
+  <p class="note">Nội dung trên được dựng lại đúng định dạng SRT (thứ tự · dòng thời gian <code>HH:MM:SS,mmm --&gt; HH:MM:SS,mmm</code> · văn bản) theo đúng hàm <code>export_to_srt()</code> / <code>fmt_time()</code> trong Lab, từ đúng 3 phân đoạn. Chi tiết đáng học: dòng 3 in ra <code>07,799</code> chứ không phải <code>07,800</code> — vì số 7,8 giây không biểu diễn chính xác bằng số thực nhị phân, nên <code>int((7,8 − 7) × 1000) = int(799,99…) = 799</code> (đây đúng là kết quả hàm <code>fmt_time()</code> của Lab chạy trên Python).</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Toàn văn &amp; chỉ số phiên âm</span>
+  <h2>Kết quả trả về của pipeline dự phòng</h2>
+  <div class="stat" id="stat3"></div>
+  <p class="note">Văn bản đầy đủ theo kịch bản mẫu:</p>
+  <blockquote class="formula" id="fullText" style="margin:6px 0;font-style:italic"></blockquote>
+  <p class="note">Ngôn ngữ khai báo trong kịch bản: <code>vi</code>. Không có bất kỳ suy luận nào trên âm thanh thật được chạy trong bài này — đừng phát biểu rằng "Whisper đã nhận dạng được giọng nói".</p>
+ </div>
+</div>
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_speech_to_text_whisper.py</span>
+ <h2>Toàn bộ hằng số trích xuất từ Lab chuẩn</h2>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Tần số lấy mẫu chuẩn Whisper <span class="sub">(sample_rate)</span></td><td class="ro hi">16.000 Hz</td></tr>
+<tr><td><code>[M02]</code> Độ dài đoạn tín hiệu tổng hợp <span class="sub">(duration)</span></td><td class="ro hi">3,0 giây</td></tr>
+<tr><td><code>[M03]</code> Tần số cơ bản của tín hiệu tổng hợp <span class="sub">(f0)</span></td><td class="ro hi">150 Hz</td></tr>
+<tr><td><code>[M04]</code> Tổng số điểm lấy mẫu N = f_s × duration <span class="sub">(n_samples)</span></td><td class="ro hi">48.000 mẫu</td></tr>
+<tr><td><code>[M05]</code> Số phân đoạn phiên âm trong kịch bản <span class="sub">(n_segments)</span></td><td class="ro hi">3 phân đoạn</td></tr>
+<tr><td><code>[M06]</code> Ngôn ngữ khai báo trong kịch bản <span class="sub">(lang)</span></td><td class="ro hi"><code>vi</code></td></tr>
+<tr><td><code>[M07]</code> Toàn văn kịch bản phiên âm mẫu <span class="sub">(transcription.text)</span></td><td class="ro">Chào mừng các bạn sinh viên UTH đến với môn học Trí tuệ nhân tạo và Ứng dụng.</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Tín hiệu tổng hợp của Lab dài 3,0 giây và được lấy mẫu ở tần số 16.000 Hz. Tổng số điểm lấy mẫu N là bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">N = 48.000 mẫu = 16.000 mẫu/giây × 3,0 giây</button><button class="opt" type="button" data-v="q1_2">N = 16.000 mẫu (đúng bằng tần số lấy mẫu)</button><button class="opt" type="button" data-v="q1_3">N = 3.000 mẫu (lấy 3 giây × 1.000)</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Định lý Nyquist–Shannon yêu cầu f_s ≥ 2 lần tần số cao nhất của tín hiệu. Với f_s = 16.000 Hz, tần số cao nhất còn tái tạo được (tần số Nyquist) là bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">8.000 Hz = 16.000 Hz ÷ 2</button><button class="opt" type="button" data-v="q2_2">16.000 Hz, bằng đúng tần số lấy mẫu</button><button class="opt" type="button" data-v="q2_3">150 Hz, bằng tần số cơ bản f₀</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Có thể khẳng định "Whisper đã nhận dạng đúng giọng nói thật" trong bài thực hành này không?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Không — môi trường không cài whisper; 3 phân đoạn là kịch bản phiên âm mẫu ghi sẵn trong .py</button><button class="opt" type="button" data-v="q3_2">Có — tệp .srt chứng minh Whisper đã nghe và hiểu tiếng Việt</button><button class="opt" type="button" data-v="q3_3">Có — Lab ghi âm trực tiếp từ micro của người dùng</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_speech_to_text_whisper.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10],"vars":{"sample_rate":16000,"duration":3.0,"f0":150,"transcription":{"text":"Chào mừng các bạn sinh viên UTH đến với môn học Trí tuệ nhân tạo và Ứng dụng.","language":"vi","segments":[{"id":0,"start":0.0,"end":2.5,"text":"Chào mừng các bạn sinh viên UTH"},{"id":1,"start":2.5,"end":5.2,"text":"đến với môn học Trí tuệ nhân tạo"},{"id":2,"start":5.2,"end":7.8,"text":"và Ứng dụng."}]}},"derived":{"n_samples":48000,"n_segments":3,"lang":"vi","env":[0.0,-0.014,0.0,0.042,-0.0,-0.07,0.0,0.097,-0.0,-0.123,0.0,0.149,-0.0,-0.173,-0.0,0.195,-0.0,-0.215,0.0,0.234,0.0,-0.251,-0.0,0.265,-0.0,-0.277,0.0,0.287,0.0,-0.294,0.0,0.298,-0.0,-0.3,-0.0,0.299,-0.0,-0.296,0.0,0.289,0.0,-0.281,0.0,0.269,0.0,-0.256,-0.0,0.24,-0.0,-0.222,0.0,0.202,-0.0,-0.18,0.0,0.157,0.0,-0.132,0.0,0.106,-0.0,-0.079,0.0,0.052,-0.0,-0.024,0.0,0.005,-0.0,-0.033,-0.0,0.061,-0.0,-0.088,0.0,0.115,-0.0,-0.14,0.0,0.165,0.0,-0.188,-0.0,0.209,-0.0,-0.228,0.0,0.245,0.0,-0.261,-0.0,0.273,0.0,-0.284,-0.0,0.292,-0.0,-0.297,0.0,0.3,-0.0,-0.3,0.0,0.297,-0.0,-0.292,0.0,0.284,0.0,-0.273,0.0,0.261,0.0,-0.245,-0.0,0.228,-0.0,-0.209,0.0,0.188,-0.0,-0.165,0.0,0.14,-0.0,-0.115,0.0,0.088,-0.0,-0.061,0.0,0.033,0.0,-0.005,0.0,0.024,-0.0,-0.052,0.0,0.079,0.0,-0.106,0.0,0.132,-0.0,-0.157,0.0,0.18,-0.0,-0.202,-0.0,0.222,-0.0,-0.24,-0.0,0.256,-0.0,-0.269,-0.0,0.281,0.0,-0.289,-0.0,0.296,-0.0,-0.299,-0.0,0.3,-0.0,-0.298,0.0,0.294,-0.0,-0.287,0.0,0.277,0.0,-0.265,0.0,0.251,-0.0,-0.234,0.0,0.215,0.0,-0.195,0.0,0.173,0.0,-0.149,0.0,0.123,-0.0,-0.097,0.0,0.07,-0.0,-0.042,0.0,0.014,-0.0,-0.014,-0.0,0.042,-0.0,-0.07,-0.0,0.097,-0.0,-0.123,-0.0,0.149,-0.0,-0.173,-0.0,0.195,0.0,-0.215,-0.0,0.234,0.0,-0.251,-0.0,0.265,0.0,-0.277,-0.0,0.287,-0.0,-0.294,-0.0,0.298,-0.0,-0.3,0.0,0.299,-0.0,-0.296,0.0,0.289,-0.0,-0.281,0.0,0.269,-0.0,-0.256,0.0,0.24,-0.0,-0.222,0.0,0.202,-0.0,-0.18,-0.0,0.157,-0.0,-0.132,-0.0,0.106,-0.0,-0.079,-0.0,0.052,0.0,-0.024,-0.0,0.005,-0.0,-0.033,-0.0,0.061,-0.0,-0.088,-0.0,0.115,0.0,-0.14,-0.0,0.165,0.0,-0.188,0.0,0.209,-0.0,-0.228,0.0,0.245,-0.0,-0.261,0.0,0.273,-0.0,-0.284,0.0,0.292,-0.0,-0.297,-0.0,0.3,-0.0,-0.3,0.0,0.297,-0.0,-0.292,-0.0,0.284,0.0,-0.273,0.0,0.261,-0.0,-0.245,-0.0,0.228,-0.0,-0.209,0.0,0.188,0.0,-0.165,-0.0,0.14,0.0,-0.115,0.0,0.088,-0.0,-0.061,-0.0,0.033,0.0,-0.005,0.0,0.024,-0.0,-0.052,0.0,0.079,-0.0,-0.106,0.0,0.132,-0.0,-0.157,0.0,0.18,-0.0,-0.202,-0.0,0.222,0.0,-0.24,0.0,0.256,-0.0,-0.269,-0.0,0.281,-0.0,-0.289,0.0,0.296,-0.0,-0.299,-0.0,0.3,0.0,-0.298,0.0,0.294,-0.0,-0.287,-0.0,0.277,0.0,-0.265,0.0,0.251,-0.0,-0.234,-0.0,0.215,-0.0,-0.195,0.0,0.173,-0.0,-0.149,0.0,0.123,-0.0,-0.097,0.0,0.07,-0.0,-0.042,0.0,0.014,-0.0,-0.014,0.0,0.042,-0.0,-0.07,-0.0,0.097,-0.0,-0.123,0.0,0.149,-0.0,-0.173,0.0,0.195,-0.0,-0.215,0.0,0.234,0.0,-0.251,0.0,0.265,-0.0,-0.277,0.0,0.287,-0.0,-0.294,0.0,0.298,0.0,-0.3,0.0,0.299,0.0,-0.296,0.0,0.289,0.0,-0.281,0.0,0.269,-0.0,-0.256,0.0,0.24,0.0,-0.222,0.0,0.202,0.0,-0.18,-0.0,0.157,-0.0,-0.132,0.0,0.106,0.0,-0.079,0.0,0.052,-0.0,-0.024,0.0,0.005,-0.0,-0.033,-0.0,0.061,-0.0,-0.088,0.0,0.115,-0.0,-0.14,-0.0,0.165,-0.0,-0.188,0.0,0.209,-0.0,-0.228,-0.0,0.245,-0.0,-0.261,0.0,0.273,-0.0,-0.284,-0.0,0.292,-0.0,-0.297,0.0,0.3,-0.0,-0.3,-0.0,0.297,-0.0,-0.292,0.0,0.284,-0.0,-0.273,-0.0,0.261,-0.0,-0.245,0.0,0.228,0.0,-0.209,0.0,0.188,-0.0,-0.165,0.0,0.14,-0.0,-0.115,0.0,0.088,0.0,-0.061,0.0,0.033,-0.0,-0.005,0.0,0.024,-0.0,-0.052,0.0,0.079,0.0,-0.106,0.0,0.132,-0.0,-0.157,0.0,0.18,0.0,-0.202,0.0,0.222,0.0,-0.24,0.0,0.256,-0.0,-0.269,0.0,0.281,0.0,-0.289,0.0,0.296,-0.0,-0.299,-0.0,0.3,-0.0,-0.298,0.0,0.294,-0.0,-0.287,0.0,0.277,-0.0,-0.265,0.0,0.251,-0.0,-0.234,0.0,0.215,-0.0,-0.195,0.0,0.173,-0.0,-0.149,-0.0,0.123,-0.0,-0.097,-0.0,0.07,-0.0,-0.042,0.0,0.014],"env_step":80}};
+const V = LAB.vars;
+const D = LAB.derived;
+const KEYS = ["sample_rate", "duration", "f0", "n_samples", "n_segments", "lang"];
+const LABELS = {"sample_rate": "Tần số lấy mẫu chuẩn Whisper (Hz)", "duration": "Độ dài đoạn tín hiệu tổng hợp (giây)", "f0": "Tần số cơ bản của tín hiệu tổng hợp (Hz)", "n_samples": "Tổng số điểm lấy mẫu N = f_s × duration", "n_segments": "Số phân đoạn phiên âm trong kịch bản", "lang": "Ngôn ngữ khai báo trong kịch bản"};
+const KV = {"sample_rate": V.sample_rate, "duration": V.duration, "f0": V.f0, "n_samples": D.n_samples, "n_segments": D.n_segments, "lang": D.lang};
+const FB = {1:{"q1_1":["Đúng! N = f_s \u00d7 duration = 16.000 \u00d7 3,0 = 48.000 m\u1eabu \u2014 kh\u1edbp n_samples = 48.000 trong lab_data.js.",1],"q1_2":["Sai: 16.000 m\u1eabu l\u00e0 s\u1ed1 m\u1eabu c\u1ee7a M\u1ed8T gi\u00e2y; Lab k\u00e9o d\u00e0i 3,0 gi\u00e2y.",0],"q1_3":["Sai: 3.000 kh\u00f4ng ph\u1ea3i k\u1ebft qu\u1ea3 c\u1ee7a 16.000 \u00d7 3,0.",0]},2:{"q2_1":["Đúng! T\u1ea7n s\u1ed1 Nyquist = 16.000 \u00f7 2 = 8.000 Hz. H\u00e0i cao nh\u1ea5t c\u1ee7a t\u00edn hi\u1ec7u Lab l\u00e0 3\u00d7150 = 450 Hz, th\u1ea5p h\u01a1n nhi\u1ec1u ng\u01b0\u1ee1ng n\u00e0y.",1],"q2_2":["Sai: t\u1ea7n s\u1ed1 Nyquist b\u1eb1ng M\u1ed8T N\u1eeeA f_s, kh\u00f4ng b\u1eb1ng f_s.",0],"q2_3":["Sai: 150 Hz l\u00e0 f\u2080, kh\u00f4ng ph\u1ea3i f_s \u00f7 2.",0]},3:{"q3_1":["Đúng! Lab th\u1eed import whisper; khi th\u1ea5t b\u1ea1i tr\u1ea3 v\u1ec3 k\u1ecbch b\u1ea3n phi\u00ean \u00e2m m\u1eabu 3 ph\u00e2n \u0111o\u1ea1n ghi s\u1eb5n trong .py.",1],"q3_2":["Sai: m\u00f4i tr\u01b0\u1eddng kh\u00f4ng c\u00e0i whisper \u2014 kh\u00f4ng c\u00f3 su\u00fd lu\u1eadn n\u00e0o ch\u1ea1y tr\u00ean \u00e2m thanh th\u1eadt.",0],"q3_3":["Sai: Lab kh\u00f4ng d\u00f9ng micro; to\u00e0n b\u1ed9 l\u00e0 t\u00edn hi\u1ec7u t\u1ed5ng h\u1ee3p + k\u1ecbch b\u1ea3n m\u1eabu.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const dec = (x, nd = 2) => {
+  if (typeof x !== 'number') return String(x);
+  const s = x < 0 ? '-' : '';
+  const t = (Math.round(Math.abs(x) * 10 ** nd) / 10 ** nd).toFixed(nd);
+  const p = t.split('.');
+  return s + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (p[1] ? ',' + p[1] : '');
+};
+const chipHTML = arr => arr.map(([b, sp]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(sp)}</span></div>`).join('');
+
+// Waveform y theo DUNG cong thuc muc 1 cua 01_speech_to_text_whisper.py:
+// x(t) = 0,5 sin(2 pi f0 t) + 0,3 sin(2 pi 2 f0 t) + 0,2 sin(2 pi 3 f0 t); env = |sin(2 pi 1,5 t)|
+function renderTab1(){
+  const f0 = +$('#f0Sel').value;
+  const fs = +$('#fsSel').value;
+  $('#val1').textContent = dec(f0, 0) + ' Hz';
+  $('#val2').textContent = dec(fs, 0) + ' Hz';
+  const win = 0.1;                     // cua so 0,1 giay nhu ax1.plot(t[:1600], ...) cua Lab
+  const nPts = Math.round(win * fs);   // so diem cua so = f_s x 0,1 giay (1.600 o mac dinh Lab)
+  let pts = '';
+  for (let i = 0; i < nPts; i++) {
+    const t = i / fs;
+    const sig = 0.5 * Math.sin(2 * Math.PI * f0 * t) + 0.3 * Math.sin(4 * Math.PI * f0 * t) + 0.2 * Math.sin(6 * Math.PI * f0 * t);
+    const env = Math.abs(Math.sin(2 * Math.PI * 1.5 * t));
+    pts += (34 + i * 390 / (nPts - 1)).toFixed(2) + ',' + (150 - sig * env * 88).toFixed(2) + ' ';
+  }
+  let svg = `<text class="ax" x="34" y="16" style="font-weight:700">Tín hiệu TỔNG HỢP của Lab · f₀ = ${esc(dec(f0, 0))} Hz · f_s = ${esc(dec(fs, 0))} Hz</text>`;
+  svg += `<text class="ax" x="34" y="30">cửa sổ 0,1 giây = ${esc(dec(nPts, 0))} điểm lấy mẫu · N đầy đủ = f_s × 3,0 s</text>`;
+  svg += '<line class="ln" x1="34" y1="150" x2="424" y2="150"/>';
+  svg += '<line class="ln" x1="34" y1="40" x2="34" y2="238"/>';
+  [0, 0.05, 0.1].forEach(tt => svg += `<text class="ax" x="${(34 + tt * 3900).toFixed(1)}" y="252" text-anchor="middle">${esc(dec(tt, 2).replace('.', ','))} s</text>`);
+  svg += '<text class="ax" x="26" y="46" text-anchor="end">+1</text><text class="ax" x="26" y="154" text-anchor="end">0</text><text class="ax" x="26" y="242" text-anchor="end">−1</text>';
+  svg += `<polyline fill="none" stroke="var(--acc)" stroke-width="1.2" points="${pts}"/>`;
+  $('#waveSvg').innerHTML = svg;
+  $('#stat1').innerHTML = chipHTML([
+    [dec(f0, 0) + ' Hz', 'f₀ (thanh trượt)'],
+    [dec(fs, 0) + ' Hz', 'f_s (thanh trượt)'],
+    [dec(fs * V.duration, 0), 'N = f_s × 3,0 giây (suy ra từ số Lab)'],
+    [dec(fs / f0, 1), 'Điểm lấy mẫu trên mỗi chu kỳ f₀ = f_s ÷ f₀'],
+    [dec(0.1 * f0, 0), 'Số chu kỳ f₀ trong cửa sổ 0,1 giây']
+  ]);
+  $('#liveTable tbody').innerHTML = KEYS.map(k => `<tr><td>${esc(LABELS[k])}</td><td class="ro hi">${esc(dec(KV[k], typeof KV[k] === 'number' && KV[k] % 1 ? 1 : 0))}</td></tr>`).join('');
+  $('#insight1').innerHTML = `N = f_s × duration = 16.000 × 3,0 = <b>48.000 mẫu</b> (suy ra từ số Lab — khớp đúng n_samples trong blob <code>lab_data.js</code> nhúng nguyên văn từ <code>01_speech_to_text_whisper.py</code>).`;
+}
+
+// Pho tan so: ba harmonic cua Lab (0,5 / 0,3 / 0,2) trai tren truc thoi gian 0..3 giay
+function renderTab2(){
+  const f0 = V.f0, sr = V.sample_rate;
+  const yF = f => 200 - f / 500 * 162;
+  const xT = t => 46 + t / 3 * 372;
+  let svg = `<text class="ax" x="46" y="16" style="font-weight:700">Phổ hài âm của tín hiệu tổng hợp (0–3 giây · 0–500 Hz)</text>`;
+  svg += `<line class="ln" x1="42" y1="204" x2="424" y2="204"/><line class="ln" x1="42" y1="204" x2="42" y2="32"/>`;
+  [[0, '0'], [150, dec(f0, 0)], [300, dec(2 * f0, 0)], [450, dec(3 * f0, 0)]].forEach(([f, lb]) =>
+    svg += `<text class="ax" x="38" y="${(yF(f) + 4).toFixed(1)}" text-anchor="end">${esc(lb)} Hz</text>`);
+  [0, 1, 2, 3].forEach(tt => svg += `<text class="ax" x="${xT(tt).toFixed(1)}" y="220" text-anchor="middle">${tt} s</text>`);
+  [[1, 0.5], [2, 0.3], [3, 0.2]].forEach(([k, amp]) => {
+    const y = yF(k * f0);
+    svg += `<rect x="46" y="${(y - 6).toFixed(1)}" width="372" height="12" rx="3" fill="var(--acc)" opacity="${(amp * 1.5).toFixed(2)}"/>`;
+    svg += `<text class="ax" x="46" y="${(y - 10).toFixed(1)}">${k === 1 ? 'f₀' : k + '·f₀'} = ${esc(dec(k * f0, 0))} Hz (biên độ ${esc(dec(amp, 1))})</text>`;
+  });
+  svg += `<text class="ax" x="235" y="240" text-anchor="middle">Thời gian (giây) — độ đậm mỗi vạch mô phỏng biến điệu biên độ 1,5 Hz</text>`;
+  $('#specSvg').innerHTML = svg;
+  let mel = `<text class="ax" x="10" y="18" style="font-weight:700">Lưới bộ lọc Mel phủ dải tần số</text>`;
+  for (let i = 0; i < 12; i++)
+    mel += `<rect x="${10 + i * 36}" y="30" width="30" height="26" rx="6" fill="var(--acc)" opacity="${(0.95 - i * 0.06).toFixed(2)}"/>`;
+  mel += `<text class="ax" x="10" y="74">80 kênh</text><text class="ax" x="430" y="74" text-anchor="end">tần số cao</text><text class="ax" x="10" y="90">Log-Mel 80 kênh = ảnh đầu vào Whisper (mục 2 của Lab)</text>`;
+  $('#melSvg').innerHTML = mel;
+  $('#stat2').innerHTML = chipHTML([
+    ['80', 'Số kênh Mel của ảnh đầu vào Whisper'],
+    [dec(f0, 0) + ' Hz', 'Hài bậc 1 (f₀, biên độ 0,5)'],
+    [dec(2 * f0, 0) + ' Hz', 'Hài bậc 2 (2·f₀, biên độ 0,3)'],
+    [dec(3 * f0, 0) + ' Hz', 'Hài cao nhất (3·f₀, biên độ 0,2)'],
+    [dec(sr / 2, 0) + ' Hz', 'Tần số Nyquist = f_s ÷ 2']
+  ]);
+}
+
+// Bang phan doan + xuat .srt theo dung fmt_time()/export_to_srt() cua Lab
+function fmtSrt(sec){
+  const p = (n, w) => String(n).padStart(w, '0');
+  const h = Math.floor(sec / 3600), m = Math.floor((sec % 3600) / 60), s = Math.floor(sec % 60);
+  const ms = Math.floor((sec - Math.floor(sec)) * 1000);
+  return `${p(h, 2)}:${p(m, 2)}:${p(s, 2)},${p(ms, 3)}`;
+}
+function renderTab3(){
+  const segs = V.transcription.segments;
+  $('#segTable tbody').innerHTML = segs.map((s, i) => `<tr><td>${i + 1}</td><td class="ro">${esc(dec(s.start, 2))}</td><td class="ro">${esc(dec(s.end, 2))}</td><td>${esc(s.text)}</td></tr>`).join('');
+  $('#srtBox').textContent = segs.map((s, i) => `${i + 1}\n${fmtSrt(s.start)} --> ${fmtSrt(s.end)}\n${s.text.trim()}\n`).join('\n');
+  $('#stat3').innerHTML = chipHTML([
+    [dec(D.n_segments, 0) + ' phân đoạn', 'Số đoạn trong transcription.segments'],
+    [D.lang, 'Ngôn ngữ khai báo (lang)'],
+    [dec(segs[segs.length - 1].end, 1) + ' s', 'Mốc thời gian cuối của kịch bản']
+  ]);
+  $('#fullText').textContent = '"' + V.transcription.text + '"';
+}
+
+// ===== Khoi "Dang song chay": duong song ve tu LAB.derived.env =====
+// Lab xuat voice_signal[::80] -> moi diem ve = 80 mau = 80 / 16000 = 0,005 giay.
+// Moi con so do tren khoi nay (bien do, vi tri dau phat) doc THANG tu env, khong phai do am thanh that.
+const AENV = Array.isArray(D.env) ? D.env : [];
+const ASTEP = (typeof D.env_step === 'number' && D.env_step > 0 && V.sample_rate) ? D.env_step / V.sample_rate : 0;
+const ADUR = V.duration;
+const FRAME = 0.05;
+const AX0 = 40, AX1 = 428, AMID = 110, AH = 58, AYTOP = 44, AYBOT = 172, ABAND = 190, ABH = 12;
+const ANIM = { t: 0, playing: false, speed: 1, raf: 0, last: 0, speedLabel: '×1' };
+let APEAK = 0;
+for (const v of AENV) if (Math.abs(v) > APEAK) APEAK = Math.abs(v);
+const ASCALE = APEAK ? AH / APEAK : 0;
+const xAt = t => AX0 + (ADUR ? t / ADUR : 0) * (AX1 - AX0);
+const yAt = v => AMID - v * ASCALE;
+
+function baseAnimSVG() {
+  if (!AENV.length) return '<text class="ax" x="20" y="40">lab_data.js chưa có mảng env — khối animation không vẽ được</text>';
+  let pts = '';
+  for (let i = 0; i < AENV.length; i++) pts += xAt(i * ASTEP).toFixed(2) + ',' + yAt(AENV[i]).toFixed(2) + ' ';
+  let s = `<text class="ax" x="40" y="16" style="font-weight:700">Dạng sóng chạy — env do Lab xuất · ${esc(dec(AENV.length, 0))} điểm · ${esc(dec(D.env_step, 0))} mẫu/điểm</text>`;
+  s += `<line class="ln" x1="${AX0}" y1="${AMID}" x2="${AX1}" y2="${AMID}"/><line class="ln" x1="${AX0}" y1="${AYTOP}" x2="${AX0}" y2="${AYBOT}"/>`;
+  s += `<text class="ax" x="36" y="${AMID + 4}" text-anchor="end">0</text><text class="ax" x="36" y="${AMID - AH + 4}" text-anchor="end">+${esc(dec(APEAK, 2))}</text><text class="ax" x="36" y="${AMID + AH + 4}" text-anchor="end">−${esc(dec(APEAK, 2))}</text>`;
+  s += `<text class="ax" x="40" y="${ABAND - 5}">Dải phân đoạn kịch bản trong trục 0–${esc(dec(ADUR, 1))} giây</text>`;
+  V.transcription.segments.forEach((sg, i) => {
+    if (sg.start >= ADUR) return;
+    const a = xAt(sg.start), b = xAt(Math.min(sg.end, ADUR));
+    s += `<rect id="animSpan${i}" x="${a.toFixed(1)}" y="${ABAND}" width="${(b - a).toFixed(1)}" height="${ABH}" rx="3" fill="var(--cam)" opacity="0.3"/>`;
+    s += `<text class="ax" style="font-size:10px" x="${((a + b) / 2).toFixed(1)}" y="${ABAND + 9}" text-anchor="middle">phân đoạn ${i + 1}</text>`;
+  });
+  for (let k = 0; k <= Math.round(ADUR * 2); k++) {
+    const xx = xAt(k / 2);
+    s += `<line class="ln" x1="${xx.toFixed(1)}" y1="${ABAND + ABH + 2}" x2="${xx.toFixed(1)}" y2="${ABAND + ABH + 6}"/>`;
+    if (k % 2 === 0) s += `<text class="ax" x="${xx.toFixed(1)}" y="${ABAND + ABH + 18}" text-anchor="middle">${k / 2} s</text>`;
+  }
+  s += `<rect id="animCover" x="${AX0}" y="${AYTOP}" width="0" height="${AYBOT - AYTOP}" fill="var(--cam)" opacity="0.1"/>`;
+  s += `<polyline id="animWave" fill="none" stroke="var(--acc)" stroke-width="1.1" points="${pts}"/>`;
+  s += `<line id="animHead" data-t="0" x1="${AX0}" x2="${AX0}" y1="${AYTOP}" y2="${ABAND + ABH + 2}" stroke="var(--cam)" stroke-width="1.6"/>`;
+  s += `<circle id="animDot" cx="${AX0}" cy="${yAt(AENV[0]).toFixed(2)}" r="3.4" fill="var(--cam)"/>`;
+  return s;
+}
+
+function renderAnimAll() {
+  if (!AENV.length) {
+    $('#animCaption').textContent = 'Không vẽ được: lab_data.js chưa có mảng env.';
+    return;
+  }
+  $('#animSvg').innerHTML = baseAnimSVG();
+  $('#animSegs').innerHTML = V.transcription.segments.map((sg, i) => `<div class="seg${sg.start >= ADUR ? ' far' : ''}" id="animSeg${i}"><b>Phân đoạn ${i + 1} · ${esc(dec(sg.start, 2))} → ${esc(dec(sg.end, 2))} giây</b><em>${esc(sg.text.trim())}</em><i>${sg.start < ADUR ? 'đầu phát đi vào được phân đoạn này' : 'bắt đầu ngoài phạm vi ' + esc(dec(ADUR, 1)) + ' giây của tín hiệu Lab — đầu phát không tới nơi'}</i></div>`).join('');
+  $('#animCaption').innerHTML = `Toàn bộ số vẽ và đo trong khối này lấy thẳng từ mảng <code>env</code> do Lab xuất (cứ 80 mẫu của <code>voice_signal</code> Lab lấy 1 điểm): <b>${esc(dec(AENV.length, 0))} điểm vẽ</b>, mỗi điểm = <b>${esc(dec(D.env_step, 0))} mẫu</b> = ${esc(dec(D.env_step, 0))} ÷ ${esc(dec(V.sample_rate, 0))} = <b>${esc(dec(ASTEP, 3))} giây</b>. Đường liền chỉ nối các điểm mẫu đó; đây là dạng sóng, không phải ảnh phổ — Lab vẽ spectrogram bằng matplotlib ở ô 6 của tệp, các giá trị phổ không được xuất ra nên trang không vẽ lại spectrogram.`;
+  $('#animStat').innerHTML = chipHTML([
+    [dec(AENV.length, 0) + ' điểm vẽ', 'độ dài mảng env do Lab xuất'],
+    [dec(D.env_step, 0) + ' mẫu', 'mỗi điểm vẽ = env_step mẫu'],
+    [dec(ASTEP, 3) + ' giây', 'thời gian mỗi điểm = env_step ÷ f_s'],
+    [dec(APEAK, 3) + ' đỉnh', 'biên độ tuyệt đối lớn nhất trong env'],
+    [dec(ADUR, 1) + ' giây', 'một vòng của đầu phát = duration']
+  ]);
+  $('#animStep').textContent = 'Bước một khung (' + dec(FRAME, 2) + ' giây)';
+  $('#animHarmNote').innerHTML = `Bật <b>Hiện từng thành phần</b> để xem từng sóng hài mà công thức trong <code>.py</code> sinh ra: 0,5 × sin(2π·f₀·t), 0,3 × sin(2π·2f₀·t), 0,2 × sin(2π·3f₀·t) và bao đạn |sin(2π·1,5·t)| — <b>các hệ số 0,5 / 0,3 / 0,2 và 1,5 Hz lấy nguyên văn từ mã Lab</b>, không phải số đo từ giọng nói. Các mini-plot dưới đây tính từ công thức (401 điểm mỗi đường), còn đường sóng ở trên chỉ dùng đúng các điểm Lab xuất.`;
+  paintAnim();
+}
+
+function paintAnim() {
+  if (!AENV.length) return;
+  const t = ANIM.t;
+  const idx = Math.max(0, Math.min(AENV.length - 1, Math.round(t / (ASTEP || 1))));
+  const px = xAt(t);
+  const head = $('#animHead');
+  head.setAttribute('x1', px.toFixed(2));
+  head.setAttribute('x2', px.toFixed(2));
+  head.setAttribute('data-t', String(t));
+  $('#animCover').setAttribute('width', Math.max(0, px - AX0).toFixed(2));
+  $('#animDot').setAttribute('cx', xAt(idx * ASTEP).toFixed(2));
+  $('#animDot').setAttribute('cy', yAt(AENV[idx]).toFixed(2));
+  let act = null;
+  V.transcription.segments.forEach((sg, i) => {
+    const on = t >= sg.start && t < sg.end;
+    const chip = document.getElementById('animSeg' + i);
+    if (chip) chip.classList.toggle('on', on);
+    const span = document.getElementById('animSpan' + i);
+    if (span) span.setAttribute('opacity', on ? '0.9' : '0.3');
+    if (on) act = sg;
+  });
+  $('#animSegLine').textContent = act
+    ? 'Phân đoạn đang sáng (mốc thời gian nguyên văn từ transcription.segments): ' + act.text.trim()
+    : 'Ở mốc này không phân đoạn nào của kịch bản phủ tới.';
+  $('#animReadout').innerHTML = `Đầu phát: <b>t = ${esc(dec(t, 3))} giây</b> · điểm env thứ <b>${esc(dec(idx + 1, 0))}/${esc(dec(AENV.length, 0))}</b> (giá trị env = ${esc(dec(AENV[idx], 3))}) · tốc độ <b>${esc(ANIM.speedLabel)}</b> — mọi giá trị đọc từ <code>env</code> do Lab xuất, mỗi điểm = ${esc(dec(D.env_step, 0))} mẫu = ${esc(dec(ASTEP, 3))} giây.`;
+}
+
+function setAnimT(t, fromSlider) {
+  ANIM.t = Math.max(0, Math.min(ADUR, t));
+  if (!fromSlider) $('#animScrub').value = ANIM.t.toFixed(3);
+  paintAnim();
+}
+function pauseAnim() {
+  ANIM.playing = false;
+  if (ANIM.raf) cancelAnimationFrame(ANIM.raf);
+  ANIM.raf = 0;
+  ANIM.last = 0;
+  $('#animPlay').setAttribute('aria-pressed', 'false');
+}
+function tickAnim(now) {
+  if (!ANIM.playing) return;
+  if (!ANIM.last) ANIM.last = now;
+  const dt = ((now - ANIM.last) / 1000) * ANIM.speed;
+  ANIM.last = now;
+  if (ANIM.t + dt >= ADUR) {
+    setAnimT(ADUR);
+    pauseAnim();
+    return;
+  }
+  setAnimT(ANIM.t + dt);
+  ANIM.raf = requestAnimationFrame(tickAnim);
+}
+function playAnim() {
+  if (ANIM.playing) return;
+  if (ANIM.t >= ADUR) setAnimT(0);
+  ANIM.playing = true;
+  ANIM.last = 0;
+  $('#animPlay').setAttribute('aria-pressed', 'true');
+  ANIM.raf = requestAnimationFrame(tickAnim);
+}
+const SPEEDLBL = { '0.5': '×0,5', '1': '×1', '2': '×2' };
+$('#animPlay').onclick = playAnim;
+$('#animPause').onclick = pauseAnim;
+$('#animRestart').onclick = () => {
+  pauseAnim();
+  setAnimT(0);
+};
+$('#animStep').onclick = () => {
+  pauseAnim();
+  setAnimT(ANIM.t + FRAME);
+};
+$('#animScrub').oninput = e => {
+  pauseAnim();
+  setAnimT(+e.target.value, true);
+};
+$('#animSpeed').onchange = e => {
+  ANIM.speed = +e.target.value;
+  ANIM.speedLabel = SPEEDLBL[e.target.value] || ('×' + e.target.value);
+  paintAnim();
+};
+
+// Mini-plot tung thanh phan, dung HE SO NGUYEN VAN trong 01_speech_to_text_whisper.py:
+// signal = 0,5*sin(2 pi f0 t) + 0,3*sin(2 pi 2 f0 t) + 0,2*sin(2 pi 3 f0 t); envelope = |sin(2 pi 1,5 t)|
+const H_PXU = 26, H_MID = 58, H_H = 90;
+function harmPlot(label, sub, coef, win, fn, color, tag) {
+  let pts = '';
+  const N = 401;
+  for (let i = 0; i < N; i++) pts += (AX0 + (AX1 - AX0) * i / (N - 1)).toFixed(2) + ',' + (H_MID - fn(win * i / (N - 1)) * H_PXU).toFixed(2) + ' ';
+  return `<svg class="harm" viewBox="0 0 440 ${H_H}" role="img" aria-label="${esc(label)}" data-mid="${H_MID}" data-scale="${H_PXU}" data-coef="${coef}" data-plot="${tag}"><text class="ax" x="10" y="14" style="font-weight:700">${esc(label)}</text><text class="ax" x="10" y="27" style="font-size:10px">${esc(sub)}</text><line class="ln" x1="${AX0}" y1="${H_MID}" x2="${AX1}" y2="${H_MID}"/><polyline fill="none" stroke="${color}" stroke-width="1.2" points="${pts}"/></svg>`;
+}
+function renderHarmonics() {
+  const box = $('#harmBox');
+  if (!$('#animHarm').checked) {
+    box.innerHTML = '';
+    return;
+  }
+  const w = 0.1;
+  const envFn = t => Math.abs(Math.sin(2 * Math.PI * 1.5 * t));
+  box.innerHTML = [
+    harmPlot('Hài 1 · 0,5 × sin(2π·f₀·t) với f₀ = 150 Hz', `cửa sổ ${esc(dec(w, 1))} giây · hệ số 0,5 nguyên văn từ .py`, 0.5, w, t => 0.5 * Math.sin(2 * Math.PI * V.f0 * t), 'var(--acc)', 'h1'),
+    harmPlot('Hài 2 · 0,3 × sin(2π·2·f₀·t) — 2·f₀ = 300 Hz', `cửa sổ ${esc(dec(w, 1))} giây · hệ số 0,3 nguyên văn từ .py`, 0.3, w, t => 0.3 * Math.sin(2 * Math.PI * 2 * V.f0 * t), 'var(--new)', 'h2'),
+    harmPlot('Hài 3 · 0,2 × sin(2π·3·f₀·t) — 3·f₀ = 450 Hz', `cửa sổ ${esc(dec(w, 1))} giây · hệ số 0,2 nguyên văn từ .py`, 0.2, w, t => 0.2 * Math.sin(2 * Math.PI * 3 * V.f0 * t), 'var(--ok)', 'h3'),
+    harmPlot('Bao đạn · |sin(2π·1,5·t)|', `0–${esc(dec(ADUR, 1))} giây · hệ số 1,5 Hz nguyên văn từ .py`, 1, ADUR, envFn, 'var(--cam)', 'env'),
+    harmPlot('Tổng có bao đạn · (0,5 sin + 0,3 sin + 0,2 sin) × bao đạn', `cửa sổ ${esc(dec(w, 1))} giây · chỉ ${esc(dec(AENV.length, 0))}/${esc(dec(D.n_samples, 0))} điểm Lab xuất`, 1, w, t => (0.5 * Math.sin(2 * Math.PI * V.f0 * t) + 0.3 * Math.sin(2 * Math.PI * 2 * V.f0 * t) + 0.2 * Math.sin(2 * Math.PI * 3 * V.f0 * t)) * envFn(t), 'var(--táo)', 'sum')
+  ].join('');
+}
+$('#animHarm').onchange = renderHarmonics;
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#f0Sel').oninput = renderTab1;
+$('#fsSel').oninput = renderTab1;
+const resetSliders = () => { $('#f0Sel').value = String(V.f0); $('#fsSel').value = String(V.sample_rate); renderTab1(); };
+$('#btnDefault1').onclick = resetSliders;
+$('#resetHero').onclick = resetSliders;
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); renderTab3(); renderAnimAll(); wireQuiz();
+</script>
+</body>
+</html>

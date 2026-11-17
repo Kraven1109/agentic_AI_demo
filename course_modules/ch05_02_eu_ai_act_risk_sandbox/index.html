@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Đánh giá mức độ tuân thủ pháp lý và phân tầng rủi ro cho các dự án AI doanh nghiệp theo Đạo luật AI Châu Âu (EU AI Act — 4 tầng: Tối thiểu, Giới hạn, Rủi ro cao, Bị cấm). Tính toán khung chế tài tài chính tối đa theo quy mô doanh thu toàn cầu và kiểm định điều kiện đạt theo kịch bản của Lab đối với các hệ thống AI Rủi ro cao (High-Risk) trong tuyển dụng, tín dụng và y tế.">
+<title>Khung phân loại 4 Tầng Rủi ro EU AI Act & Hộp cát Tuân thủ Pháp lý — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 5 · Pháp lý AI Quốc tế (EU AI Act) & Quản trị Rủi ro</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Khung phân loại 4 Tầng Rủi ro EU AI Act & Hộp cát Tuân thủ Pháp lý</span></h1>
+<p class="lede">Bài toán thực tế: Đánh giá mức độ tuân thủ pháp lý và phân tầng rủi ro cho các dự án AI doanh nghiệp theo Đạo luật AI Châu Âu (EU AI Act — 4 tầng: Tối thiểu, Giới hạn, Rủi ro cao, Bị cấm). Tính toán khung chế tài tài chính tối đa theo quy mô doanh thu toàn cầu và kiểm định điều kiện đạt theo kịch bản của Lab đối với các hệ thống AI Rủi ro cao (High-Risk) trong tuyển dụng, tín dụng và y tế.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>Chế tài tối đa theo 4 tầng rủi ro EU AI Act &amp; cổng cấp phép High-Risk</h2>
+  <div class="ctl">
+   <label for="compSel" class="note">Điểm tuân thủ kỹ thuật của hệ thống High-Risk (%): <b id="val1"></b></label>
+   <input id="compSel" type="range" min="20" max="100" step="5" value="85">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (85)</button>
+  </div>
+  <svg id="plot" viewBox="0 0 440 272" role="img" aria-label="Cột chế tài tối đa theo 4 tầng rủi ro EU AI Act kèm đồng hồ điểm tuân thủ High-Risk"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>Fine</mi><mo>max</mo></msub><mo>=</mo><mo>max</mo><mrow><mo>(</mo><mn>35,0</mn><mtext> triệu EUR</mtext><mo>,</mo><mspace width="0.4em"/><mn>7,0</mn><mtext>% doanh thu toàn cầu</mtext><mo>)</mo></mrow></math></div>
+  <p class="note">Kéo thanh trượt để kiểm định cổng kịch bản High-Risk của Lab (ngưỡng điểm kiểm định và chỉ số DI), hoặc bấm nút mặc định để đối chiếu trực tiếp với các mốc tính toán trong tệp <code>01_kiem_tra_thien_vi_ai_bias_audit.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích độ nhạy · Đường cong tham số</span>
+  <h2>Đường cong chế tài theo tầng rủi ro &amp; kiểm định công bằng DI</h2>
+  <div class="ctl">
+   <label for="tierSel" class="note">Tầng rủi ro hệ thống AI (1=Tối thiểu -> 4=Cấm): <b id="val2"></b></label>
+   <input id="tierSel" type="range" min="1" max="4" step="1" value="3">
+  </div>
+  <svg id="curve" viewBox="0 0 440 262" role="img" aria-label="Đường cong chế tài tối đa theo tầng rủi ro EU AI Act kèm khung kiểm định chỉ số DI"></svg>
+  <p class="note">Điểm tròn màu hổ phách đánh dấu tầng đang chọn trên đường cong chế tài; khung bên phải chiếu ngưỡng công bằng tối thiểu (quy tắc bốn phần năm) và hai chỉ số DI đo được trong Lab (trước/sau xử lý thiên kiến).</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mtext>Tuân thủ High-Risk</mtext><mo>&#8660;</mo><mrow><mo>(</mo><mi>Score</mi><mo>&#8805;</mo><mn>80,0</mn><mtext>%</mtext><mo>)</mo></mrow><mo>&#8743;</mo><mrow><mo>(</mo><mi>DI</mi><mo>&#8805;</mo><mn>0,80</mn><mo>)</mo></mrow></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_kiem_tra_thien_vi_ai_bias_audit.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_kiem_tra_thien_vi_ai_bias_audit.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Số tầng phân loại rủi ro trong Đạo luật AI Châu Âu (EU AI Act) <span class="sub">(n_eu_tiers)</span></td><td class="ro hi">4</td></tr>
+<tr><td><code>[M02]</code> Mức phạt tối đa cho hành vi AI bị nghiêm cấm (triệu EUR) <span class="sub">(fine_unacceptable_eur_m)</span></td><td class="ro hi">35,0</td></tr>
+<tr><td><code>[M03]</code> Mức phạt theo % tổng doanh thu toàn cầu cho hành vi bị cấm (%) <span class="sub">(fine_unacceptable_pct)</span></td><td class="ro hi">7,0</td></tr>
+<tr><td><code>[M04]</code> Mức phạt tối đa khi vi phạm nghĩa vụ hệ thống Rủi ro cao (triệu EUR) <span class="sub">(fine_highrisk_eur_m)</span></td><td class="ro hi">15,0</td></tr>
+<tr><td><code>[M05]</code> Mức phạt % doanh thu toàn cầu cho vi phạm Rủi ro cao (%) <span class="sub">(fine_highrisk_pct)</span></td><td class="ro hi">3,0</td></tr>
+<tr><td><code>[M06]</code> Mức phạt khi cung cấp thông tin sai lệch cho cơ quan quản lý (triệu EUR) <span class="sub">(fine_info_eur_m)</span></td><td class="ro hi">7,5</td></tr>
+<tr><td><code>[M07]</code> Mức phạt % doanh thu khi cung cấp thông tin sai lệch (%) <span class="sub">(fine_info_pct)</span></td><td class="ro hi">1,5</td></tr>
+<tr><td><code>[M08]</code> Ngưỡng điểm kiểm định tối thiểu để đạt cổng kịch bản hệ thống High-Risk (%) <span class="sub">(high_risk_pass_score)</span></td><td class="ro hi">80,0</td></tr>
+<tr><td><code>[M09]</code> Ngưỡng công bằng tối thiểu Disparate Impact <span class="sub">(four_fifths_rule)</span></td><td class="ro hi">0,8</td></tr>
+<tr><td><code>[M10]</code> Chỉ số Disparate Impact trước khi loại bỏ biến nhạy cảm <span class="sub">(di_biased)</span></td><td class="ro hi">0,918</td></tr>
+<tr><td><code>[M11]</code> Chỉ số Disparate Impact sau khi chuẩn hóa công bằng <span class="sub">(di_fair)</span></td><td class="ro hi">0,9823</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Theo Đạo luật AI Châu Âu (EU AI Act), hệ thống AI điều khiển phanh tự động phương tiện giao thông hoặc chấm điểm tuyển dụng nhân sự thuộc tầng rủi ro nào?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Rủi ro cao (High-Risk) — được phép triển khai nhưng bắt buộc phải qua kiểm định độ an toàn, minh bạch dữ liệu và có con người giám sát (Human-in-the-loop)</button><button class="opt" type="button" data-v="q1_2">Rủi ro tối thiểu (Minimal Risk) như bộ lọc thư rác</button><button class="opt" type="button" data-v="q1_3">Rủi ro không thể chấp nhận (Unacceptable Risk) — bị cấm hoàn toàn</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Mức phạt hành chính cao nhất theo EU AI Act đối với doanh nghiệp triển khai các hệ thống AI bị nghiêm cấm (Unacceptable Risk) là bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Lên tới 35,0 triệu EUR hoặc 7,0% tổng doanh thu toàn cầu hàng năm (tùy mức nào cao hơn)</button><button class="opt" type="button" data-v="q2_2">Phạt cảnh cáo 1.000 EUR</button><button class="opt" type="button" data-v="q2_3">Không có chế tài tài chính</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Đối với các hệ thống AI Rủi ro giới hạn (Limited Risk) như Chatbot CSKH hoặc ảnh/video do AI tạo sinh (Deepfake), nghĩa vụ pháp lý cốt lõi là gì?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Nghĩa vụ minh bạch (Transparency): phải thông báo rõ cho người dùng biết họ đang tương tác với AI và gắn nhãn nhận diện (Digital Watermarking) cho nội dung do AI sinh ra</button><button class="opt" type="button" data-v="q3_2">Cấm mọi Chatbot hoạt động trên Internet</button><button class="opt" type="button" data-v="q3_3">Không cần thông báo gì cho khách hàng</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_kiem_tra_thien_vi_ai_bias_audit.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10,11,12,13],"vars":{"n_eu_tiers":4,"fine_unacceptable_eur_m":35.0,"fine_unacceptable_pct":7.0,"fine_highrisk_eur_m":15.0,"fine_highrisk_pct":3.0,"fine_info_eur_m":7.5,"fine_info_pct":1.5,"high_risk_pass_score":80.0,"four_fifths_rule":0.8,"di_biased":0.918,"di_fair":0.9823},"derived":{}};
+const V = LAB.vars;
+const vi = (x, nd) => {
+  const a = Math.round(Math.abs(+x) * Math.pow(10, nd)) / Math.pow(10, nd);
+  const p = a.toFixed(nd).split('.');
+  const ip = p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (+x < 0 ? '-' : '') + ip + (nd > 0 ? ',' + p[1] : '');
+};
+const pct = (x, nd) => vi(x, nd) + '%';
+const TIERS = [
+  { n: 'Nghiêm cấm', eur: +V.fine_unacceptable_eur_m, p: +V.fine_unacceptable_pct, c: 'var(--táo)' },
+  { n: 'Rủi ro cao', eur: +V.fine_highrisk_eur_m, p: +V.fine_highrisk_pct, c: 'var(--cam)' },
+  { n: 'Minh bạch', eur: +V.fine_info_eur_m, p: +V.fine_info_pct, c: 'var(--new)' },
+  { n: 'Rủi ro tối thiểu', eur: 0, p: null, c: 'var(--ok)' }
+];
+const T2 = ['Tối thiểu', 'Minh bạch', 'Rủi ro cao', 'Nghiêm cấm'];
+const FB = {1:{"q1_1":["Ch\u00ednh x\u00e1c! Vi ph\u1ea1m ngh\u0129a v\u1ee5 High-Risk c\u00f3 th\u1ec3 b\u1ecb ph\u1ea1t t\u1edbi 15,0 tri\u1ec7u EUR ho\u1eb7c 3,0% doanh thu to\u00e0n c\u1ea7u.",1],"q1_2":["Sai: giao th\u00f4ng v\u00e0 tuy\u1ec3n d\u1ee5ng \u1ea3nh h\u01b0\u1edfng tr\u1ef1c ti\u1ebfp \u0111\u1ebfn t\u00ednh m\u1ea1ng v\u00e0 sinh k\u1ebf con ng\u01b0\u1eddi.",0],"q1_3":["Sai: ch\u1ec9 c\u00e1c h\u1ec7 th\u1ed1ng ch\u1ea5m \u0111i\u1ec3m c\u00f4ng d\u00e2n (Social Scoring) ho\u1eb7c thao t\u00fang h\u00e0nh vi v\u00f4 th\u1ee9c m\u1edbi b\u1ecb c\u1ea5m tuy\u1ec7t \u0111\u1ed1i.",0]},2:{"q2_1":["\u0110\u00fang! \u0110\u00e2y l\u00e0 m\u1ee9c ch\u1ebf t\u00e0i nghi\u00eam kh\u1eafc h\u01a1n c\u1ea3 GDPR (4% doanh thu).",1],"q2_2":["Sai.",0],"q2_3":["Sai.",0]},3:{"q3_1":["Ch\u00ednh x\u00e1c! Ng\u01b0\u1eddi d\u00f9ng c\u00f3 quy\u1ec1n \u0111\u01b0\u1ee3c bi\u1ebft n\u1ed9i dung hay cu\u1ed9c h\u1ed9i tho\u1ea1i \u0111\u00f3 l\u00e0 do m\u00e1y t\u1ea1o ra.",1],"q3_2":["Sai.",0],"q3_3":["Sai.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function renderTab1(){
+  const v1 = +$('#compSel').value;
+  $('#val1').textContent = vi(v1, 0) + ' / 100';
+  const pass = +V.high_risk_pass_score;
+  const okGate = v1 >= pass;
+  const gateCol = okGate ? 'var(--ok)' : 'var(--táo)';
+  const chips = [
+    [vi(V.n_eu_tiers, 0), 'Tầng rủi ro EU AI Act'],
+    [vi(V.fine_unacceptable_eur_m, 1), 'Phạt tối đa hành vi nghiêm cấm (triệu EUR)'],
+    [vi(V.high_risk_pass_score, 1), 'Ngưỡng điểm kịch bản High-Risk (%)'],
+    [vi(v1, 0), 'Điểm tuân thủ đang chọn (%)']
+  ];
+  $('#stat1').innerHTML = chips.map(c => `<div class="chip"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></div>`).join('');
+  const x0 = 44, bY = 214, tY = 34, pR = 330, maxF = +V.fine_unacceptable_eur_m;
+  const y = v => bY - (v / maxF) * (bY - tY);
+  let s = '';
+  [0, 10, 20, 30].forEach(g => {
+    s += `<line class="ln" x1="${x0}" y1="${y(g).toFixed(1)}" x2="${pR}" y2="${y(g).toFixed(1)}"/>`;
+    s += `<text class="ax" x="${x0 - 6}" y="${(y(g) + 4).toFixed(1)}" text-anchor="end">${g}</text>`;
+  });
+  const px = [56, 128, 200, 272], bw = 46;
+  TIERS.forEach((t, i) => {
+    const h = Math.max(2.5, (t.eur / maxF) * (bY - tY));
+    const fill = t.n === 'Rủi ro cao' ? gateCol : t.c;
+    s += `<rect x="${px[i]}" y="${(bY - h).toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="5" fill="${fill}" opacity=".9"/>`;
+    s += `<text class="ax" x="${px[i] + bw / 2}" y="${(bY - h - 6).toFixed(1)}" text-anchor="middle" font-weight="700" fill="${fill}">${t.eur ? vi(t.eur, 1) : '0'}</text>`;
+    s += `<text class="ax" x="${px[i] + bw / 2}" y="230" text-anchor="middle">${t.n}</text>`;
+    s += `<text class="ax" x="${px[i] + bw / 2}" y="245" text-anchor="middle">${t.p == null ? '—' : pct(t.p, 1) + ' DT'}</text>`;
+  });
+  const gx = 366, gw = 12, gyT = 40, gyB = 214;
+  const sy = sc => gyB - (sc / 100) * (gyB - gyT);
+  s += `<rect x="${gx}" y="${gyT}" width="${gw}" height="${gyB - gyT}" rx="4" fill="none" stroke="var(--line2)"/>`;
+  s += `<rect x="${gx}" y="${sy(v1).toFixed(1)}" width="${gw}" height="${(gyB - sy(v1)).toFixed(1)}" rx="4" fill="${gateCol}" opacity=".85"/>`;
+  s += `<line x1="${gx - 12}" y1="${sy(pass).toFixed(1)}" x2="${gx + gw + 8}" y2="${sy(pass).toFixed(1)}" stroke="var(--acc)" stroke-dasharray="4 3"/>`;
+  s += `<text class="ax" x="${gx + gw + 11}" y="${(sy(pass) + 4).toFixed(1)}" fill="var(--acc)" font-weight="700">${vi(pass, 1)}</text>`;
+  s += `<text class="ax" x="${gx + gw + 11}" y="${(sy(pass) - 10).toFixed(1)}">ngưỡng</text>`;
+  s += `<text class="ax" x="${gx - 4}" y="${(sy(v1) - 5).toFixed(1)}" text-anchor="end" font-weight="700" fill="${gateCol}">${vi(v1, 0)}</text>`;
+  s += `<text class="ax" x="${gx + gw / 2}" y="230" text-anchor="middle">Điểm</text>`;
+  s += `<text class="ax" x="${gx + gw / 2}" y="245" text-anchor="middle">tuân thủ</text>`;
+  const ann = okGate
+    ? `Score ${vi(v1, 0)} ≥ ${vi(pass, 1)} · DI ${vi(V.di_biased, 3)} ≥ ${vi(V.four_fifths_rule, 2)} → High-Risk đủ điều kiện cấp phép`
+    : `Score ${vi(v1, 0)} dưới ${vi(pass, 1)} → chưa cấp phép · phơi nhiễm ${vi(V.fine_highrisk_eur_m, 1)} tr EUR / ${pct(V.fine_highrisk_pct, 1)}`;
+  s += `<text class="ax" x="${x0}" y="21" font-weight="700" fill="${gateCol}">${ann}</text>`;
+  s += `<text class="ax" x="${x0}" y="263">Đơn vị cột: triệu EUR · "DT" = % doanh thu toàn cầu</text>`;
+  $('#plot').innerHTML = s;
+  const rows = [
+    ['Số tầng rủi ro EU AI Act', vi(V.n_eu_tiers, 0)],
+    ['Mức phạt tối đa — hành vi bị nghiêm cấm (triệu EUR)', vi(V.fine_unacceptable_eur_m, 1)],
+    ['Mức phạt theo % doanh thu toàn cầu — hành vi bị cấm', pct(V.fine_unacceptable_pct, 1)],
+    ['Mức phạt tối đa — vi phạm nghĩa vụ Rủi ro cao (triệu EUR)', vi(V.fine_highrisk_eur_m, 1)],
+    ['Ngưỡng điểm tối thiểu cấp phép High-Risk (%)', vi(V.high_risk_pass_score, 1)],
+    ['Điểm tuân thủ High-Risk đang chọn (%)', vi(v1, 0)]
+  ];
+  $('#liveTable tbody').innerHTML = rows.map(r => `<tr><td>${esc(r[0])}</td><td class="ro hi">${esc(r[1])}</td></tr>`).join('');
+  $('#insight1').innerHTML = okGate
+    ? `Điểm tuân thủ <b>${esc(vi(v1, 0))}</b> ≥ ngưỡng <b>${esc(vi(V.high_risk_pass_score, 1))}%</b> và DI <b>${esc(vi(V.di_biased, 3))}</b> đạt quy tắc bốn phần năm (<b>${esc(vi(V.four_fifths_rule, 2))}</b>) → hệ thống High-Risk đủ điều kiện cấp phép; phơi nhiễm tối đa nếu vi phạm: <b>${esc(vi(V.fine_highrisk_eur_m, 1))} triệu EUR</b> hoặc <b>${esc(pct(V.fine_highrisk_pct, 1))}</b> doanh thu.`
+    : `Điểm tuân thủ <b>${esc(vi(v1, 0))}</b> dưới ngưỡng <b>${esc(vi(V.high_risk_pass_score, 1))}%</b> → High-Risk chưa được cấp phép; phơi nhiễm tối đa <b>${esc(vi(V.fine_highrisk_eur_m, 1))} triệu EUR</b> hoặc <b>${esc(pct(V.fine_highrisk_pct, 1))}</b> doanh thu.`;
+}
+
+function renderTab2(){
+  const v2 = +$('#tierSel').value;
+  const i = v2 - 1;
+  $('#val2').textContent = `${v2} · ${T2[i]}`;
+  const fine = [0, +V.fine_info_eur_m, +V.fine_highrisk_eur_m, +V.fine_unacceptable_eur_m];
+  const x0 = 40, bY = 206, tY = 52, pR = 286, maxF = +V.fine_unacceptable_eur_m;
+  const y = v => bY - (v / maxF) * (bY - tY);
+  const cx = k => 52 + k * 72;
+  const pts = fine.map((v, k) => `${cx(k)},${y(v).toFixed(1)}`).join(' ');
+  let s = `<line class="ln" x1="${x0}" y1="${bY}" x2="${pR + 6}" y2="${bY}"/>`;
+  s += `<line class="ln" x1="${x0}" y1="${y(maxF).toFixed(1)}" x2="${pR}" y2="${y(maxF).toFixed(1)}" stroke-dasharray="3 4"/>`;
+  s += `<text class="ax" x="${x0 - 6}" y="${(y(maxF) + 4).toFixed(1)}" text-anchor="end">${vi(maxF, 0)}</text>`;
+  s += `<text class="ax" x="${x0 - 6}" y="${bY + 4}" text-anchor="end">0</text>`;
+  s += `<text class="ax" x="${x0}" y="20" fill="var(--acc)" font-weight="700">triệu EUR</text>`;
+  s += `<polyline fill="none" stroke="var(--acc)" stroke-width="2.5" points="${pts}"/>`;
+  fine.forEach((v, k) => {
+    s += `<circle cx="${cx(k)}" cy="${y(v).toFixed(1)}" r="3.5" fill="var(--acc)"/>`;
+    s += `<text class="ax" x="${cx(k)}" y="${(y(v) - 9).toFixed(1)}" text-anchor="middle">${v ? vi(v, 1) : '0'}</text>`;
+    s += `<text class="ax" x="${cx(k)}" y="${bY + 16}" text-anchor="middle">${T2[k]}</text>`;
+  });
+  s += `<line x1="${cx(i)}" y1="${y(fine[i]).toFixed(1)}" x2="${cx(i)}" y2="${bY}" stroke="var(--cam)" stroke-dasharray="4 3"/>`;
+  s += `<circle cx="${cx(i)}" cy="${y(fine[i]).toFixed(1)}" r="7.5" fill="var(--cam)" stroke="var(--plot)" stroke-width="2.5"/>`;
+  const head = ['Tầng 1 · Tối thiểu — không có nghĩa vụ pháp lý riêng',
+    'Tầng 2 · Minh bạch — nghĩa vụ khai báo, gắn nhãn',
+    `Tầng 3 · Rủi ro cao — chế tài tối đa ${vi(V.fine_highrisk_eur_m, 1)} tr EUR / ${pct(V.fine_highrisk_pct, 1)}`,
+    `Tầng 4 · Nghiêm cấm — chế tài tối đa ${vi(V.fine_unacceptable_eur_m, 1)} tr EUR / ${pct(V.fine_unacceptable_pct, 1)}`][i];
+  const det = ['Không có chế tài riêng; mọi hệ thống chịu nghĩa vụ chung về minh bạch AI',
+    `Khai báo sai với cơ quan quản lý: tới ${vi(V.fine_info_eur_m, 1)} tr EUR hoặc ${pct(V.fine_info_pct, 1)} doanh thu`,
+    `Cần Score ≥ ${vi(V.high_risk_pass_score, 1)}% và DI ≥ ${vi(V.four_fifths_rule, 2)} (quy tắc bốn phần năm) để được cấp phép`,
+    'Bị cấm tuyệt đối: chấm điểm công dân, thao túng hành vi, sinh nhận dạng'][i];
+  s += `<text class="ax" x="${x0}" y="36" font-weight="700" fill="var(--cam)">${head}</text>`;
+  s += `<text class="ax" x="${x0}" y="${bY + 34}">${det}</text>`;
+  const iX = 308, iW = 124, iT = 70, iB = 206;
+  const dY = d => iB - ((d - 0.7) / 0.3) * (iB - iT);
+  s += `<rect x="${iX}" y="${iT}" width="${iW}" height="${iB - iT}" rx="8" fill="none" stroke="var(--line)"/>`;
+  s += `<rect x="${iX + 1}" y="${dY(V.four_fifths_rule).toFixed(1)}" width="${iW - 2}" height="${(iB - dY(V.four_fifths_rule)).toFixed(1)}" fill="var(--táo)" opacity=".1"/>`;
+  s += `<text class="ax" x="${iX + iW / 2}" y="${iT - 7}" text-anchor="middle" fill="var(--acc)" font-weight="700">Chỉ số DI</text>`;
+  s += `<line x1="${iX + 1}" y1="${dY(V.four_fifths_rule).toFixed(1)}" x2="${iX + iW - 1}" y2="${dY(V.four_fifths_rule).toFixed(1)}" stroke="var(--acc)" stroke-dasharray="4 3"/>`;
+  s += `<text class="ax" x="${iX + 6}" y="${(dY(V.four_fifths_rule) - 6).toFixed(1)}" fill="var(--acc)" font-weight="700">${vi(V.four_fifths_rule, 2)}</text>`;
+  const xB = iX + 28, xF = iX + 84;
+  s += `<circle cx="${xB}" cy="${dY(V.di_biased).toFixed(1)}" r="4" fill="var(--new)"/>`;
+  s += `<text class="ax" x="${xB}" y="${(dY(V.di_biased) - 9).toFixed(1)}" text-anchor="middle" fill="var(--new)">${vi(V.di_biased, 3)}</text>`;
+  s += `<text class="ax" x="${xB}" y="${(dY(V.di_biased) + 16).toFixed(1)}" text-anchor="middle">trước XL</text>`;
+  s += `<circle cx="${xF}" cy="${dY(V.di_fair).toFixed(1)}" r="4" fill="var(--ok)"/>`;
+  s += `<text class="ax" x="${xF}" y="${(dY(V.di_fair) + 16).toFixed(1)}" text-anchor="middle" fill="var(--ok)">${vi(V.di_fair, 4)}</text>`;
+  s += `<text class="ax" x="${xF}" y="${(dY(V.di_fair) - 9).toFixed(1)}" text-anchor="middle">sau XL</text>`;
+  s += `<text class="ax" x="${iX + iW / 2}" y="222" text-anchor="middle">vùng tô = vi phạm 4/5</text>`;
+  $('#curve').innerHTML = s;
+  const chips2 = [
+    [`${v2} · ${T2[i]}`, 'Tầng rủi ro đang chọn'],
+    [vi(V.fine_highrisk_eur_m, 1), 'Chế tài Rủi ro cao (triệu EUR)'],
+    [pct(V.fine_highrisk_pct, 1), 'Chế tài Rủi ro cao (% DT)'],
+    [vi(V.high_risk_pass_score, 1), 'Ngưỡng điểm kịch bản (%)'],
+    [vi(V.four_fifths_rule, 2), 'Ngưỡng DI tối thiểu'],
+    [vi(V.di_fair, 4), 'DI sau chuẩn hóa']
+  ];
+  $('#stat2').innerHTML = chips2.map(c => `<div class="chip"><b>${esc(c[0])}</b><span>${esc(c[1])}</span></div>`).join('');
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#compSel').oninput = renderTab1;
+$('#tierSel').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#compSel').value = 85; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#compSel').value = 85;
+  $('#tierSel').value = 3;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

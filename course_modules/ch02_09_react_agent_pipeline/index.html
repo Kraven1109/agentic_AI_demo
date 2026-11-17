@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Tự động hóa báo giá tour du lịch cho nhóm khách (đơn giá cơ bản 15,0 triệu VNĐ/khách, chiết khấu 10% trên giá tour cơ bản khi đi từ 3 khách trở lên, cộng phụ phí 1,2 triệu VNĐ/khách) bằng AI Tác tử theo chu trình Suy luận – Hành động – Quan sát (ReAct) gắn với 6 giai đoạn dự án CRISP-DM.">
+<title>Từ Mô hình đến Sản phẩm: Vòng lặp ReAct Agent & 6 pha CRISP-DM — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 2 · AI Tác tử (Vòng lặp ReAct) & Quy trình CRISP-DM</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Từ Mô hình đến Sản phẩm: Vòng lặp ReAct Agent & 6 pha CRISP-DM</span></h1>
+<p class="lede">Bài toán thực tế: Tự động hóa báo giá tour du lịch cho nhóm khách (đơn giá cơ bản 15,0 triệu VNĐ/khách, chiết khấu 10% trên giá tour cơ bản khi đi từ 3 khách trở lên, cộng phụ phí 1,2 triệu VNĐ/khách) bằng AI Tác tử theo chu trình Suy luận – Hành động – Quan sát (ReAct) gắn với 6 giai đoạn dự án CRISP-DM.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>Cơ cấu chi phí báo giá tour theo số khách (báo giá Agent tạo ra)</h2>
+  <div class="ctl">
+   <label for="contSel" class="note">Số khách trong nhóm đặt tour: <b id="val1"></b></label>
+   <input id="contSel" type="range" min="1" max="10" step="1" value="3">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (3)</button>
+  </div>
+  <svg id="plot" viewBox="0 0 440 270" role="img" aria-label="Biểu đồ cơ cấu chi phí báo giá tour: tour cơ bản, chiết khấu, phí xử lý và tổng phí theo số khách"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>C</mi><mtext>tổng</mtext></msub><mo>=</mo><mi>N</mi><mo>&#8901;</mo><msub><mi>c</mi><mtext>cơ bản</mtext></msub><mo>(</mo><mn>1</mn><mo>&#8722;</mo><mi>d</mi><mo>)</mo><mo>+</mo><mi>N</mi><mo>&#8901;</mo><msub><mi>c</mi><mtext>phụ phí</mtext></msub></math></div>
+  <p class="note">Kéo thanh trượt hoặc bấm nút mặc định để đối chiếu trực tiếp với các mốc tính toán trong tệp <code>01_prompt_engineering_thuc_chien.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích Agent theo pha · thanh trượt chọn pha hiện tại</span>
+  <h2>Tiến trình 6 pha CRISP-DM &amp; độ chính xác khi Agent có / không dùng Tool</h2>
+  <div class="ctl">
+   <label for="phaseSel" class="note">Pha CRISP-DM đang xem (1 -> 6): <b id="val2"></b></label>
+   <input id="phaseSel" type="range" min="1" max="6" step="1" value="6">
+  </div>
+  <svg id="curve" viewBox="0 0 440 250" role="img" aria-label="Tiến trình 6 pha CRISP-DM và so sánh độ chính xác khi Agent ReAct gọi Tool so với LLM thuần không Tool"></svg>
+  <p class="note">Pha đã hoàn thành tô xanh, pha đang xem tô cam. Trong kịch bản chuẩn của Lab, Agent ReAct gọi Tool đặt mốc 98,5% chính xác, cao hơn hẳn 76,0% khi LLM tự tính nhẩm (ảo giác số học 24,0%).</p>
+  <p class="note" id="insight2"></p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mtext>ReAct</mtext><mo>:</mo><mspace width="0.5em"/><msub><mi>Thought</mi><mi>t</mi></msub><mo>&#8594;</mo><msub><mi>Action</mi><mi>t</mi></msub><mo>(</mo><mtext>Tool</mtext><mo>)</mo><mo>&#8594;</mo><msub><mi>Observation</mi><mi>t</mi></msub><mo>&#8594;</mo><mtext>Answer</mtext></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_prompt_engineering_thuc_chien.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_prompt_engineering_thuc_chien.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Số khách trong nhóm đặt tour chuẩn của lab <span class="sub">(n_containers)</span></td><td class="ro hi">3</td></tr>
+<tr><td><code>[M02]</code> Giá tour cơ bản mỗi khách (triệu VNĐ / khách) <span class="sub">(base_rate_m)</span></td><td class="ro hi">15,0</td></tr>
+<tr><td><code>[M03]</code> Tổng giá tour cơ bản trước chiết khấu của 3 khách (triệu VNĐ) <span class="sub">(gross_cost_m)</span></td><td class="ro hi">45,0</td></tr>
+<tr><td><code>[M04]</code> Tỷ lệ chiết khấu khi đi từ 3 khách trở lên (%) <span class="sub">(discount_pct)</span></td><td class="ro hi">10,0</td></tr>
+<tr><td><code>[M05]</code> Số tiền được chiết khấu trên giá tour cơ bản (triệu VNĐ) <span class="sub">(discount_m)</span></td><td class="ro hi">4,5</td></tr>
+<tr><td><code>[M06]</code> Giá tour cơ bản sau chiết khấu (triệu VNĐ) <span class="sub">(net_freight_m)</span></td><td class="ro hi">40,5</td></tr>
+<tr><td><code>[M07]</code> Phụ phí (phòng đơn, bảo hiểm) mỗi khách (triệu VNĐ) <span class="sub">(handling_fee_m)</span></td><td class="ro hi">1,2</td></tr>
+<tr><td><code>[M08]</code> Tổng phụ phí của 3 khách (triệu VNĐ) <span class="sub">(total_handling_m)</span></td><td class="ro hi">3,6</td></tr>
+<tr><td><code>[M09]</code> Tổng chi phí thanh toán cuối cùng (triệu VNĐ) <span class="sub">(final_total_m)</span></td><td class="ro hi">44,1</td></tr>
+<tr><td><code>[M10]</code> Số bước chuẩn trong chu trình suy luận - hành động ReAct <span class="sub">(n_react_steps)</span></td><td class="ro hi">4</td></tr>
+<tr><td><code>[M11]</code> Số pha chuẩn trong quy trình dự án dữ liệu CRISP-DM <span class="sub">(n_crispdm_phases)</span></td><td class="ro hi">6</td></tr>
+<tr><td><code>[M12]</code> Độ chính xác tính toán khi Agent gọi công cụ Python/Calculator (%) <span class="sub">(acc_react_tool_pct)</span></td><td class="ro hi">98,5</td></tr>
+<tr><td><code>[M13]</code> Tỷ lệ tính nhẩm sai (ảo giác số học) khi LLM không dùng Tool (%) <span class="sub">(halluc_zeroshot_pct)</span></td><td class="ro hi">24,0</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Với nhóm 3 khách đặt tour (giá tour cơ bản 15,0 triệu/khách, chiết khấu 10% trên giá tour cơ bản khi từ 3 khách trở lên, phụ phí 1,2 triệu/khách), tổng tiền phải thanh toán là bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">44,1 triệu VNĐ (40,5 triệu giá tour sau giảm + 3,6 triệu phụ phí)</button><button class="opt" type="button" data-v="q1_2">45,0 triệu VNĐ</button><button class="opt" type="button" data-v="q1_3">43,74 triệu VNĐ (giảm 10% trên cả phụ phí)</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Điểm khác biệt cốt lõi giữa một AI Agent theo cơ chế ReAct và một Chatbot LLM thông thường là gì?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">AI Agent biết tự lập kế hoạch (Thought), chủ động gọi công cụ/API bên ngoài (Action) và đọc kết quả trả về (Observation) trước khi kết luận</button><button class="opt" type="button" data-v="q2_2">AI Agent không sử dụng mô hình ngôn ngữ</button><button class="opt" type="button" data-v="q2_3">AI Agent chỉ trả lời bằng thơ</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Trong 6 pha của quy trình CRISP-DM, pha đầu tiên quyết định sự thành bại của dự án AI thực tế là pha nào?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Thấu hiểu bài toán nghiệp vụ (Business Understanding) trước khi thu thập và chuẩn bị dữ liệu</button><button class="opt" type="button" data-v="q3_2">Triển khai hệ thống (Deployment) ngay khi chưa có dữ liệu</button><button class="opt" type="button" data-v="q3_3">Huấn luyện mạng sâu nhất có thể bất kể dữ liệu rác</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_prompt_engineering_thuc_chien.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[10],"vars":{"n_containers":3,"base_rate_m":15.0,"gross_cost_m":45.0,"discount_pct":10.0,"discount_m":4.5,"net_freight_m":40.5,"handling_fee_m":1.2,"total_handling_m":3.6,"final_total_m":44.1,"n_react_steps":4,"n_crispdm_phases":6,"acc_react_tool_pct":98.5,"halluc_zeroshot_pct":24.0},"derived":{}};
+const V = LAB.vars;
+const KEYS = ["n_containers", "base_rate_m", "gross_cost_m", "discount_pct", "discount_m", "net_freight_m", "handling_fee_m", "total_handling_m", "final_total_m", "n_react_steps", "n_crispdm_phases", "acc_react_tool_pct", "halluc_zeroshot_pct"];
+const LABELS = {"n_containers": "Số khách trong nhóm đặt tour chuẩn của lab", "base_rate_m": "Giá tour cơ bản mỗi khách (triệu VNĐ / khách)", "gross_cost_m": "Tổng giá tour cơ bản trước chiết khấu của 3 khách (triệu VNĐ)", "discount_pct": "Tỷ lệ chiết khấu khi đi từ 3 khách trở lên (%)", "discount_m": "Số tiền được chiết khấu trên giá tour cơ bản (triệu VNĐ)", "net_freight_m": "Giá tour cơ bản sau chiết khấu (triệu VNĐ)", "handling_fee_m": "Phụ phí (phòng đơn, bảo hiểm) mỗi khách (triệu VNĐ)", "total_handling_m": "Tổng phụ phí của 3 khách (triệu VNĐ)", "final_total_m": "Tổng chi phí thanh toán cuối cùng (triệu VNĐ)", "n_react_steps": "Số bước chuẩn trong chu trình suy luận - hành động ReAct", "n_crispdm_phases": "Số pha chuẩn trong quy trình dự án dữ liệu CRISP-DM", "acc_react_tool_pct": "Độ chính xác tính toán khi Agent gọi công cụ Python/Calculator (%)", "halluc_zeroshot_pct": "Tỷ lệ tính nhẩm sai (ảo giác số học) khi LLM không dùng Tool (%)"};
+const FB = {1:{"q1_1":["Ch\u00ednh x\u00e1c! Gi\u00e1 tour c\u01a1 b\u1ea3n = 45,0 tri\u1ec7u; gi\u1ea3m 10% = 4,5 tri\u1ec7u -> c\u00f2n 40,5 tri\u1ec7u; c\u1ed9ng 3 x 1,2 = 3,6 tri\u1ec7u ph\u1ee5 ph\u00ed = 44,1 tri\u1ec7u VN\u0110.",1],"q1_2":["Sai: ch\u01b0a tr\u1eeb chi\u1ebft kh\u1ea5u v\u00e0 ch\u01b0a c\u1ed9ng ph\u1ee5 ph\u00ed.",0],"q1_3":["Sai: quy \u0111\u1ecbnh ch\u1ec9 chi\u1ebft kh\u1ea5u 10% tr\u00ean c\u01b0\u1edbc c\u01a1 b\u1ea3n, kh\u00f4ng gi\u1ea3m tr\u00ean ph\u1ee5 ph\u00ed.",0]},2:{"q2_1":["\u0110\u00fang! Nh\u1edd g\u1ecdi c\u00f4ng c\u1ee5 t\u00ednh to\u00e1n v\u00e0 tra c\u1ee9u DB, \u0111\u1ed9 ch\u00ednh x\u00e1c \u0111\u1ea1t 98,5% thay v\u00ec b\u1ecb 24,0% l\u1ed7i t\u00ednh nh\u1ea9m.",1],"q2_2":["Sai: LLM \u0111\u00f3ng vai tr\u00f2 b\u1ed9 n\u00e3o \u0111i\u1ec1u ph\u1ed1i trung t\u00e2m c\u1ee7a Agent.",0],"q2_3":["Sai.",0]},3:{"q3_1":["Ch\u00ednh x\u00e1c! Kh\u00f4ng hi\u1ec3u \u0111\u00fang m\u1ee5c ti\u00eau nghi\u1ec7p v\u1ee5 th\u00ec m\u00f4 h\u00ecnh c\u00f3 R^2 cao c\u0169ng kh\u00f4ng gi\u1ea3i quy\u1ebft \u0111\u00fang b\u00e0i to\u00e1n th\u1ef1c t\u1ebf.",1],"q3_2":["Sai: Deployment l\u00e0 pha th\u1ee9 6.",0],"q3_3":["Sai: Garbage In, Garbage Out.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const vi1 = x => (x < 0 ? '-' : '') + (Math.round(Math.abs(x) * 10) / 10).toFixed(1).replace('.', ',');
+const sgn = v => (v > 0 ? '-' : '') + vi1(v);
+
+function tourCost(n){
+  const gross = n * V.base_rate_m;
+  const disc = n >= 3 ? gross * V.discount_pct / 100 : 0;
+  const net = gross - disc;
+  const handle = n * V.handling_fee_m;
+  return { n, gross, disc, net, handle, total: net + handle };
+}
+
+function renderTab1(){
+  const n = +$('#contSel').value;
+  $('#val1').textContent = String(n);
+  const c = tourCost(n);
+  $('#stat1').innerHTML = [
+    [String(n), 'Số khách trong nhóm (N)'],
+    [vi1(V.base_rate_m), 'Giá tour cơ bản mỗi khách'],
+    [sgn(c.disc), 'Chiết khấu đã trừ'],
+    [vi1(c.total), 'Tổng phí phải trả (triệu VNĐ)']
+  ].map(([v, l]) => `<div class="chip"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  const ymax = Math.max(c.gross, c.total, 1);
+  const bars = [
+    ['Tour cơ bản', c.gross, 'var(--acc)'],
+    ['Chiết khấu', -c.disc, 'var(--táo)'],
+    ['Phí xử lý', c.handle, 'var(--ok)'],
+    ['Tổng phí', c.total, 'var(--cam)']
+  ];
+  const base = 214, plotH = 158;
+  let svg = `<line class="ln" x1="42" y1="${base}" x2="424" y2="${base}"/>`;
+  svg += `<line class="ln" x1="42" y1="${base}" x2="42" y2="${base - plotH}"/>`;
+  svg += `<text class="ax" x="38" y="${base - plotH + 4}" text-anchor="end">${esc(vi1(ymax))}</text>`;
+  svg += `<text class="ax" x="56" y="22">đơn vị: triệu VNĐ</text>`;
+  bars.forEach(([lab, val, col], i) => {
+    const a = Math.abs(val);
+    const h = Math.max(2.5, (a / ymax) * plotH);
+    const x = 56 + i * 95, y = base - h;
+    svg += `<rect x="${x}" y="${y.toFixed(1)}" width="70" height="${h.toFixed(1)}" rx="6" fill="${col}" opacity=".88"/>`;
+    svg += `<text class="ax" x="${x + 35}" y="${(y - 6).toFixed(1)}" text-anchor="middle" font-weight="700">${esc((val < 0 ? '-' : '') + vi1(a))}</text>`;
+    svg += `<text class="ax" x="${x + 35}" y="${base + 17}" text-anchor="middle">${esc(lab)}</text>`;
+  });
+  const cap = n >= 3
+    ? `Đang áp dụng chiết khấu ${esc(vi1(V.discount_pct))}% cho nhóm ${n} khách (mốc chuẩn của lab: ${V.n_containers} khách)`
+    : `Nhóm ${n} khách dưới mốc tối thiểu - chưa được chiết khấu (0%)`;
+  svg += `<text class="ax" x="42" y="258">${cap}</text>`;
+  $('#plot').innerHTML = svg;
+  $('#liveTable tbody').innerHTML = [
+    ['Số khách trong nhóm (N)', String(n)],
+    ['Giá tour cơ bản mỗi khách', vi1(V.base_rate_m)],
+    ['Tổng giá tour cơ bản trước chiết khấu', vi1(c.gross)],
+    ['Tỷ lệ chiết khấu (áp dụng khi N từ 3 khách trở lên)', n >= 3 ? vi1(V.discount_pct) + '%' : '0% (chưa đủ 3 khách)'],
+    ['Số tiền được chiết khấu', sgn(c.disc)],
+    ['Giá tour cơ bản sau chiết khấu', vi1(c.net)],
+    ['Phụ phí mỗi khách (phòng đơn, bảo hiểm)', vi1(V.handling_fee_m)],
+    ['Tổng phụ phí của cả nhóm', vi1(c.handle)],
+    ['Tổng chi phí thanh toán cuối cùng', vi1(c.total)]
+  ].map(([l, v]) => `<tr><td>${esc(l)}</td><td class="ro hi">${esc(v)}</td></tr>`).join('');
+  $('#insight1').innerHTML = n === V.n_containers
+    ? `Đang đúng mốc chuẩn của lab: ${n} khách, tổng thanh toán ${esc(vi1(c.total))} triệu VNĐ khớp tệp <code>01_prompt_engineering_thuc_chien.py</code>.`
+    : `Mốc chuẩn của lab là ${V.n_containers} khách với tổng thanh toán ${esc(vi1(V.final_total_m))} triệu VNĐ - kéo thanh trượt về ${V.n_containers} để đối chiếu.`;
+}
+
+const PHASES = [
+  'Thấu hiểu bài toán', 'Thu thập dữ liệu', 'Chuẩn bị dữ liệu',
+  'Mô hình hóa', 'Đánh giá', 'Triển khai'
+];
+
+function renderTab2(){
+  const k = +$('#phaseSel').value;
+  $('#val2').textContent = `${k} · ${PHASES[k - 1]}`;
+  const acc = V.acc_react_tool_pct, halluc = V.halluc_zeroshot_pct;
+  const noTool = 100 - halluc;
+  let svg = '';
+  PHASES.forEach((name, i) => {
+    const x = 26 + i * 67, done = i + 1 < k, cur = i + 1 === k;
+    const fill = cur ? 'var(--cam)' : done ? 'var(--acc)' : 'var(--plot)';
+    const op = cur ? 1 : done ? 0.82 : 1;
+    const ink = cur || done ? '#04121f' : 'var(--mut)';
+    svg += `<rect x="${x}" y="30" width="60" height="40" rx="9" fill="${fill}" opacity="${op}" stroke="${cur ? 'var(--cam)' : 'var(--line2)'}" stroke-width="${cur ? 2 : 1}"/>`;
+    const parts = name.split(' ');
+    const l1 = parts[0], l2 = parts.slice(1).join(' ');
+    const line1 = l2.length && l1.length + l2.length > 11 ? l1 : parts.slice(0, 2).join(' ');
+    const line2 = line1 === name ? '' : name.slice(line1.length + 1);
+    svg += `<text x="${x + 30}" y="44" text-anchor="middle" fill="${ink}" font-size="8" font-weight="700">P${i + 1}</text>`;
+    svg += `<text x="${x + 30}" y="${line2 ? 54 : 58}" text-anchor="middle" fill="${ink}" font-size="8">${esc(line1)}</text>`;
+    if (line2) svg += `<text x="${x + 30}" y="64" text-anchor="middle" fill="${ink}" font-size="8">${esc(line2)}</text>`;
+  });
+  const px1 = 56, px2 = 26 + (k - 1) * 67 + 30;
+  svg += `<line x1="${px1}" y1="84" x2="${px2}" y2="84" stroke="var(--acc)" stroke-width="3"/>`;
+  svg += `<circle cx="${px2}" cy="84" r="4.5" fill="var(--cam)"/>`;
+  svg += `<text class="ax" x="14" y="106">Độ chính xác khi trả lời câu hỏi số học:</text>`;
+  const barW = 250;
+  svg += `<text class="ax" x="14" y="122" font-size="10">ReAct + Tool (Python/Calculator)</text>`;
+  svg += `<rect x="14" y="127" width="${(acc / 100 * barW).toFixed(1)}" height="13" rx="4" fill="var(--ok)"/>`;
+  svg += `<text class="ax" x="${(14 + acc / 100 * barW + 8).toFixed(1)}" y="137" font-weight="700">${esc(vi1(acc))}%</text>`;
+  svg += `<text class="ax" x="14" y="158" font-size="10">LLM thuần - tự tính nhẩm (không Tool)</text>`;
+  svg += `<rect x="14" y="163" width="${(noTool / 100 * barW).toFixed(1)}" height="13" rx="4" fill="var(--táo)" opacity=".85"/>`;
+  svg += `<text class="ax" x="${(14 + noTool / 100 * barW + 8).toFixed(1)}" y="173" font-weight="700">${esc(vi1(noTool))}%</text>`;
+  svg += `<text class="ax" x="14" y="196" font-size="10">LLM không Tool: ${esc(vi1(halluc))}% ảo giác số học -> chỉ còn ${esc(vi1(noTool))}% chính xác.</text>`;
+  svg += `<text class="ax" x="14" y="212" font-size="10">Agent ReAct gọi Tool: ${esc(vi1(acc))}% chính xác - chênh lệch ${esc(vi1(acc - noTool))} điểm.</text>`;
+  svg += `<text class="ax" x="14" y="234" font-size="10">Mỗi pha vận hành chu trình ReAct ${V.n_react_steps} bước: Thought - Action(Tool) - Observation - Answer.</text>`;
+  $('#curve').innerHTML = svg;
+  $('#insight2').innerHTML = `Agent đang ở pha <b>${k}/${V.n_crispdm_phases}</b> (${esc(PHASES[k - 1])}) - hoàn thành ${k - 1} pha, mỗi pha vận hành chu trình ReAct ${V.n_react_steps} bước.`;
+  $('#stat2').innerHTML = [
+    [`${k}/${V.n_crispdm_phases}`, 'Pha CRISP-DM đang xem'],
+    [String(V.n_react_steps), 'Bước chu trình ReAct'],
+    [vi1(V.acc_react_tool_pct) + '%', 'Chính xác khi gọi Tool'],
+    [vi1(V.halluc_zeroshot_pct) + '%', 'Không Tool: ảo giác số học']
+  ].map(([v, l]) => `<div class="chip"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#contSel').oninput = renderTab1;
+$('#phaseSel').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#contSel').value = 3; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#contSel').value = 3;
+  $('#phaseSel').value = 6;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

@@ -1,0 +1,312 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Thiết kế câu lệnh (Prompt) theo khuôn mẫu 5 thành phần chuẩn công nghiệp (Role, Context, Task, Constraints, Output Format) để tự động hóa phân loại phản hồi khách hàng và giải bài toán tính giá tour 3 khách có chiết khấu kèm phụ phí bằng suy luận chuỗi tư duy (Chain-of-Thought — CoT), đối chiếu trực tiếp độ chính xác giữa Zero-shot, Few-shot và CoT.">
+<title>Phòng thí nghiệm Cấu trúc 5 Thành phần Prompt & Suy luận CoT — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 3 · Prompt Engineering (Kỹ thuật thiết kế câu lệnh)</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Phòng thí nghiệm Cấu trúc 5 Thành phần Prompt & Suy luận CoT</span></h1>
+<p class="lede">Bài toán thực tế: Thiết kế câu lệnh (Prompt) theo khuôn mẫu 5 thành phần chuẩn công nghiệp (Role, Context, Task, Constraints, Output Format) để tự động hóa phân loại phản hồi khách hàng và giải bài toán tính giá tour 3 khách có chiết khấu kèm phụ phí bằng suy luận chuỗi tư duy (Chain-of-Thought — CoT), đối chiếu trực tiếp độ chính xác giữa Zero-shot, Few-shot và CoT.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>Mô phỏng tương tác trên dữ liệu thực nghiệm của Lab</h2>
+  <div class="ctl">
+   <label for="partSel" class="note">Số thành phần được bật trong Prompt (1 -> 5): <b id="val1"></b></label>
+   <input id="partSel" type="range" min="1" max="5" step="1" value="5">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (5)</button>
+  </div>
+   <svg id="plot" viewBox="0 0 440 300" role="img" aria-label="Biểu đồ 5 thành phần Prompt và độ chính xác Zero-shot, Few-shot, CoT, JSON đúng chuẩn"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>S</mi><mtext>prompt</mtext></msub><mo>=</mo><munderover><mo>&#8721;</mo><mrow><mi>m</mi><mo>=</mo><mn>1</mn></mrow><mn>5</mn></munderover><msub><mi>w</mi><mi>m</mi></msub><mo>&#8901;</mo><msub><mi>I</mi><mi>m</mi></msub><mspace width="1em"/><mo>(</mo><mtext>Role, Context, Task, Constraints, Format</mtext><mo>)</mo></math></div>
+  <p class="note">Kéo thanh trượt hoặc bấm nút mặc định để đối chiếu trực tiếp với các mốc tính toán trong tệp <code>01_prompt_engineering_thuc_chien.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+   <span class="eyebrow">Chiến lược Prompt · Mốc kịch bản của Lab</span>
+   <h2>Zero-shot → Few-shot → Chain-of-Thought theo số ví dụ mẫu</h2>
+   <div class="ctl">
+    <label for="shotSel" class="note">Số ví dụ mẫu cung cấp (k-shot): <b id="val2"></b></label>
+    <input id="shotSel" type="range" min="0" max="5" step="1" value="3">
+   </div>
+   <svg id="curve" viewBox="0 0 440 230" role="img" aria-label="Biểu đồ cột Zero-shot và Few-shot tại k=0 và k=3, đường tham chiếu Chain-of-Thought và mức tăng cộng 40,0%"></svg>
+   <p class="note" id="insight2"></p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>&#916;Acc</mi><mo>=</mo><msub><mi>Acc</mi><mtext>CoT</mtext></msub><mo>&#8722;</mo><msub><mi>Acc</mi><mtext>Zero-shot</mtext></msub><mo>=</mo><mn>92,5</mn><mtext>%</mtext><mo>&#8722;</mo><mn>52,5</mn><mtext>%</mtext><mo>=</mo><mo>+</mo><mn>40,0</mn><mtext>%</mtext></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_prompt_engineering_thuc_chien.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_prompt_engineering_thuc_chien.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Số thành phần chuẩn của một Prompt chuyên nghiệp <span class="sub">(n_prompt_parts)</span></td><td class="ro hi">5</td></tr>
+<tr><td><code>[M02]</code> Giới hạn số từ tối đa trong ràng buộc (Constraints) của lab <span class="sub">(max_words_limit)</span></td><td class="ro hi">200</td></tr>
+<tr><td><code>[M03]</code> Số ví dụ mẫu trong kỹ thuật Few-Shot Prompting của lab <span class="sub">(n_fewshot_examples)</span></td><td class="ro hi">3</td></tr>
+<tr><td><code>[M04]</code> Độ chính xác khi hỏi trực tiếp không ví dụ (Zero-shot %) <span class="sub">(acc_zeroshot_pct)</span></td><td class="ro hi">52,5</td></tr>
+<tr><td><code>[M05]</code> Độ chính xác khi cung cấp 3 ví dụ mẫu (Few-shot %) <span class="sub">(acc_fewshot_pct)</span></td><td class="ro hi">77,5</td></tr>
+<tr><td><code>[M06]</code> Độ chính xác khi yêu cầu suy luận từng bước (Chain-of-Thought %) <span class="sub">(acc_cot_pct)</span></td><td class="ro hi">92,5</td></tr>
+<tr><td><code>[M07]</code> Mức tăng độ chính xác của CoT so với Zero-shot (%) <span class="sub">(cot_gain_pct)</span></td><td class="ro hi">40,0</td></tr>
+<tr><td><code>[M08]</code> Tỷ lệ đầu ra tuân thủ đúng cấu trúc bảng/JSON khi có Format (%) <span class="sub">(json_valid_pct)</span></td><td class="ro hi">97,5</td></tr>
+<tr><td><code>[M09]</code> Số khách trong bài toán suy luận CoT <span class="sub">(n_containers)</span></td><td class="ro hi">3</td></tr>
+<tr><td><code>[M10]</code> Giá tour cơ bản mỗi khách trong bài toán CoT (triệu VNĐ) <span class="sub">(base_rate_m)</span></td><td class="ro hi">15,0</td></tr>
+<tr><td><code>[M11]</code> Mức chiết khấu khi đi từ 3 khách trở lên (%) <span class="sub">(discount_pct)</span></td><td class="ro hi">10,0</td></tr>
+<tr><td><code>[M12]</code> Phụ phí mỗi khách (triệu VNĐ) <span class="sub">(handling_fee_m)</span></td><td class="ro hi">1,2</td></tr>
+<tr><td><code>[M13]</code> Đáp số đúng của chuỗi suy luận 5 bước CoT (triệu VNĐ) <span class="sub">(final_total_m)</span></td><td class="ro hi">44,1</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Khuôn mẫu 5 thành phần của một Prompt đạt chuẩn công nghiệp trong bài thực hành bao gồm những gì?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Vai trò (Role), Ngữ cảnh (Context), Nhiệm vụ (Task), Ràng buộc (Constraints) và Định dạng đầu ra (Output Format)</button><button class="opt" type="button" data-v="q1_2">Chỉ cần gõ 1 câu hỏi càng ngắn càng tốt</button><button class="opt" type="button" data-v="q1_3">Lặp lại câu hỏi 5 lần liên tiếp</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Kỹ thuật Chain-of-Thought (CoT - Suy luận từng bước) mang lại hiệu quả gì trên các bài toán tính giá và xử lý nhiều điều kiện?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Buộc mô hình phân rã bài toán thành các bước trung gian tường minh, nâng độ chính xác từ 52,5% (Zero-shot) lên 92,5% (+40,0%)</button><button class="opt" type="button" data-v="q2_2">Làm mô hình bỏ qua các phép tính số học</button><button class="opt" type="button" data-v="q2_3">Chỉ dùng được cho dịch thuật văn bản</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Khi cần phân loại hàng nghìn phản hồi khách hàng vào đúng 3 nhãn cố định [TÍCH CỰC, TRUNG TÍNH, TIÊU CỰC], kỹ thuật nào hiệu quả và tiết kiệm nhất?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Few-shot Prompting kèm 3 ví dụ mẫu đại diện cho 3 nhãn (đạt 77,5% -> 97,5% tuân thủ định dạng)</button><button class="opt" type="button" data-v="q3_2">Không nêu tên nhãn để mô hình tự đặt tên nhãn tùy ý</button><button class="opt" type="button" data-v="q3_3">Tắt hoàn toàn phần Ràng buộc</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_prompt_engineering_thuc_chien.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[10],"vars":{"n_prompt_parts":5,"max_words_limit":200,"n_fewshot_examples":3,"acc_zeroshot_pct":52.5,"acc_fewshot_pct":77.5,"acc_cot_pct":92.5,"cot_gain_pct":40.0,"json_valid_pct":97.5,"n_containers":3,"base_rate_m":15.0,"discount_pct":10.0,"handling_fee_m":1.2,"final_total_m":44.1},"derived":{}};
+const V = LAB.vars;
+const LABELS = {"n_prompt_parts": "Số thành phần chuẩn của một Prompt chuyên nghiệp", "max_words_limit": "Giới hạn số từ tối đa trong ràng buộc (Constraints) của lab", "n_fewshot_examples": "Số ví dụ mẫu trong kỹ thuật Few-Shot Prompting của lab", "acc_zeroshot_pct": "Độ chính xác khi hỏi trực tiếp không ví dụ (Zero-shot %)", "acc_fewshot_pct": "Độ chính xác khi cung cấp 3 ví dụ mẫu (Few-shot %)", "acc_cot_pct": "Độ chính xác khi yêu cầu suy luận từng bước (Chain-of-Thought %)", "cot_gain_pct": "Mức tăng độ chính xác của CoT so với Zero-shot (%)", "json_valid_pct": "Tỷ lệ đầu ra tuân thủ đúng cấu trúc bảng/JSON khi có Format (%)", "n_containers": "Số khách trong bài toán suy luận CoT", "base_rate_m": "Giá tour cơ bản mỗi khách trong bài toán CoT (triệu VNĐ)", "discount_pct": "Mức chiết khấu khi đi từ 3 khách trở lên (%)", "handling_fee_m": "Phụ phí mỗi khách (triệu VNĐ)", "final_total_m": "Đáp số đúng của chuỗi suy luận 5 bước CoT (triệu VNĐ)"};
+const FB = {1:{"q1_1":["Ch\u00ednh x\u00e1c! \u0110\u1ee7 5 th\u00e0nh ph\u1ea7n gi\u00fap ki\u1ec3m so\u00e1t ng\u1eef \u0111i\u1ec7u chuy\u00ean m\u00f4n, gi\u1edbi h\u1ea1n d\u01b0\u1edbi 200 t\u1eeb v\u00e0 \u00e9p \u0111\u1ecbnh d\u1ea1ng b\u1ea3ng/JSON chu\u1ea9n t\u1edbi 97,5%.",1],"q1_2":["Sai: c\u00e2u h\u1ecfi m\u01a1 h\u1ed3 l\u00e0m LLM ph\u1ea3i t\u1ef1 \u0111o\u00e1n ng\u1eef c\u1ea3nh v\u00e0 \u0111\u1ecbnh d\u1ea1ng.",0],"q1_3":["Sai.",0]},2:{"q2_1":["\u0110\u00fang! Khi LLM vi\u1ebft ra t\u1eebng b\u01b0\u1edbc (t\u00ednh gi\u00e1 tour c\u01a1 b\u1ea3n -> t\u00ednh chi\u1ebft kh\u1ea5u -> c\u1ed9ng ph\u1ee5 ph\u00ed), x\u00e1c su\u1ea5t nh\u1ea3y c\u00f3c sai c\u00f4ng th\u1ee9c gi\u1ea3m m\u1ea1nh.",1],"q2_2":["Sai.",0],"q2_3":["Sai: CoT \u0111\u1eb7c bi\u1ec7t m\u1ea1nh cho to\u00e1n h\u1ecdc, logic v\u00e0 k\u1ebf ho\u1ea1ch v\u1eadn h\u00e0nh.",0]},3:{"q3_1":["\u0110\u00fang! 3 v\u00ed d\u1ee5 m\u1eabu gi\u00fap LLM hi\u1ec3u ngay quy chu\u1ea9n ph\u00e2n lo\u1ea1i c\u1ee7a doanh nghi\u1ec7p m\u00e0 kh\u00f4ng c\u1ea7n hu\u1ea5n luy\u1ec7n l\u1ea1i tr\u1ecdng s\u1ed1.",1],"q3_2":["Sai: m\u1ed7i c\u00e2u s\u1ebd sinh ra m\u1ed9t ki\u1ec3u nh\u00e3n kh\u00e1c nhau, kh\u00f4ng th\u1ec3 t\u1ed5ng h\u1ee3p th\u1ed1ng k\u00ea.",0],"q3_3":["Sai.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const vi = (x, nd) => {
+  const v = +x, d = nd === 0 ? 0 : 1, sg = v < 0 ? '-' : '';
+  let [ip, fp] = (Math.abs(v) + 1e-12).toFixed(d).split('.');
+  ip = ip.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return sg + ip + (fp ? ',' + fp : '');
+};
+const INTK = new Set(["n_prompt_parts", "n_fewshot_examples", "max_words_limit", "n_containers"]);
+const disp = k => vi(V[k], INTK.has(k) ? 0 : 1);
+const PARTS = [["Role", "Vai trò"], ["Context", "Ngữ cảnh"], ["Task", "Nhiệm vụ"], ["Constraints", "Ràng buộc"], ["Output Format", "Định dạng"]];
+const STRAT = [
+  ["acc_zeroshot_pct", "Zero-shot", "Hỏi thẳng, 0 mẫu", "var(--acc)"],
+  ["acc_fewshot_pct", "Few-shot", "có ví dụ mẫu", "var(--ok)"],
+  ["acc_cot_pct", "Chain-of-Thought", "suy luận từng bước", "var(--cam)"],
+  ["json_valid_pct", "JSON đúng chuẩn", "cần Output Format", "var(--new)"]
+];
+
+function renderTab1(){
+  const k = Math.min(5, Math.max(1, +$('#partSel').value || 5));
+  $('#val1').textContent = String(k);
+  $('#stat1').innerHTML = STRAT.map(a => `<div class="chip"><b>${esc(disp(a[0]))}</b><span>${esc(LABELS[a[0]])}</span></div>`).join('');
+  const yB = 262, yT = 92, H = v => (v / 100) * (yB - yT);
+  let s = '';
+  PARTS.forEach((p, i) => {
+    const x = 16 + i * 82, on = i < k;
+    s += `<rect x="${x}" y="16" width="66" height="14" rx="7" fill="${on ? 'var(--acc)' : 'none'}" stroke="var(--line2)" opacity="${on ? .9 : 1}"/>`;
+    s += `<text class="ax" x="${x + 33}" y="44" text-anchor="middle" opacity="${on ? 1 : .45}">${esc(p[0])}</text>`;
+  });
+  s += `<text class="ax" x="16" y="66">Đang bật ${k}/${esc(String(V.n_prompt_parts))} thành phần: ${esc(PARTS.slice(0, k).map(p => p[1]).join(' · '))}</text>`;
+  [0, 50, 100].forEach(g => {
+    const y = yB - H(g);
+    s += `<line class="ln" x1="46" y1="${y}" x2="428" y2="${y}"/><text class="ax" x="40" y="${y + 4}" text-anchor="end">${g}</text>`;
+  });
+  STRAT.forEach((a, i) => {
+    const val = +V[a[0]], x = 64 + i * 92, h = H(val), y = yB - h;
+    const dim = a[0] === 'json_valid_pct' && k < 5;
+    s += `<rect x="${x}" y="${y.toFixed(1)}" width="56" height="${h.toFixed(1)}" rx="6" fill="${a[3]}" opacity="${dim ? .25 : .88}"/>`;
+    s += `<text class="ax" x="${x + 28}" y="${(y - 7).toFixed(1)}" text-anchor="middle">${esc(disp(a[0]))}%</text>`;
+    s += `<text class="ax" x="${x + 28}" y="${yB + 16}" text-anchor="middle">${esc(a[1])}</text>`;
+    s += `<text class="ax" x="${x + 28}" y="${yB + 30}" text-anchor="middle" opacity=".75">${dim ? 'Format chưa bật' : a[2]}</text>`;
+  });
+  $('#plot').innerHTML = s;
+  $('#liveTable tbody').innerHTML = ["acc_zeroshot_pct", "acc_fewshot_pct", "acc_cot_pct", "cot_gain_pct", "json_valid_pct", "n_fewshot_examples", "max_words_limit"].map(kk =>
+    `<tr><td>${esc(LABELS[kk])}</td><td class="ro hi">${esc(disp(kk))}</td></tr>`).join('');
+  $('#insight1').innerHTML = k === +V.n_prompt_parts
+    ? `Prompt đủ <b>${esc(String(V.n_prompt_parts))}/${esc(String(V.n_prompt_parts))}</b> thành phần — điều kiện để lab đo <b>${esc(disp('acc_cot_pct'))}%</b> với Chain-of-Thought và <b>${esc(disp('json_valid_pct'))}%</b> đầu ra JSON đúng chuẩn (bảng SSoT tab 03).`
+    : `Chưa bật <b>${esc(PARTS.slice(k).map(p => p[1]).join(', '))}</b> — chuẩn ${esc(String(V.n_prompt_parts))}/${esc(String(V.n_prompt_parts))} thành phần mới đạt các mốc kịch bản của Lab: <b>${esc(disp('acc_cot_pct'))}%</b> (CoT) và <b>${esc(disp('json_valid_pct'))}%</b> (JSON đúng chuẩn).`;
+}
+
+function renderTab2(){
+  const k = Math.min(5, Math.max(0, +$('#shotSel').value || 0));
+  $('#val2').textContent = String(k);
+  const nf = +V.n_fewshot_examples, x0 = 40, yB = 200, yT = 45;
+  const H = v => (v / 100) * (yB - yT), xk = i => x0 + 28 + i * 68;
+  let s = '';
+  [0, 50, 100].forEach(g => {
+    const y = yB - H(g);
+    s += `<line class="ln" x1="${x0}" y1="${y}" x2="428" y2="${y}"/><text class="ax" x="34" y="${y + 4}" text-anchor="end">${g}</text>`;
+  });
+  for (let i = 0; i <= 5; i++) s += `<text class="ax" x="${xk(i)}" y="${yB + 16}" text-anchor="middle">k=${i}</text>`;
+  [[0, 'acc_zeroshot_pct', 'Zero-shot', 'var(--acc)'], [nf, 'acc_fewshot_pct', 'Few-shot', 'var(--ok)']].forEach(b => {
+    const val = +V[b[1]], x = xk(b[0]), h = H(val), y = yB - h;
+    s += `<rect x="${(x - 17).toFixed(1)}" y="${y.toFixed(1)}" width="34" height="${h.toFixed(1)}" rx="6" fill="${b[3]}" opacity="${k === b[0] ? .95 : .55}"/>`;
+    s += `<text class="ax" x="${x}" y="${(y - 7).toFixed(1)}" text-anchor="middle">${esc(b[2])} ${esc(disp(b[1]))}%</text>`;
+  });
+  const yc = yB - H(+V.acc_cot_pct);
+  s += `<line x1="${x0}" y1="${yc.toFixed(1)}" x2="428" y2="${yc.toFixed(1)}" stroke="var(--cam)" stroke-width="2" stroke-dasharray="6 4"/>`;
+  s += `<text class="ax" x="428" y="${(yc - 8).toFixed(1)}" text-anchor="end">CoT không cần mẫu: ${esc(disp('acc_cot_pct'))}%</text>`;
+  const yz = yB - H(+V.acc_zeroshot_pct), gx = xk(1) + 30;
+  s += `<line x1="${gx}" y1="${(yz - 4).toFixed(1)}" x2="${gx}" y2="${(yc + 4).toFixed(1)}" stroke="var(--táo)" stroke-width="2"/>`;
+  s += `<text class="ax" x="${gx + 6}" y="${((yz + yc) / 2).toFixed(1)}" fill="var(--táo)">+${esc(disp('cot_gain_pct'))}%</text>`;
+  s += `<circle cx="${xk(k)}" cy="${yB - 4}" r="8" fill="var(--new)" stroke="var(--bg)" stroke-width="2"/>`;
+  s += `<text class="ax" x="${x0}" y="26">${k === 0 ? `k = 0 → Zero-shot: ${esc(disp('acc_zeroshot_pct'))}%` : k === nf ? `k = ${nf} → Few-shot chuẩn lab (${esc(String(nf))} mẫu): ${esc(disp('acc_fewshot_pct'))}%` : `k = ${k}: Lab chỉ ghi nhận mốc tại k=0 và k=${esc(String(nf))}`}</text>`;
+  $('#curve').innerHTML = s;
+  $('#stat2').innerHTML = ["acc_cot_pct", "cot_gain_pct", "json_valid_pct", "n_fewshot_examples"].map(kk => `<div class="chip"><b>${esc(disp(kk))}</b><span>${esc(LABELS[kk])}</span></div>`).join('');
+  $('#insight2').innerHTML = `Bài toán CoT của lab: <b>${esc(disp('n_containers'))} khách × ${esc(disp('base_rate_m'))} triệu</b>, chiết khấu ${esc(disp('discount_pct'))}% cho nhóm từ ${esc(disp('n_containers'))} khách, phụ phí ${esc(disp('handling_fee_m'))} triệu mỗi khách — chuỗi 5 bước suy luận ra đáp số <b>${esc(disp('final_total_m'))} triệu</b>. ` +
+    (k === 0 ? `Không có ví dụ mẫu (Zero-shot), lab chỉ đạt ${esc(disp('acc_zeroshot_pct'))}%.`
+      : k === nf ? `Bật đủ ${esc(String(nf))} ví dụ mẫu chuẩn (Few-shot), lab đạt ${esc(disp('acc_fewshot_pct'))}%.`
+        : `Lab chỉ đo tại k=0 (${esc(disp('acc_zeroshot_pct'))}%) và k=${esc(String(nf))} (${esc(disp('acc_fewshot_pct'))}%); CoT vượt lên ${esc(disp('acc_cot_pct'))}%.`);
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#partSel').oninput = renderTab1;
+$('#shotSel').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#partSel').value = 5; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#partSel').value = 5;
+  $('#shotSel').value = 3;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

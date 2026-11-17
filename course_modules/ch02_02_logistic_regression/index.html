@@ -1,0 +1,2414 @@
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Interactive AI Lab: Hồi quy Logistic — ĐH Giao thông Vận tải TP.HCM (UTH)</title>
+  <meta name="description" content="Phòng thí nghiệm tương tác Hồi quy Logistic: hàm Sigmoid, Log-Odds, ước lượng hợp lý cực đại (MLE) và hạ gradient cho sinh viên UTH.">
+  <style>
+    :root {
+      --bg-deep: #050811;
+      --bg-surface: #0b1120;
+      --card-bg: rgba(15, 23, 42, 0.72);
+      --card-border: rgba(148, 163, 184, 0.14);
+      --card-border-hi: rgba(56, 189, 248, 0.4);
+      --txt-main: #f8fafc;
+      --txt-sub: #94a3b8;
+      --txt-dim: #64748b;
+      --cyan: #06b6d4;
+      --cyan-bright: #22d3ee;
+      --blue: #3b82f6;
+      --indigo: #6366f1;
+      --emerald: #10b981;
+      --emerald-bright: #34d399;
+      --rose: #f43f5e;
+      --rose-bright: #fb7185;
+      --amber: #f59e0b;
+      --amber-bright: #fbbf24;
+      --purple: #a855f7;
+      --radius-lg: 16px;
+      --radius-md: 12px;
+      --radius-sm: 8px;
+      --font-sans: 'Plus Jakarta Sans', system-ui, -apple-system, sans-serif;
+      --font-mono: 'JetBrains Mono', ui-monospace, SFMono-Regular, monospace;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
+
+    html,
+    body {
+      min-height: 100dvh;
+      background-color: var(--bg-deep);
+      background-image:
+        radial-gradient(at 10% 0%, rgba(6, 182, 212, 0.14) 0px, transparent 50%),
+        radial-gradient(at 90% 10%, rgba(99, 102, 241, 0.12) 0px, transparent 50%),
+        radial-gradient(at 50% 100%, rgba(16, 185, 129, 0.08) 0px, transparent 50%);
+      color: var(--txt-main);
+      font-family: var(--font-sans);
+      display: flex;
+      flex-direction: column;
+      overflow-x: hidden;
+    }
+
+    /* Header */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+      flex-wrap: wrap;
+      padding: 12px 24px;
+      background: rgba(11, 17, 32, 0.8);
+      backdrop-filter: blur(16px);
+      border-bottom: 1px solid var(--card-border);
+      position: sticky;
+      top: 0;
+      z-index: 50;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+    }
+
+    .logo-box {
+      width: 44px;
+      height: 44px;
+      border-radius: 12px;
+      background: linear-gradient(135deg, var(--cyan-bright), var(--indigo));
+      display: grid;
+      place-items: center;
+      font-family: var(--font-mono);
+      font-size: 22px;
+      font-weight: 800;
+      color: #020617;
+      box-shadow: 0 0 24px rgba(34, 211, 238, 0.35);
+    }
+
+    .brand-text h1 {
+      font-size: clamp(16px, 2vw, 20px);
+      font-weight: 800;
+      letter-spacing: -0.3px;
+      background: linear-gradient(90deg, #ffffff, #bae6fd);
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    .brand-text p {
+      font-size: 12px;
+      color: var(--txt-sub);
+      margin-top: 2px;
+    }
+
+    .header-pills {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .pill {
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 5px 12px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.04);
+      border: 1px solid var(--card-border);
+      color: var(--txt-sub);
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .pill.live {
+      color: var(--cyan-bright);
+      border-color: rgba(34, 211, 238, 0.35);
+      background: rgba(6, 182, 212, 0.1);
+    }
+
+    .pill .pulse {
+      width: 7px;
+      height: 7px;
+      border-radius: 50%;
+      background: var(--emerald-bright);
+      box-shadow: 0 0 8px var(--emerald-bright);
+    }
+
+    /* Main Grid Layout */
+    main {
+      flex: 1;
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 460px;
+      gap: 18px;
+      padding: 16px 24px;
+      max-width: 1720px;
+      width: 100%;
+      margin: 0 auto;
+    }
+
+    .bento-card {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius-lg);
+      backdrop-filter: blur(14px);
+      box-shadow: 0 12px 32px -8px rgba(0, 0, 0, 0.5);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+    }
+
+    /* Top Navigation Bar inside Left Card */
+    .stage-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--card-border);
+      background: rgba(2, 6, 23, 0.45);
+    }
+
+    .method-tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(2, 6, 23, 0.75);
+      padding: 4px;
+      border-radius: 12px;
+      border: 1px solid var(--card-border);
+      flex-wrap: wrap;
+    }
+
+    .m-tab {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--txt-sub);
+      font-family: var(--font-sans);
+      font-size: 12.5px;
+      font-weight: 600;
+      padding: 7px 13px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+      display: flex;
+      align-items: center;
+      gap: 7px;
+    }
+
+    .m-tab:hover {
+      color: var(--txt-main);
+      background: rgba(255, 255, 255, 0.04);
+    }
+
+    .m-tab.active {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(59, 130, 246, 0.25));
+      color: #fff;
+      box-shadow: inset 0 0 0 1px rgba(34, 211, 238, 0.45), 0 4px 12px rgba(6, 182, 212, 0.18);
+    }
+
+    .m-tab .step-idx {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      padding: 1px 6px;
+      border-radius: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      color: var(--cyan-bright);
+    }
+
+    .overlay-toggles {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+    }
+
+    .chip-toggle {
+      appearance: none;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.6);
+      color: var(--txt-sub);
+      font-family: var(--font-sans);
+      font-size: 11.5px;
+      font-weight: 600;
+      padding: 6px 11px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.18s;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .chip-toggle:hover {
+      border-color: var(--cyan-bright);
+      color: var(--txt-main);
+    }
+
+    .chip-toggle.active {
+      background: rgba(34, 211, 238, 0.14);
+      border-color: rgba(34, 211, 238, 0.5);
+      color: var(--cyan-bright);
+    }
+
+    /* Canvas Stage */
+    .canvas-stage {
+      position: relative;
+      flex: 1;
+      min-height: 390px;
+      background:
+        radial-gradient(circle at 50% 50%, rgba(15, 23, 42, 0.3), rgba(2, 6, 23, 0.85));
+    }
+
+    canvas#mainCanvas {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      cursor: crosshair;
+    }
+
+    /* Floating Glass Tooltip */
+    #chartTooltip {
+      position: absolute;
+      pointer-events: none;
+      opacity: 0;
+      transform: translateY(4px);
+      transition: opacity 0.15s, transform 0.15s;
+      background: rgba(9, 14, 28, 0.94);
+      border: 1px solid rgba(34, 211, 238, 0.45);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-size: 12px;
+      line-height: 1.6;
+      z-index: 30;
+      box-shadow: 0 14px 34px rgba(0, 0, 0, 0.65);
+      min-width: 210px;
+    }
+
+    /* Telemetry KPI Ribbon */
+    .kpi-ribbon {
+      display: grid;
+      grid-template-columns: repeat(6, minmax(0, 1fr));
+      gap: 8px;
+      padding: 10px 16px;
+      background: rgba(2, 6, 23, 0.55);
+      border-top: 1px solid var(--card-border);
+    }
+
+    .kpi-card {
+      background: rgba(255, 255, 255, 0.025);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 7px 10px;
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+
+    .kpi-label {
+      font-size: 10.5px;
+      color: var(--txt-dim);
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.4px;
+    }
+
+    .kpi-val {
+      font-family: var(--font-mono);
+      font-size: 13.5px;
+      font-weight: 700;
+      color: var(--txt-main);
+    }
+
+    .kpi-card.cyan .kpi-val {
+      color: var(--cyan-bright);
+    }
+
+    .kpi-card.amber .kpi-val {
+      color: var(--amber-bright);
+    }
+
+    .kpi-card.emerald .kpi-val {
+      color: var(--emerald-bright);
+    }
+
+    .kpi-card.rose .kpi-val {
+      color: var(--rose-bright);
+    }
+
+    /* Interactive Prediction & Cutoff Sandbox */
+    .sandbox-section {
+      padding: 14px 16px;
+      border-top: 1px solid var(--card-border);
+      background: linear-gradient(180deg, rgba(15, 23, 42, 0.5), rgba(2, 6, 23, 0.7));
+    }
+
+    .sandbox-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .sandbox-title {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--txt-main);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .sandbox-controls-grid {
+      display: grid;
+      grid-template-columns: 1.2fr 1fr auto;
+      gap: 12px;
+      align-items: center;
+    }
+
+    .ctrl-box {
+      background: rgba(2, 6, 23, 0.55);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 8px 12px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .ctrl-box label {
+      font-size: 11.5px;
+      color: var(--txt-sub);
+      font-weight: 600;
+      white-space: nowrap;
+    }
+
+    .ctrl-box output {
+      font-family: var(--font-mono);
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--amber-bright);
+      min-width: 48px;
+      text-align: right;
+    }
+
+    .verdict-card {
+      background: rgba(2, 6, 23, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 8px 14px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+    }
+
+    .gauge-bar {
+      width: 84px;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .gauge-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--rose), var(--amber), var(--emerald));
+      transition: width 0.12s ease-out;
+    }
+
+    .badge-verdict {
+      font-family: var(--font-mono);
+      font-size: 11.5px;
+      font-weight: 800;
+      padding: 4px 10px;
+      border-radius: 6px;
+    }
+
+    .badge-verdict.pass {
+      background: rgba(16, 185, 129, 0.2);
+      color: var(--emerald-bright);
+      border: 1px solid rgba(52, 211, 153, 0.4);
+    }
+
+    .badge-verdict.fail {
+      background: rgba(244, 63, 94, 0.2);
+      color: var(--rose-bright);
+      border: 1px solid rgba(251, 113, 133, 0.4);
+    }
+
+    /* Quick Student Pills */
+    .student-quick-bar {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 10px;
+    }
+
+    .stu-pill {
+      appearance: none;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.03);
+      color: var(--txt-sub);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 10px;
+      border-radius: 99px;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .stu-pill:hover {
+      border-color: var(--cyan-bright);
+      color: #fff;
+    }
+
+    .stu-pill.special {
+      border-color: rgba(251, 191, 36, 0.4);
+      color: var(--amber-bright);
+    }
+
+    .stu-pill.active {
+      background: var(--cyan-bright);
+      color: #020617;
+      border-color: var(--cyan-bright);
+      font-weight: 700;
+    }
+
+    /* Step-by-Step Pipeline Cards */
+    .pipeline-grid {
+      display: grid;
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+
+    .pipe-step {
+      background: rgba(2, 6, 23, 0.65);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 9px 11px;
+      font-size: 11.5px;
+      line-height: 1.5;
+      position: relative;
+    }
+
+    .pipe-step .step-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 4px;
+    }
+
+    .pipe-step .s-tag {
+      font-family: var(--font-mono);
+      font-size: 10px;
+      font-weight: 700;
+      color: var(--cyan-bright);
+      background: rgba(6, 182, 212, 0.12);
+      padding: 1px 6px;
+      border-radius: 4px;
+    }
+
+    .pipe-step .s-formula {
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+      color: var(--txt-dim);
+    }
+
+    .pipe-step .s-val {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--txt-main);
+      margin-top: 2px;
+    }
+
+    .pipe-step .s-sub {
+      font-size: 10.5px;
+      color: var(--txt-sub);
+      margin-top: 2px;
+    }
+
+    /* RIGHT SIDEBAR */
+    .right-sidebar {
+      display: flex;
+      flex-direction: column;
+      gap: 14px;
+      max-height: calc(100dvh - 96px);
+      overflow-y: auto;
+      padding-right: 4px;
+    }
+
+    .right-sidebar::-webkit-scrollbar {
+      width: 6px;
+    }
+
+    .right-sidebar::-webkit-scrollbar-thumb {
+      background: rgba(148, 163, 184, 0.2);
+      border-radius: 99px;
+    }
+
+    .pane-box {
+      padding: 15px 16px;
+    }
+
+    .pane-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .pane-title {
+      font-size: 13.5px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .dot-indicator {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: var(--cyan-bright);
+      box-shadow: 0 0 10px var(--cyan-bright);
+    }
+
+    .pane-desc {
+      font-size: 12px;
+      color: var(--txt-sub);
+      line-height: 1.6;
+      margin-bottom: 10px;
+    }
+
+    /* Interactive Parameter Sliders */
+    .sliders-panel {
+      background: rgba(2, 6, 23, 0.55);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px 12px;
+      margin-bottom: 10px;
+    }
+
+    .param-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 6px 0;
+    }
+
+    .param-row label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--txt-sub);
+      width: 95px;
+      flex: 0 0 95px;
+    }
+
+    .param-row output {
+      font-family: var(--font-mono);
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--cyan-bright);
+      width: 64px;
+      flex: 0 0 64px;
+      text-align: right;
+    }
+
+    input[type=range] {
+      flex: 1;
+      appearance: none;
+      height: 24px;
+      background: transparent;
+      cursor: pointer;
+    }
+
+    input[type=range]::-webkit-slider-runnable-track {
+      height: 6px;
+      border-radius: 99px;
+      background: rgba(148, 163, 184, 0.2);
+    }
+
+    input[type=range]::-webkit-slider-thumb {
+      appearance: none;
+      width: 16px;
+      height: 16px;
+      border-radius: 50%;
+      background: var(--cyan-bright);
+      margin-top: -5px;
+      box-shadow: 0 0 10px rgba(34, 211, 238, 0.65);
+      border: 2px solid #fff;
+      transition: transform 0.12s;
+    }
+
+    input[type=range]::-webkit-slider-thumb:hover {
+      transform: scale(1.18);
+    }
+
+    .preset-row {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      margin-top: 8px;
+    }
+
+    .btn-preset {
+      appearance: none;
+      border: 1px solid var(--card-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--txt-main);
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 5px 10px;
+      border-radius: 7px;
+      cursor: pointer;
+      transition: 0.15s;
+    }
+
+    .btn-preset:hover {
+      border-color: var(--cyan-bright);
+      color: var(--cyan-bright);
+    }
+
+    .btn-preset.primary {
+      background: rgba(6, 182, 212, 0.15);
+      border-color: rgba(34, 211, 238, 0.45);
+      color: var(--cyan-bright);
+    }
+
+    /* Data Table & Confusion Matrix Tabs inside Card 1 */
+    .sub-view-switch {
+      display: flex;
+      gap: 4px;
+      background: rgba(2, 6, 23, 0.6);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--card-border);
+    }
+
+    .sv-btn {
+      appearance: none;
+      border: 0;
+      background: transparent;
+      color: var(--txt-sub);
+      font-size: 11px;
+      font-weight: 600;
+      padding: 4px 9px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .sv-btn.active {
+      background: rgba(34, 211, 238, 0.2);
+      color: var(--cyan-bright);
+    }
+
+    .table-wrap {
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      overflow: hidden;
+      background: rgba(2, 6, 23, 0.4);
+    }
+
+    table.data-tbl {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 11.5px;
+      font-family: var(--font-mono);
+    }
+
+    table.data-tbl th,
+    table.data-tbl td {
+      padding: 6px 8px;
+      text-align: right;
+      border-bottom: 1px solid rgba(148, 163, 184, 0.08);
+    }
+
+    table.data-tbl th:nth-child(1),
+    table.data-tbl td:nth-child(1),
+    table.data-tbl th:nth-child(2),
+    table.data-tbl td:nth-child(2) {
+      text-align: center;
+    }
+
+    table.data-tbl th {
+      font-family: var(--font-sans);
+      font-size: 11px;
+      font-weight: 700;
+      color: var(--txt-sub);
+      background: rgba(2, 6, 23, 0.7);
+    }
+
+    table.data-tbl tr {
+      cursor: pointer;
+      transition: background 0.12s;
+    }
+
+    table.data-tbl tr:hover td {
+      background: rgba(34, 211, 238, 0.08);
+    }
+
+    table.data-tbl tr.selected-row td {
+      background: rgba(34, 211, 238, 0.18) !important;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .prob-cell-bar {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      justify-content: flex-end;
+      width: 100%;
+    }
+
+    .mini-p-track {
+      width: 38px;
+      height: 5px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 99px;
+      overflow: hidden;
+    }
+
+    .mini-p-fill {
+      height: 100%;
+      border-radius: 99px;
+    }
+
+    /* Confusion Matrix Grid */
+    .cm-grid {
+      display: grid;
+      grid-template-columns: auto 1fr 1fr;
+      gap: 6px;
+      align-items: center;
+      margin-top: 6px;
+      font-size: 11.5px;
+    }
+
+    .cm-cell {
+      background: rgba(2, 6, 23, 0.65);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px;
+      text-align: center;
+    }
+
+    .cm-cell b {
+      font-family: var(--font-mono);
+      font-size: 18px;
+      display: block;
+      margin-bottom: 2px;
+    }
+
+    .cm-cell.tp,
+    .cm-cell.tn {
+      border-color: rgba(52, 211, 153, 0.35);
+      background: rgba(16, 185, 129, 0.07);
+    }
+
+    .cm-cell.tp b,
+    .cm-cell.tn b {
+      color: var(--emerald-bright);
+    }
+
+    .cm-cell.fp,
+    .cm-cell.fn {
+      border-color: rgba(251, 113, 133, 0.35);
+      background: rgba(244, 63, 94, 0.07);
+    }
+
+    .cm-cell.fp b,
+    .cm-cell.fn b {
+      color: var(--rose-bright);
+    }
+
+    /* Math & Formula Callouts */
+    .formula-card {
+      background: rgba(2, 6, 23, 0.65);
+      border: 1px solid var(--card-border);
+      border-left: 3px solid var(--cyan-bright);
+      border-radius: 8px;
+      padding: 9px 12px;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      color: #e2e8f0;
+      margin: 7px 0;
+      text-align: center;
+    }
+
+    .note-box {
+      background: rgba(255, 255, 255, 0.03);
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      padding: 10px 12px;
+      font-size: 12px;
+      line-height: 1.6;
+      color: var(--txt-sub);
+      margin: 8px 0;
+    }
+
+    .note-box b {
+      color: var(--txt-main);
+    }
+
+    .note-box code {
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--cyan-bright);
+      background: rgba(6, 182, 212, 0.12);
+      padding: 1px 5px;
+      border-radius: 4px;
+    }
+
+    /* 2D Parameter Space Heatmap & Loss Surface */
+    .surface-box {
+      background: rgba(2, 6, 23, 0.7);
+      border: 1px solid var(--card-border);
+      border-radius: 12px;
+      padding: 10px;
+      margin-top: 10px;
+    }
+
+    .surface-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 11.5px;
+      color: var(--txt-sub);
+      margin-bottom: 6px;
+    }
+
+    .dual-canvas-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    canvas.aux-canvas {
+      width: 100%;
+      height: 155px;
+      display: block;
+      border-radius: 8px;
+      background: #040812;
+      border: 1px solid rgba(148, 163, 184, 0.15);
+      cursor: pointer;
+    }
+
+    /* GD Action Buttons */
+    .gd-toolbar {
+      display: flex;
+      gap: 6px;
+      flex-wrap: wrap;
+      align-items: center;
+      margin: 8px 0;
+    }
+
+    .btn-action {
+      appearance: none;
+      border: 1px solid var(--card-border);
+      background: rgba(15, 23, 42, 0.8);
+      color: var(--txt-main);
+      font-family: var(--font-sans);
+      font-size: 12px;
+      font-weight: 600;
+      padding: 7px 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: 0.15s;
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .btn-action:hover {
+      border-color: var(--cyan-bright);
+    }
+
+    .btn-action.play {
+      background: linear-gradient(135deg, var(--cyan-bright), var(--blue));
+      color: #020617;
+      border: 0;
+      font-weight: 700;
+    }
+
+    .btn-action.reset {
+      color: var(--rose-bright);
+    }
+
+    /* Code Block */
+    .code-box {
+      background: #030711;
+      border: 1px solid var(--card-border);
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 8px;
+    }
+
+    .code-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 12px;
+      background: rgba(255, 255, 255, 0.03);
+      border-bottom: 1px solid var(--card-border);
+      font-family: var(--font-mono);
+      font-size: 11px;
+      color: var(--txt-sub);
+    }
+
+    pre.py-code {
+      padding: 10px 12px;
+      font-family: var(--font-mono);
+      font-size: 11px;
+      line-height: 1.55;
+      color: #bae6fd;
+      overflow-x: auto;
+    }
+
+    /* MLE 8-Student Cards Grid */
+    .mle-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 6px;
+      margin-top: 8px;
+    }
+
+    .mle-item {
+      background: rgba(2, 6, 23, 0.65);
+      border: 1px solid var(--card-border);
+      border-radius: 8px;
+      padding: 6px;
+      text-align: center;
+      font-family: var(--font-mono);
+      font-size: 10.5px;
+    }
+
+    .mle-item.hi {
+      border-color: rgba(52, 211, 153, 0.4);
+    }
+
+    .mle-item.lo {
+      border-color: rgba(251, 113, 133, 0.45);
+      background: rgba(244, 63, 94, 0.06);
+    }
+
+    footer {
+      padding: 10px 24px;
+      border-top: 1px solid var(--card-border);
+      font-size: 11.5px;
+      color: var(--txt-dim);
+      display: flex;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    @media (max-width: 1180px) {
+      main {
+        grid-template-columns: 1fr;
+      }
+
+      .right-sidebar {
+        max-height: none;
+      }
+
+      .kpi-ribbon {
+        grid-template-columns: repeat(3, 1fr);
+      }
+
+      .pipeline-grid {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .sandbox-controls-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    @media (max-width: 640px) {
+      .kpi-ribbon {
+        grid-template-columns: repeat(2, 1fr);
+      }
+
+      .pipeline-grid {
+        grid-template-columns: 1fr;
+      }
+
+      .dual-canvas-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+
+<body>
+
+  <header>
+    <div class="brand">
+      <div class="logo-box">σ</div>
+      <div class="brand-text">
+        <h1>Hồi quy Logistic — Dự đoán Đỗ / Trượt theo Giờ học</h1>
+        <p>Học phần Trí tuệ Nhân tạo & Ứng dụng · Trường Đại học Giao thông Vận tải TP.HCM (UTH)</p>
+      </div>
+    </div>
+    <div class="header-pills">
+      <a class="pill" href="../../index.html" style="text-decoration:none; color:var(--cyan-bright); border-color:rgba(34,211,238,0.45); font-weight:700;">← All Demos</a>
+      <span class="pill live"><span class="pulse"></span>Interactive AI Lab v2.0</span>
+      <span class="pill">8 Quan sát của Lab</span>
+      <span class="pill">Vùng chồng lấn: x=4 (Đỗ) & x=5 (Trượt)</span>
+      <span class="pill">Nghiệm MLE: x* = 4.50h</span>
+    </div>
+  </header>
+
+  <main>
+    <!-- LEFT STAGE: INTERACTIVE VISUALIZATION & SANDBOX -->
+    <section class="bento-card">
+      <div class="stage-toolbar">
+        <div class="method-tabs" role="tablist">
+          <button class="m-tab active" id="tab0" onclick="switchMethod(0)"><span class="step-idx">0</span>Python
+            Lib</button>
+          <button class="m-tab" id="tab1" onclick="switchMethod(1)"><span class="step-idx">1</span>OLS vs.
+            Logit</button>
+          <button class="m-tab" id="tab2" onclick="switchMethod(2)"><span class="step-idx">2</span>Hợp lý Cực đại
+            (MLE)</button>
+          <button class="m-tab" id="tab3" onclick="switchMethod(3)"><span class="step-idx">3</span>Gradient
+            Descent</button>
+        </div>
+
+        <div class="overlay-toggles">
+          <button class="chip-toggle active" id="btnShowRegions" onclick="toggleOption('showRegions')">🎨 Vùng Phân
+            lớp</button>
+          <button class="chip-toggle active" id="btnShowResiduals" onclick="toggleOption('showResiduals')">📏 Thanh Sai
+            số |y - p̂|</button>
+          <button class="chip-toggle active" id="btnShowOLS" onclick="toggleOption('showOLS')">📈 Đường OLS</button>
+          <button class="chip-toggle" id="btnLogOdds" onclick="toggleOption('logOddsMode')">⚡ Trục Log-Odds</button>
+        </div>
+      </div>
+
+      <!-- Main Interactive Plot -->
+      <div class="canvas-stage">
+        <canvas id="mainCanvas"></canvas>
+        <div id="chartTooltip"></div>
+      </div>
+
+      <!-- 6-Card Live Telemetry Ribbon -->
+      <div class="kpi-ribbon">
+        <div class="kpi-card cyan">
+          <span class="kpi-label">Độ dốc (w)</span>
+          <span class="kpi-val" id="kpiW"></span>
+        </div>
+        <div class="kpi-card cyan">
+          <span class="kpi-label">Hệ số chặn (b)</span>
+          <span class="kpi-val" id="kpiB"></span>
+        </div>
+        <div class="kpi-card amber">
+          <span class="kpi-label">Biên Quyết định x*</span>
+          <span class="kpi-val" id="kpiXStar"></span>
+        </div>
+        <div class="kpi-card">
+          <span class="kpi-label">Tỷ số Odds (eʷ)</span>
+          <span class="kpi-val" id="kpiOddsRatio"></span>
+        </div>
+        <div class="kpi-card rose">
+          <span class="kpi-label">BCE Loss (J)</span>
+          <span class="kpi-val" id="kpiLoss"></span>
+        </div>
+        <div class="kpi-card emerald">
+          <span class="kpi-label">Độ chính xác (Acc)</span>
+          <span class="kpi-val" id="kpiAcc"></span>
+        </div>
+      </div>
+
+      <!-- Interactive Student Sandbox & Cutoff Controller -->
+      <div class="sandbox-section">
+        <div class="sandbox-top">
+          <div class="sandbox-title">
+            <span>🎯 Phòng Thử nghiệm Dự đoán & Ngưỡng Phân loại</span>
+            <span style="font-size:11.5px; color:var(--txt-sub); font-weight:500;">(Kéo thanh trượt hoặc Click trực tiếp
+              lên đồ thị)</span>
+          </div>
+          <button class="chip-toggle active" id="btnTogglePipeline" onclick="togglePipeline()">🔍 Hiện Pipeline 4
+            Bước</button>
+        </div>
+
+        <div class="sandbox-controls-grid">
+          <div class="ctrl-box">
+            <label for="testHours">Giờ học thử (x):</label>
+            <input type="range" id="testHours" min="0" max="10" step="0.1" value="5.0" oninput="onSandboxInput()">
+            <output id="outTestHours">5.0 h</output>
+          </div>
+
+          <div class="ctrl-box">
+            <label for="cutoffSlider" title="Ngưỡng xác suất tối thiểu để kết luận ĐỖ">Ngưỡng P<sub>cut</sub>:</label>
+            <input type="range" id="cutoffSlider" min="0.10" max="0.90" step="0.05" value="0.50"
+              oninput="onCutoffChange()">
+            <output id="outCutoff" style="color:var(--cyan-bright);">0.50</output>
+          </div>
+
+          <div class="verdict-card">
+            <div>
+              <div style="font-size:10.5px; color:var(--txt-sub);">Xác suất Đỗ P(y=1|x)</div>
+              <div style="font-family:var(--font-mono); font-size:14px; font-weight:800; color:var(--cyan-bright);"
+                id="sandboxProbTxt"></div>
+            </div>
+            <div class="gauge-bar">
+              <div class="gauge-fill" id="sandboxGauge" style="width:0%;"></div>
+            </div>
+            <span class="badge-verdict pass" id="sandboxVerdict">ĐỖ (1)</span>
+          </div>
+        </div>
+
+        <div class="student-quick-bar">
+          <span style="font-size:11px; color:var(--txt-dim); font-weight:600;">Chọn nhanh mốc:</span>
+          <button class="stu-pill" onclick="jumpToHours(2.0, 2)">SV 2 (2.0h · Trượt)</button>
+          <button class="stu-pill special" onclick="jumpToHours(4.0, 4)">★ SV 4 (4.0h · Đỗ sớm)</button>
+          <button class="stu-pill" onclick="jumpToHours(4.5, null)">⚡ Biên x* (4.5h · 50%)</button>
+          <button class="stu-pill special" onclick="jumpToHours(5.0, 5)">★ SV 5 (5.0h · Trượt muộn)</button>
+          <button class="stu-pill" onclick="jumpToHours(7.0, 7)">SV 7 (7.0h · Đỗ)</button>
+        </div>
+
+        <!-- 4-Card Horizontal Mathematical Pipeline -->
+        <div class="pipeline-grid" id="pipelineGrid"></div>
+      </div>
+    </section>
+
+    <!-- RIGHT SIDEBAR: CONTROLS, DATA TABLE, 2D CONTOUR & THEORY -->
+    <aside class="right-sidebar">
+      <!-- Card 1: Model Parameters & Dataset / Confusion Matrix -->
+      <div class="bento-card pane-box">
+        <div class="pane-header">
+          <div class="pane-title"><span class="dot-indicator"></span>Điều chỉnh Tham số (w, b) & Dữ liệu</div>
+          <div class="sub-view-switch">
+            <button class="sv-btn active" id="svTableBtn" onclick="switchDataSubView('table')">Bảng 8 SV</button>
+            <button class="sv-btn" id="svCmBtn" onclick="switchDataSubView('cm')">Confusion Matrix</button>
+          </div>
+        </div>
+
+        <div class="sliders-panel">
+          <div class="param-row">
+            <label for="rangeW">Độ dốc (w):</label>
+            <input type="range" id="rangeW" min="-1.5" max="4.0" step="0.01" value="1.2823"
+              oninput="onParamSliderInput()">
+            <output id="outW">1.282</output>
+          </div>
+          <div class="param-row">
+            <label for="rangeB">Hệ số chặn (b):</label>
+            <input type="range" id="rangeB" min="-18.0" max="4.0" step="0.05" value="-5.7703"
+              oninput="onParamSliderInput()">
+            <output id="outB">-5.770</output>
+          </div>
+          <div class="preset-row">
+            <button class="btn-preset primary" onclick="animateToPreset(1.282293, -5.770320)">✨ Nghiệm Cực đại
+              MLE</button>
+            <button class="btn-preset" onclick="animateToPreset(0.867838, -3.905378)">Sklearn L2 (C=1)</button>
+            <button class="btn-preset" onclick="animateToPreset(0.0, 0.0)">Khởi tạo (0, 0)</button>
+            <button class="btn-preset" onclick="animateToPreset(3.4, -15.3)">Dốc đứng (w=3.4)</button>
+          </div>
+        </div>
+
+        <!-- Sub-view A: 8 Students Table -->
+        <div id="subViewTable" class="table-wrap">
+          <table class="data-tbl">
+            <thead>
+              <tr>
+                <th>SV</th>
+                <th>Giờ (xᵢ)</th>
+                <th>Thực tế (yᵢ)</th>
+                <th>Dự đoán P̂ᵢ</th>
+                <th>Hợp lý Lᵢ</th>
+                <th>Đánh giá</th>
+              </tr>
+            </thead>
+            <tbody id="dataTableBody"></tbody>
+          </table>
+        </div>
+
+        <!-- Sub-view B: Confusion Matrix -->
+        <div id="subViewCM" style="display:none;">
+          <div class="note-box" style="margin-top:0;">
+            Ma trận nhầm lẫn tự động cập nhật theo bộ tham số <code>(w, b)</code> và ngưỡng quyết định
+            <code>P_cut = <span id="cmCutLabel">0.50</span></code>:
+          </div>
+          <div class="cm-grid" id="cmGridContainer"></div>
+        </div>
+      </div>
+
+      <!-- Card 2: Method-Specific Interactive Module -->
+      <div class="bento-card pane-box">
+        <!-- TAB 0: PYTHON LIB -->
+        <div id="methodPane0" role="tabpanel">
+          <div class="pane-header">
+            <div class="pane-title"><span class="dot-indicator" style="background:var(--blue);"></span>Phương pháp 0:
+              Thư viện Chuẩn Python</div>
+            <span style="font-size:11px; color:var(--cyan-bright); font-family:var(--font-mono);">sklearn ·
+              statsmodels</span>
+          </div>
+          <p class="pane-desc">
+            Mặc định <code>LogisticRegression()</code> của Scikit-Learn áp dụng phạt chuẩn hóa L2 (<code>C=1.0</code>)
+            khiến đường cong thoải hơn. Để thu được đúng nghiệm Hợp lý Cực đại (MLE) thuần túy, cần
+            đặt <code>C=np.inf</code>.
+          </p>
+
+          <div class="table-wrap" style="margin-bottom:10px;">
+            <table class="data-tbl">
+              <thead>
+                <tr>
+                  <th style="text-align:left;">Mô hình</th>
+                  <th>w</th>
+                  <th>b</th>
+                  <th>x*</th>
+                  <th>ln L</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr onclick="animateToPreset(1.282293, -5.770320)">
+                  <td style="text-align:left; color:var(--cyan-bright); font-weight:700;">Sklearn (C=np.inf) / MLE</td>
+                  <td>1.2823</td>
+                  <td>-5.7703</td>
+                  <td>4.50h</td>
+                  <td>-2.5030</td>
+                </tr>
+                <tr onclick="animateToPreset(0.867838, -3.905378)">
+                  <td style="text-align:left;">Sklearn Mặc định (L2, C=1)</td>
+                  <td>0.8678</td>
+                  <td>-3.9054</td>
+                  <td>4.50h</td>
+                  <td>-2.6582</td>
+                </tr>
+                <tr>
+                  <td style="text-align:left; color:var(--rose-bright);">Hồi quy Tuyến tính OLS</td>
+                  <td>0.1667</td>
+                  <td>-0.2500</td>
+                  <td>4.50h</td>
+                  <td>N/A</td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <div class="code-box">
+            <div class="code-top">
+              <span>02_hoi_quy_logistic_churn.py</span>
+              <button class="sv-btn active" onclick="copyPyCode(this)">Sao chép mã</button>
+            </div>
+            <pre class="py-code" id="pyCodeBlock">import numpy as np
+from sklearn.linear_model import LogisticRegression
+import statsmodels.api as sm
+
+X = np.array([1, 2, 3, 4, 5, 6, 7, 8]).reshape(-1, 1)
+y = np.array([0, 0, 0, 1, 0, 1, 1, 1])
+
+# 1. Nghiệm MLE thuần túy (Tắt phạt chuẩn hóa L2)
+clf = LogisticRegression(C=np.inf, solver='lbfgs', tol=1e-8).fit(X, y)
+w, b = clf.coef_[0][0], clf.intercept_[0]
+print(f"w = {w:.4f}, b = {b:.4f}, x* = {-b/w:.3f}h")
+
+# 2. Kiểm định thống kê qua Statsmodels
+logit_res = sm.Logit(y, sm.add_constant(X)).fit()
+print(logit_res.summary())</pre>
+          </div>
+        </div>
+
+        <!-- TAB 1: OLS VS LOGIT -->
+        <div id="methodPane1" role="tabpanel" style="display:none;">
+          <div class="pane-header">
+            <div class="pane-title"><span class="dot-indicator" style="background:var(--amber-bright);"></span>Phương
+              pháp 1: Tại sao OLS thất bại & Cấu trúc Logit</div>
+          </div>
+          <p class="pane-desc">
+            Nếu áp dụng Hồi quy Tuyến tính OLS, đường thẳng vượt ra ngoài miền xác suất hợp
+            lệ <code>[0, 1]</code> (vùng gạch chéo đỏ trên đồ thị khi x &lt; 1.5h hoặc x &gt; 7.5h).
+          </p>
+          <div class="formula-card">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mtext>logit</mtext><mo stretchy="false">(</mo><mi>p</mi><mo stretchy="false">)</mo><mo>=</mo><mi>ln</mi><mrow><mo stretchy="true">(</mo><mfrac><mi>p</mi><mrow><mn>1</mn><mo>−</mo><mi>p</mi></mrow></mfrac><mo stretchy="true">)</mo></mrow><mo>=</mo><mi>w</mi><mi>x</mi><mo>+</mo><mi>b</mi><mspace width="0.8em"/><mo>⇔</mo><mspace width="0.8em"/><mi>p</mi><mo>=</mo><mfrac><mn>1</mn><mrow><mn>1</mn><mo>+</mo><msup><mi>e</mi><mrow><mo>−</mo><mo stretchy="false">(</mo><mi>w</mi><mi>x</mi><mo>+</mo><mi>b</mi><mo stretchy="false">)</mo></mrow></msup></mrow></mfrac></mrow></math>
+          </div>
+          <div class="note-box">
+            <b>⚠️ Sai lầm kinh điển cần tránh:</b> Không thể lấy nhãn thực tế <code>yᵢ ∈ {0, 1}</code> thay vào
+            <code>ln(yᵢ / (1 - yᵢ))</code> để chạy OLS tuyến tính, vì:
+            <br>• Khi <code>yᵢ = 1</code> ⇒ <code>ln(1/0) = +∞</code>
+            <br>• Khi <code>yᵢ = 0</code> ⇒ <code>ln(0/1) = -∞</code>
+            <br>Khoảng cách từ điểm dữ liệu thật tới đường thẳng trong không gian Log-Odds là <b>vô cực</b>! Hãy bấm thử
+            nút <b>"⚡ Trục Log-Odds"</b> phía trên đồ thị để thấy các mũi tên chỉ ra vô cực. Do đó, ta bắt buộc phải ước
+            lượng <code>(w, b)</code> bằng <b>MLE</b> hoặc <b>Gradient Descent</b>.
+          </div>
+        </div>
+
+        <!-- TAB 2: MAXIMUM LIKELIHOOD ESTIMATION (MLE) -->
+        <div id="methodPane2" role="tabpanel" style="display:none;">
+          <div class="pane-header">
+            <div class="pane-title"><span class="dot-indicator" style="background:var(--emerald-bright);"></span>Phương
+              pháp 2: Hợp lý Cực đại (MLE)</div>
+          </div>
+          <p class="pane-desc">
+            Tìm <code>(w, b)</code> sao cho tích xác suất xảy ra đồng thời của cả 8 kết quả thực nghiệm đạt cực đại:
+          </p>
+          <div class="formula-card">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mi>L</mi><mo stretchy="false">(</mo><mi>w</mi><mo>,</mo><mi>b</mi><mo stretchy="false">)</mo><mo>=</mo><munderover><mo>∏</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><msubsup><mi>p</mi><mi>i</mi><msub><mi>y</mi><mi>i</mi></msub></msubsup><msup><mrow><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><mo stretchy="false">)</mo></mrow><mrow><mn>1</mn><mo>−</mo><msub><mi>y</mi><mi>i</mi></msub></mrow></msup><mspace width="0.8em"/><mo>⇒</mo><mspace width="0.8em"/><mi>ln</mi><mi>L</mi><mo>=</mo><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><mrow><mo stretchy="true">[</mo><msub><mi>y</mi><mi>i</mi></msub><mi>ln</mi><msub><mi>p</mi><mi>i</mi></msub><mo>+</mo><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><msub><mi>y</mi><mi>i</mi></msub><mo stretchy="false">)</mo><mi>ln</mi><mo stretchy="false">(</mo><mn>1</mn><mo>−</mo><msub><mi>p</mi><mi>i</mi></msub><mo stretchy="false">)</mo><mo stretchy="true">]</mo></mrow></mrow></math>
+          </div>
+
+          <div id="mleCardsContainer"></div>
+
+          <!-- 2D Log-Likelihood Landscape -->
+          <div class="surface-box">
+            <div class="surface-head">
+              <span>🗺️ <b>Bản đồ Đồng mức Log-Likelihood 2D (w, b)</b> — Nhấp/Kéo trên bản đồ!</span>
+              <span style="color:var(--emerald-bright); font-family:var(--font-mono);">★ Đỉnh MLE</span>
+            </div>
+            <canvas id="mleContourCanvas" class="aux-canvas" style="height:175px;"></canvas>
+          </div>
+        </div>
+
+        <!-- TAB 3: GRADIENT DESCENT -->
+        <div id="methodPane3" role="tabpanel" style="display:none;">
+          <div class="pane-header">
+            <div class="pane-title"><span class="dot-indicator" style="background:var(--rose-bright);"></span>Phương
+              pháp 3: Tối ưu hóa Hạ Gradient</div>
+            <span style="font-family:var(--font-mono); font-size:11.5px; color:var(--amber-bright);">Epoch: <b
+                id="gdEpochTxt">0</b></span>
+          </div>
+          <div class="formula-card">
+            <math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mrow><mfrac><mrow><mo>∂</mo><mi>J</mi></mrow><mrow><mo>∂</mo><mi>w</mi></mrow></mfrac><mo>=</mo><mfrac><mn>1</mn><mi>N</mi></mfrac><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><mo stretchy="false">(</mo><msub><mover><mi>p</mi><mo>^</mo></mover><mi>i</mi></msub><mo>−</mo><msub><mi>y</mi><mi>i</mi></msub><mo stretchy="false">)</mo><msub><mi>x</mi><mi>i</mi></msub><mspace width="1.2em"/><mo>|</mo><mspace width="1.2em"/><mfrac><mrow><mo>∂</mo><mi>J</mi></mrow><mrow><mo>∂</mo><mi>b</mi></mrow></mfrac><mo>=</mo><mfrac><mn>1</mn><mi>N</mi></mfrac><munderover><mo>∑</mo><mrow><mi>i</mi><mo>=</mo><mn>1</mn></mrow><mi>N</mi></munderover><mo stretchy="false">(</mo><msub><mover><mi>p</mi><mo>^</mo></mover><mi>i</mi></msub><mo>−</mo><msub><mi>y</mi><mi>i</mi></msub><mo stretchy="false">)</mo></mrow></math>
+          </div>
+
+          <div class="gd-toolbar">
+            <button class="btn-action play" id="btnGdToggle" onclick="toggleGdRun()">▶ Chạy Tự động</button>
+            <button class="btn-action" onclick="stepGradientDescent(1)">+1 Bước</button>
+            <button class="btn-action" onclick="stepGradientDescent(20)">+20 Bước</button>
+            <button class="btn-action reset" onclick="resetGradientDescent()">↺ Đặt lại (0, 0)</button>
+          </div>
+
+          <div class="param-row" style="margin:6px 0;">
+            <label for="lrSlider" style="width:115px; flex:0 0 115px;">Tốc độ học (α):</label>
+            <input type="range" id="lrSlider" min="0.02" max="0.60" step="0.02" value="0.15" oninput="onLrChange()">
+            <output id="outLr">0.15</output>
+          </div>
+
+          <div class="note-box" id="gdLiveMathBox" style="font-family:var(--font-mono); font-size:11px;"></div>
+
+          <!-- Dual Visualizers: 2D Trajectory + 1D Loss Curve -->
+          <div class="surface-box">
+            <div class="surface-head">
+              <span>🧭 Quỹ đạo (w, b) trên Mặt BCE Loss</span>
+              <span>📉 Đồ thị Hội tụ J(w, b)</span>
+            </div>
+            <div class="dual-canvas-grid">
+              <canvas id="gdContourCanvas" class="aux-canvas"></canvas>
+              <canvas id="gdLossCanvas" class="aux-canvas"></canvas>
+            </div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <div>Học phần: <b>Trí tuệ Nhân tạo và Ứng dụng</b> · Nguồn SSoT: <code>02_hoi_quy_logistic_churn.py</code></div>
+    <div>Mẹo: Nhấp vào bất kỳ điểm dữ liệu hoặc bản đồ nhiệt 2D nào để khám phá trực quan</div>
+  </footer>
+
+  <script>
+    // ============================================================================
+    // 1. DATASET & EXACT MATHEMATICAL CONSTANTS (SSoT from 02_hoi_quy_logistic_churn.py)
+    // ============================================================================
+    const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10,11],"vars":{"exam_records":[{"id":1,"x":1,"y":0},{"id":2,"x":2,"y":0},{"id":3,"x":3,"y":0},{"id":4,"x":4,"y":1},{"id":5,"x":5,"y":0},{"id":6,"x":6,"y":1},{"id":7,"x":7,"y":1},{"id":8,"x":8,"y":1}],"n_exam":8,"w_mle":1.2822933696,"b_mle":-5.7703201555,"x_star_mle":4.4999999939,"odds_ratio_mle":3.6048976155,"ll_mle":-2.5030496985,"bce_mle":0.3128812123,"acc_mle":0.75,"w_l2":0.8678381752,"b_l2":-3.9053778197,"ll_l2":-2.6581876461,"w_ols":0.1666666667,"b_ols":-0.25,"p_x5_mle":0.655012626},"derived":{}};
+    const NOTES = {
+      1: 'Học ít, trượt rõ ràng',
+      2: 'Học ít, trượt rõ ràng',
+      3: 'Dưới ngưỡng, trượt',
+      4: 'Đỗ sớm (Ngoại lệ chồng lấn)',
+      5: 'Trượt muộn (Ngoại lệ chồng lấn)',
+      6: 'Trên ngưỡng, đỗ',
+      7: 'Học nhiều, đỗ chắc chắn',
+      8: 'Học nhiều, đỗ chắc chắn'
+    };
+    const DATA = LAB.vars.exam_records.map(r => ({ ...r, note: NOTES[r.id] || '' }));
+
+    const OLS_W = LAB.vars.w_ols;
+    const OLS_B = LAB.vars.b_ols;
+    const OPT_W = LAB.vars.w_mle;
+    const OPT_B = LAB.vars.b_mle;
+
+    const state = {
+      w: OPT_W,
+      b: OPT_B,
+      activeMethod: 0,
+      showRegions: true,
+      showResiduals: true,
+      showOLS: true,
+      logOddsMode: false,
+      showPipeline: true,
+      dataSubView: 'table', // 'table' | 'cm'
+      cutoff: 0.50,
+      testHours: 5.0,
+      selectedId: 5,
+      hoverId: null,
+
+      // Gradient Descent State
+      gdRunning: false,
+      gdTimer: null,
+      gdEpoch: 0,
+      gdLr: 0.15,
+      gdPath: [{ w: 0, b: 0, loss: Math.LN2 }]
+    };
+
+    // Parameter Space Bounds for 2D Contour Plot
+    const W_MIN = -0.6, W_MAX = 2.8;
+    const B_MIN = -11.5, B_MAX = 1.5;
+
+    function sigmoid(z) {
+      if (z > 35) return 1.0;
+      if (z < -35) return 0.0;
+      return 1.0 / (1.0 + Math.exp(-z));
+    }
+
+    function clamp(v, lo, hi) {
+      return Math.max(lo, Math.min(hi, v));
+    }
+
+    // Lookup probability cutoff inverse logit: logit(P_cut) = ln(P_cut / (1 - P_cut))
+    function getDecisionBoundaryX(w, b, cutoff = 0.5) {
+      if (Math.abs(w) < 1e-6) return NaN;
+      const logitCut = Math.log(cutoff / (1 - cutoff));
+      return (logitCut - b) / w;
+    }
+
+    function evaluateModel(w, b, cutoff = state.cutoff) {
+      let ll = 0;
+      let dw = 0, db = 0;
+      let tp = 0, tn = 0, fp = 0, fn = 0;
+
+      const items = DATA.map(d => {
+        const z = w * d.x + b;
+        const p = sigmoid(z);
+        const pSafe = clamp(p, 1e-12, 1 - 1e-12);
+        const itemL = d.y === 1 ? pSafe : (1 - pSafe);
+        const itemLL = Math.log(itemL);
+        ll += itemLL;
+
+        const err = p - d.y;
+        dw += err * d.x;
+        db += err;
+
+        const pred = p >= cutoff ? 1 : 0;
+        if (pred === 1 && d.y === 1) tp++;
+        else if (pred === 0 && d.y === 0) tn++;
+        else if (pred === 1 && d.y === 0) fp++;
+        else fn++;
+
+        return { ...d, z, p, itemL, itemLL, pred, correct: pred === d.y };
+      });
+
+      const N = DATA.length;
+      const isAtMle = Math.abs(w - OPT_W) < 1e-6 && Math.abs(b - OPT_B) < 1e-6 && Math.abs(cutoff - 0.5) < 1e-6;
+      return {
+        ll: isAtMle ? LAB.vars.ll_mle : ll,
+        bceLoss: isAtMle ? LAB.vars.bce_mle : -ll / N,
+        dw: dw / N,
+        db: db / N,
+        tp, tn, fp, fn,
+        correctCount: tp + tn,
+        accuracy: isAtMle ? LAB.vars.acc_mle : (tp + tn) / N,
+        xStar: isAtMle ? LAB.vars.x_star_mle : getDecisionBoundaryX(w, b, cutoff),
+        items
+      };
+    }
+
+    // ============================================================================
+    // 2. PRECOMPUTED 2D LOSS CONTOUR HEATMAP BUFFER
+    // ============================================================================
+    let contourOffscreen = null;
+    function buildContourCache() {
+      const cw = 180, ch = 120;
+      contourOffscreen = document.createElement('canvas');
+      contourOffscreen.width = cw;
+      contourOffscreen.height = ch;
+      const ctx = contourOffscreen.getContext('2d');
+      const img = ctx.createImageData(cw, ch);
+      const data = img.data;
+
+      for (let py = 0; py < ch; py++) {
+        const bVal = B_MAX - (py / (ch - 1)) * (B_MAX - B_MIN);
+        for (let px = 0; px < cw; px++) {
+          const wVal = W_MIN + (px / (cw - 1)) * (W_MAX - W_MIN);
+          let ll = 0;
+          for (let i = 0; i < DATA.length; i++) {
+            const z = wVal * DATA[i].x + bVal;
+            const p = clamp(sigmoid(z), 1e-9, 1 - 1e-9);
+            ll += DATA[i].y === 1 ? Math.log(p) : Math.log(1 - p);
+          }
+          const loss = -ll / DATA.length; // Minimum ~ 0.3129
+          // Normalize loss into [0, 1] visual spectrum
+          const norm = clamp((loss - 0.3129) / 1.4, 0, 1);
+          const t = Math.pow(norm, 0.45);
+
+          // Viridis/Cyber-like color ramp (Emerald/Cyan at optimum -> Indigo -> Deep Slate)
+          let r = Math.round(16 * (1 - t) + 12 * t);
+          let g = Math.round(215 * Math.pow(1 - t, 1.6) + 20 * t);
+          let bl = Math.round(220 * (1 - t * 0.65) + 45 * t);
+
+          // Subtle contour rings
+          const ring = Math.abs((loss * 18) % 1 - 0.5);
+          if (ring < 0.055) {
+            r = Math.min(255, r + 28);
+            g = Math.min(255, g + 35);
+            bl = Math.min(255, bl + 35);
+          }
+
+          const idx = (py * cw + px) * 4;
+          data[idx] = r;
+          data[idx + 1] = g;
+          data[idx + 2] = bl;
+          data[idx + 3] = 255;
+        }
+      }
+      ctx.putImageData(img, 0, 0);
+    }
+
+    // ============================================================================
+    // 3. MAIN CANVAS RENDERING
+    // ============================================================================
+    const mainCanvas = document.getElementById('mainCanvas');
+    const mainCtx = mainCanvas.getContext('2d');
+    const tooltip = document.getElementById('chartTooltip');
+
+    const plotGeo = {
+      pad: { left: 58, right: 32, top: 34, bottom: 46 },
+      w: 100, h: 100,
+      xMin: 0, xMax: 10,
+      yMin: 0, yMax: 1,
+      toX(x) { return this.pad.left + ((x - this.xMin) / (this.xMax - this.xMin)) * this.w; },
+      toY(y) { return this.pad.top + this.h - ((y - this.yMin) / (this.yMax - this.yMin)) * this.h; },
+      fromX(px) { return this.xMin + ((px - this.pad.left) / this.w) * (this.xMax - this.xMin); }
+    };
+
+    function resizeAllCanvases() {
+      const dpr = window.devicePixelRatio || 1;
+      const stageRect = mainCanvas.parentElement.getBoundingClientRect();
+      mainCanvas.width = stageRect.width * dpr;
+      mainCanvas.height = stageRect.height * dpr;
+      mainCtx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      ['mleContourCanvas', 'gdContourCanvas', 'gdLossCanvas'].forEach(id => {
+        const c = document.getElementById(id);
+        if (c && c.getBoundingClientRect().width > 0) {
+          const r = c.getBoundingClientRect();
+          c.width = r.width * dpr;
+          c.height = r.height * dpr;
+          c.getContext('2d').setTransform(dpr, 0, 0, dpr, 0, 0);
+        }
+      });
+      renderAll();
+    }
+    window.addEventListener('resize', resizeAllCanvases);
+
+    function renderMainChart(evalRes) {
+      const dpr = window.devicePixelRatio || 1;
+      const W = mainCanvas.width / dpr;
+      const H = mainCanvas.height / dpr;
+      mainCtx.clearRect(0, 0, W, H);
+
+      const pad = { left: 58, right: 32, top: 34, bottom: 46 };
+      const plotW = W - pad.left - pad.right;
+      const plotH = H - pad.top - pad.bottom;
+
+      let yMin = 0, yMax = 1;
+      if (state.logOddsMode) {
+        yMin = -6; yMax = 6;
+      } else if (state.showOLS && state.activeMethod === 1) {
+        yMin = -0.3; yMax = 1.3;
+      }
+
+      Object.assign(plotGeo, { pad, w: plotW, h: plotH, xMin: 0, xMax: 10, yMin, yMax });
+      const toX = x => plotGeo.toX(x);
+      const toY = y => plotGeo.toY(y);
+
+      // 1. Decision Regions (Pass / Fail Shaded Background)
+      const xStar = evalRes.xStar;
+      if (state.showRegions && !state.logOddsMode) {
+        const clampedXStar = clamp(isNaN(xStar) ? 10 : xStar, 0, 10);
+        const pxStar = toX(clampedXStar);
+        const yTop = toY(Math.min(1, yMax));
+        const yBot = toY(Math.max(0, yMin));
+
+        const leftIsPass = state.w < 0;
+        mainCtx.fillStyle = leftIsPass ? 'rgba(16, 185, 129, 0.055)' : 'rgba(244, 63, 94, 0.055)';
+        mainCtx.fillRect(pad.left, yTop, pxStar - pad.left, yBot - yTop);
+
+        mainCtx.fillStyle = leftIsPass ? 'rgba(244, 63, 94, 0.055)' : 'rgba(16, 185, 129, 0.055)';
+        mainCtx.fillRect(pxStar, yTop, pad.left + plotW - pxStar, yBot - yTop);
+      }
+
+      // Invalid probability zones for OLS comparison
+      if (!state.logOddsMode && state.showOLS && state.activeMethod === 1) {
+        const py1 = toY(1), py0 = toY(0);
+        mainCtx.fillStyle = 'rgba(244, 63, 94, 0.11)';
+        mainCtx.fillRect(pad.left, pad.top, plotW, py1 - pad.top);
+        mainCtx.fillRect(pad.left, py0, plotW, pad.top + plotH - py0);
+
+        mainCtx.fillStyle = '#fb7185';
+        mainCtx.font = '600 11px "Plus Jakarta Sans", sans-serif';
+        mainCtx.textAlign = 'right';
+        mainCtx.fillText('⚠️ Vùng vi phạm tiên đề xác suất (P > 1)', pad.left + plotW - 10, pad.top + 16);
+        mainCtx.fillText('⚠️ Vùng vi phạm tiên đề xác suất (P < 0)', pad.left + plotW - 10, pad.top + plotH - 8);
+      }
+
+      // 2. Coordinate Grid & Axes
+      mainCtx.lineWidth = 1;
+      mainCtx.font = '500 11px "JetBrains Mono", monospace';
+      mainCtx.textAlign = 'center';
+
+      for (let x = 0; x <= 10; x++) {
+        const px = toX(x);
+        mainCtx.strokeStyle = 'rgba(148, 163, 184, 0.08)';
+        mainCtx.beginPath();
+        mainCtx.moveTo(px, pad.top);
+        mainCtx.lineTo(px, pad.top + plotH);
+        mainCtx.stroke();
+        mainCtx.fillStyle = '#64748b';
+        mainCtx.fillText(`${x}h`, px, pad.top + plotH + 18);
+      }
+
+      mainCtx.textAlign = 'right';
+      const yTicks = state.logOddsMode
+        ? [-6, -4, -2, 0, 2, 4, 6]
+        : (state.showOLS && state.activeMethod === 1 ? [-0.2, 0, 0.25, 0.5, 0.75, 1.0, 1.2] : [0, 0.25, 0.5, 0.75, 1.0]);
+
+      yTicks.forEach(yv => {
+        const py = toY(yv);
+        mainCtx.strokeStyle = (yv === 0 || yv === 1)
+          ? 'rgba(148, 163, 184, 0.24)'
+          : 'rgba(148, 163, 184, 0.08)';
+        mainCtx.beginPath();
+        mainCtx.moveTo(pad.left, py);
+        mainCtx.lineTo(pad.left + plotW, py);
+        mainCtx.stroke();
+        mainCtx.fillStyle = '#64748b';
+        mainCtx.fillText(state.logOddsMode ? yv.toString() : yv.toFixed(2), pad.left - 10, py + 4);
+      });
+
+      // Cutoff Horizontal Line
+      if (!state.logOddsMode) {
+        const pyCut = toY(state.cutoff);
+        mainCtx.save();
+        mainCtx.setLineDash([4, 4]);
+        mainCtx.strokeStyle = 'rgba(251, 191, 36, 0.45)';
+        mainCtx.beginPath();
+        mainCtx.moveTo(pad.left, pyCut);
+        mainCtx.lineTo(pad.left + plotW, pyCut);
+        mainCtx.stroke();
+        mainCtx.restore();
+      }
+
+      // Axis Titles
+      mainCtx.fillStyle = '#94a3b8';
+      mainCtx.font = '600 12px "Plus Jakarta Sans", sans-serif';
+      mainCtx.textAlign = 'center';
+      mainCtx.fillText('Số giờ tự học của sinh viên (x)', pad.left + plotW / 2, pad.top + plotH + 38);
+
+      mainCtx.save();
+      mainCtx.translate(16, pad.top + plotH / 2);
+      mainCtx.rotate(-Math.PI / 2);
+      mainCtx.fillText(state.logOddsMode ? 'Log-Odds: z = ln(p / (1-p))' : 'Xác suất thi đỗ: P(y = 1 | x)', 0, 0);
+      mainCtx.restore();
+
+      // 3. Decision Boundary Vertical Line (x*)
+      if (!isNaN(xStar) && xStar >= 0 && xStar <= 10) {
+        const pxStar = toX(xStar);
+        mainCtx.save();
+        mainCtx.setLineDash([6, 4]);
+        mainCtx.strokeStyle = 'rgba(251, 191, 36, 0.8)';
+        mainCtx.lineWidth = 1.8;
+        mainCtx.beginPath();
+        mainCtx.moveTo(pxStar, pad.top);
+        mainCtx.lineTo(pxStar, pad.top + plotH);
+        mainCtx.stroke();
+
+        mainCtx.setLineDash([]);
+        mainCtx.fillStyle = 'rgba(15, 23, 42, 0.92)';
+        mainCtx.strokeStyle = '#fbbf24';
+        mainCtx.lineWidth = 1.2;
+        mainCtx.beginPath();
+        mainCtx.roundRect(pxStar - 54, pad.top + 8, 108, 22, 6);
+        mainCtx.fill();
+        mainCtx.stroke();
+
+        mainCtx.fillStyle = '#fbbf24';
+        mainCtx.font = '700 11px "JetBrains Mono", monospace';
+        mainCtx.textAlign = 'center';
+        mainCtx.fillText(`x* = ${xStar.toFixed(2)}h`, pxStar, pad.top + 23);
+        mainCtx.restore();
+      }
+
+      // 4. OLS Linear Line
+      if (!state.logOddsMode && state.showOLS) {
+        mainCtx.save();
+        mainCtx.strokeStyle = 'rgba(251, 113, 133, 0.78)';
+        mainCtx.lineWidth = 2;
+        mainCtx.setLineDash([5, 5]);
+        mainCtx.beginPath();
+        mainCtx.moveTo(toX(0), toY(OLS_B));
+        mainCtx.lineTo(toX(10), toY(OLS_W * 10 + OLS_B));
+        mainCtx.stroke();
+
+        mainCtx.fillStyle = '#fb7185';
+        mainCtx.font = '600 11px "Plus Jakarta Sans", sans-serif';
+        mainCtx.textAlign = 'left';
+        mainCtx.fillText('Đường OLS: ŷ = 0.167x - 0.25', pad.left + 12, pad.top + 22);
+        mainCtx.restore();
+      }
+
+      // 5. Residual / Error Springs (|y_i - p_i|)
+      if (state.showResiduals && !state.logOddsMode) {
+        evalRes.items.forEach(item => {
+          const px = toX(item.x);
+          const pyData = toY(item.y);
+          const pyPred = toY(item.p);
+          const err = Math.abs(item.y - item.p);
+
+          mainCtx.save();
+          mainCtx.strokeStyle = err > 0.45 ? 'rgba(251, 113, 133, 0.65)' : 'rgba(52, 211, 153, 0.45)';
+          mainCtx.lineWidth = err > 0.45 ? 2.2 : 1.5;
+          mainCtx.setLineDash([3, 3]);
+          mainCtx.beginPath();
+          mainCtx.moveTo(px, pyData);
+          mainCtx.lineTo(px, pyPred);
+          mainCtx.stroke();
+
+          // Small node on the Sigmoid curve
+          mainCtx.setLineDash([]);
+          mainCtx.fillStyle = err > 0.45 ? '#fb7185' : '#34d399';
+          mainCtx.beginPath();
+          mainCtx.arc(px, pyPred, 3.2, 0, Math.PI * 2);
+          mainCtx.fill();
+          mainCtx.restore();
+        });
+      }
+
+      // 6. Sigmoid Curve (or Linear Log-Odds Line)
+      mainCtx.save();
+      mainCtx.strokeStyle = '#22d3ee';
+      mainCtx.lineWidth = 3.2;
+      mainCtx.shadowColor = 'rgba(34, 211, 238, 0.55)';
+      mainCtx.shadowBlur = 12;
+      mainCtx.beginPath();
+      const steps = 200;
+      for (let i = 0; i <= steps; i++) {
+        const xv = (i / steps) * 10;
+        const yv = state.logOddsMode ? (state.w * xv + state.b) : sigmoid(state.w * xv + state.b);
+        const px = toX(xv), py = toY(yv);
+        if (i === 0) mainCtx.moveTo(px, py);
+        else mainCtx.lineTo(px, py);
+      }
+      mainCtx.stroke();
+      mainCtx.restore();
+
+      // 7. Render 8 Empirical Data Points
+      evalRes.items.forEach(item => {
+        const px = toX(item.x);
+        const py = state.logOddsMode ? toY(item.y === 1 ? 5 : -5) : toY(item.y);
+        const isPass = item.y === 1;
+        const isSelected = state.selectedId === item.id;
+        const isHovered = state.hoverId === item.id;
+        const isAnomaly = item.id === 4 || item.id === 5;
+
+        mainCtx.save();
+        // Outer halo
+        mainCtx.beginPath();
+        mainCtx.arc(px, py, isHovered || isSelected ? 13 : 8.5, 0, Math.PI * 2);
+        mainCtx.fillStyle = isPass ? 'rgba(16, 185, 129, 0.22)' : 'rgba(244, 63, 94, 0.22)';
+        mainCtx.fill();
+
+        if (isSelected) {
+          mainCtx.beginPath();
+          mainCtx.arc(px, py, 15, 0, Math.PI * 2);
+          mainCtx.strokeStyle = '#fbbf24';
+          mainCtx.lineWidth = 2;
+          mainCtx.stroke();
+        }
+
+        // Main Point Circle
+        mainCtx.beginPath();
+        mainCtx.arc(px, py, isHovered ? 7.5 : 6, 0, Math.PI * 2);
+        mainCtx.fillStyle = isPass ? '#34d399' : '#fb7185';
+        mainCtx.strokeStyle = '#ffffff';
+        mainCtx.lineWidth = 1.8;
+        mainCtx.fill();
+        mainCtx.stroke();
+
+        // Infinite Arrows in Log-Odds Mode
+        if (state.logOddsMode) {
+          const edgeY = isPass ? pad.top : pad.top + plotH;
+          mainCtx.strokeStyle = isPass ? '#34d399' : '#fb7185';
+          mainCtx.setLineDash([3, 3]);
+          mainCtx.beginPath();
+          mainCtx.moveTo(px, isPass ? py - 8 : py + 8);
+          mainCtx.lineTo(px, edgeY);
+          mainCtx.stroke();
+          mainCtx.setLineDash([]);
+        }
+
+        // Smart Label
+        mainCtx.font = '700 11px "JetBrains Mono", monospace';
+        mainCtx.textAlign = 'center';
+        mainCtx.fillStyle = isPass ? '#34d399' : '#fb7185';
+        const labelY = isPass ? py - 14 : py + 21;
+        mainCtx.fillText(state.logOddsMode ? `${item.x}h→${isPass ? '+∞' : '-∞'}` : `SV${item.id}(${item.x}h)`, px, labelY);
+
+        if (isAnomaly) {
+          mainCtx.font = '600 10px "Plus Jakarta Sans", sans-serif';
+          mainCtx.fillStyle = '#fbbf24';
+          mainCtx.fillText(item.id === 4 ? '★ Đỗ sớm' : '★ Trượt muộn', px, isPass ? py - 27 : py + 34);
+        }
+        mainCtx.restore();
+      });
+
+      // 8. Interactive Sandbox Test Point Marker
+      const tx = state.testHours;
+      const tz = state.w * tx + state.b;
+      const tp = sigmoid(tz);
+      const ptx = toX(tx);
+      const pty = toY(state.logOddsMode ? tz : tp);
+
+      mainCtx.save();
+      mainCtx.setLineDash([4, 4]);
+      mainCtx.strokeStyle = 'rgba(251, 191, 36, 0.75)';
+      mainCtx.lineWidth = 1.4;
+      mainCtx.beginPath();
+      mainCtx.moveTo(ptx, pad.top + plotH);
+      mainCtx.lineTo(ptx, pty);
+      mainCtx.lineTo(pad.left, pty);
+      mainCtx.stroke();
+
+      mainCtx.setLineDash([]);
+      mainCtx.beginPath();
+      mainCtx.arc(ptx, pty, 7.5, 0, Math.PI * 2);
+      mainCtx.fillStyle = '#fbbf24';
+      mainCtx.strokeStyle = '#020617';
+      mainCtx.lineWidth = 2.5;
+      mainCtx.fill();
+      mainCtx.stroke();
+      mainCtx.restore();
+    }
+
+    // ============================================================================
+    // 4. AUXILIARY CANVASES: 2D CONTOUR HEATMAP & 1D LOSS HISTORY
+    // ============================================================================
+    function render2DContourCanvas(canvasId, showGdTrajectory) {
+      const canvas = document.getElementById(canvasId);
+      if (!canvas || canvas.width === 0) return;
+      const dpr = window.devicePixelRatio || 1;
+      const W = canvas.width / dpr;
+      const H = canvas.height / dpr;
+      const ctx = canvas.getContext('2d');
+
+      ctx.clearRect(0, 0, W, H);
+      if (contourOffscreen) {
+        ctx.drawImage(contourOffscreen, 0, 0, W, H);
+      }
+
+      const toPx = wVal => ((wVal - W_MIN) / (W_MAX - W_MIN)) * W;
+      const toPy = bVal => ((B_MAX - bVal) / (B_MAX - B_MIN)) * H;
+
+      // Axis labels inside heatmap
+      ctx.fillStyle = 'rgba(255,255,255,0.75)';
+      ctx.font = '600 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('trục ngang: w ∈ [-0.6, 2.8]', 8, H - 7);
+      ctx.save();
+      ctx.translate(11, H - 24);
+      ctx.rotate(-Math.PI / 2);
+      ctx.fillText('trục dọc: b', 0, 0);
+      ctx.restore();
+
+      // Draw GD Trajectory if on Tab 3
+      if (showGdTrajectory && state.gdPath.length > 1) {
+        ctx.save();
+        ctx.strokeStyle = '#fbbf24';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        state.gdPath.forEach((pt, idx) => {
+          const x = toPx(pt.w), y = toPy(pt.b);
+          if (idx === 0) ctx.moveTo(x, y);
+          else ctx.lineTo(x, y);
+        });
+        ctx.stroke();
+        ctx.restore();
+      }
+
+      // Draw Global MLE Optimum Star
+      const optX = toPx(OPT_W), optY = toPy(OPT_B);
+      ctx.save();
+      ctx.strokeStyle = '#34d399';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.arc(optX, optY, 7, 0, Math.PI * 2);
+      ctx.stroke();
+      ctx.fillStyle = '#34d399';
+      ctx.font = '700 10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'left';
+      ctx.fillText('★ MLE', optX + 9, optY + 3);
+      ctx.restore();
+
+      // Draw Current (w, b) Handle
+      const curX = clamp(toPx(state.w), 4, W - 4);
+      const curY = clamp(toPy(state.b), 4, H - 4);
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(curX, curY, 6, 0, Math.PI * 2);
+      ctx.fillStyle = '#ffffff';
+      ctx.strokeStyle = '#020617';
+      ctx.lineWidth = 2;
+      ctx.fill();
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    function render1DLossCurve() {
+      const canvas = document.getElementById('gdLossCanvas');
+      if (!canvas || canvas.width === 0) return;
+      const dpr = window.devicePixelRatio || 1;
+      const W = canvas.width / dpr;
+      const H = canvas.height / dpr;
+      const ctx = canvas.getContext('2d');
+      ctx.clearRect(0, 0, W, H);
+
+      const pad = { l: 36, r: 14, t: 14, b: 22 };
+      const pw = W - pad.l - pad.r;
+      const ph = H - pad.t - pad.b;
+      const yMin = 0.28, yMax = 0.75;
+
+      const toY = loss => pad.t + ph - ((clamp(loss, yMin, yMax) - yMin) / (yMax - yMin)) * ph;
+
+      // MLE Optimum baseline
+      const yOpt = toY(0.3129);
+      ctx.strokeStyle = 'rgba(52, 211, 153, 0.45)';
+      ctx.setLineDash([3, 3]);
+      ctx.beginPath();
+      ctx.moveTo(pad.l, yOpt);
+      ctx.lineTo(pad.l + pw, yOpt);
+      ctx.stroke();
+      ctx.setLineDash([]);
+
+      ctx.fillStyle = '#34d399';
+      ctx.font = '10px "JetBrains Mono", monospace';
+      ctx.textAlign = 'right';
+      ctx.fillText('J_min=0.313', pad.l + pw, yOpt - 4);
+
+      const hist = state.gdPath;
+      if (hist.length > 0) {
+        ctx.strokeStyle = '#fb7185';
+        ctx.lineWidth = 2.2;
+        ctx.beginPath();
+        hist.forEach((item, idx) => {
+          const px = pad.l + (hist.length === 1 ? 0 : (idx / (hist.length - 1)) * pw);
+          const py = toY(item.loss);
+          if (idx === 0) ctx.moveTo(px, py);
+          else ctx.lineTo(px, py);
+        });
+        ctx.stroke();
+
+        const last = hist[hist.length - 1];
+        const lx = pad.l + (hist.length === 1 ? 0 : pw);
+        const ly = toY(last.loss);
+        ctx.fillStyle = '#fbbf24';
+        ctx.beginPath();
+        ctx.arc(lx, ly, 4, 0, Math.PI * 2);
+        ctx.fill();
+      }
+    }
+
+    // ============================================================================
+    // 5. UI SYNCHRONIZATION & DOM UPDATES
+    // ============================================================================
+    function renderAll() {
+      const evalRes = evaluateModel(state.w, state.b, state.cutoff);
+
+      // 1. Update Telemetry KPIs
+      const isAtMle = Math.abs(state.w - OPT_W) < 1e-6 && Math.abs(state.b - OPT_B) < 1e-6;
+      document.getElementById('kpiW').textContent = state.w.toFixed(4);
+      document.getElementById('kpiB').textContent = state.b.toFixed(4);
+      document.getElementById('kpiXStar').textContent = isNaN(evalRes.xStar) ? 'N/A' : `${evalRes.xStar.toFixed(3)} h`;
+      const oddsRatio = isAtMle ? LAB.vars.odds_ratio_mle : Math.exp(state.w);
+      document.getElementById('kpiOddsRatio').textContent = oddsRatio > 999 ? '>999×' : `×${oddsRatio.toFixed(2)} / giờ`;
+      document.getElementById('kpiLoss').textContent = evalRes.bceLoss.toFixed(4);
+      document.getElementById('kpiAcc').textContent = `${evalRes.correctCount}/8 (${(evalRes.accuracy * 100).toFixed(1)}%)`;
+
+      // 2. Sync Parameter Sliders
+      document.getElementById('rangeW').value = state.w;
+      document.getElementById('rangeB').value = state.b;
+      document.getElementById('outW').textContent = state.w.toFixed(3);
+      document.getElementById('outB').textContent = state.b.toFixed(3);
+
+      // 3. Populate 8-Student Data Table
+      const tbody = document.getElementById('dataTableBody');
+      tbody.innerHTML = evalRes.items.map(it => {
+        const isSel = state.selectedId === it.id;
+        const barColor = it.p >= state.cutoff ? '#34d399' : '#fb7185';
+        return `
+      <tr class="${isSel ? 'selected-row' : ''}" onclick="jumpToHours(${it.x}, ${it.id})">
+        <td>#${it.id}</td>
+        <td><b>${it.x}.0h</b></td>
+        <td style="color:${it.y === 1 ? 'var(--emerald-bright)' : 'var(--rose-bright)'}; font-weight:700;">
+          ${it.y === 1 ? 'Đỗ (1)' : 'Trượt (0)'}
+        </td>
+        <td>
+          <div class="prob-cell-bar">
+            <span>${(it.p * 100).toFixed(1)}%</span>
+            <div class="mini-p-track"><div class="mini-p-fill" style="width:${(it.p * 100).toFixed(0)}%; background:${barColor};"></div></div>
+          </div>
+        </td>
+        <td>${it.itemL.toFixed(3)}</td>
+        <td style="color:${it.correct ? 'var(--emerald-bright)' : 'var(--rose-bright)'}; font-weight:700;">
+          ${it.correct ? '✓ Đúng' : '✗ Sai'}
+        </td>
+      </tr>
+    `;
+      }).join('');
+
+      // 4. Populate Confusion Matrix
+      document.getElementById('cmCutLabel').textContent = state.cutoff.toFixed(2);
+      document.getElementById('cmGridContainer').innerHTML = `
+    <div></div>
+    <div style="text-align:center; font-weight:700; color:var(--emerald-bright);">Dự đoán: ĐỖ (1)</div>
+    <div style="text-align:center; font-weight:700; color:var(--rose-bright);">Dự đoán: TRƯỢT (0)</div>
+    <div style="font-weight:700; color:var(--emerald-bright);">Thực tế: ĐỖ (1)</div>
+    <div class="cm-cell tp"><b>${evalRes.tp}</b>True Positive (TP)</div>
+    <div class="cm-cell fn"><b>${evalRes.fn}</b>False Negative (FN)<br><span style="font-size:10px; color:var(--txt-sub);">(SV 4 nếu x* > 4)</span></div>
+    <div style="font-weight:700; color:var(--rose-bright);">Thực tế: TRƯỢT (0)</div>
+    <div class="cm-cell fp"><b>${evalRes.fp}</b>False Positive (FP)<br><span style="font-size:10px; color:var(--txt-sub);">(SV 5 nếu x* < 5)</span></div>
+    <div class="cm-cell tn"><b>${evalRes.tn}</b>True Negative (TN)</div>
+  `;
+
+      // 5. Update Sandbox & 4-Step Pipeline
+      updateSandboxView(evalRes);
+
+      // 6. Update Method 2 (MLE) & Method 3 (GD) panels
+      updateMlePanel(evalRes);
+      updateGdPanel(evalRes);
+
+      // 7. Render Canvases
+      renderMainChart(evalRes);
+      if (state.activeMethod === 2) render2DContourCanvas('mleContourCanvas', false);
+      if (state.activeMethod === 3) {
+        render2DContourCanvas('gdContourCanvas', true);
+        render1DLossCurve();
+      }
+    }
+
+    function updateSandboxView(evalRes) {
+      const x = state.testHours;
+      document.getElementById('testHours').value = x;
+      document.getElementById('outTestHours').textContent = `${x.toFixed(1)} h`;
+
+      const z = state.w * x + state.b;
+      const odds = Math.exp(z);
+      const isAtMleX5 = Math.abs(state.w - OPT_W) < 1e-6 && Math.abs(state.b - OPT_B) < 1e-6 && Math.abs(x - 5.0) < 1e-6;
+      const p = isAtMleX5 ? LAB.vars.p_x5_mle : sigmoid(z);
+      const isPass = p >= state.cutoff;
+
+      document.getElementById('sandboxProbTxt').textContent = `${(p * 100).toFixed(1)}%`;
+      document.getElementById('sandboxGauge').style.width = `${(p * 100).toFixed(1)}%`;
+
+      const vBadge = document.getElementById('sandboxVerdict');
+      vBadge.textContent = isPass ? 'ĐỖ (1)' : 'TRƯỢT (0)';
+      vBadge.className = `badge-verdict ${isPass ? 'pass' : 'fail'}`;
+
+      const pipeEl = document.getElementById('pipelineGrid');
+      pipeEl.style.display = state.showPipeline ? 'grid' : 'none';
+      if (!state.showPipeline) return;
+
+      const oddsTxt = odds > 999 ? '> 999' : (odds < 0.001 ? '< 0.001' : odds.toFixed(3));
+      const matchStu = DATA.find(d => Math.abs(d.x - x) < 0.05);
+
+      pipeEl.innerHTML = `
+    <div class="pipe-step">
+      <div class="step-head"><span class="s-tag">BƯỚC 1</span><span class="s-formula">z = w·x + b</span></div>
+      <div class="s-val">z = ${z >= 0 ? '+' : ''}${z.toFixed(3)}</div>
+      <div class="s-sub">${state.w.toFixed(2)} × ${x.toFixed(1)} ${state.b >= 0 ? '+' : '-'} ${Math.abs(state.b).toFixed(2)}</div>
+    </div>
+    <div class="pipe-step">
+      <div class="step-head"><span class="s-tag">BƯỚC 2</span><span class="s-formula">Odds = eᶻ</span></div>
+      <div class="s-val">Odds = ${oddsTxt}</div>
+      <div class="s-sub">${odds >= 1 ? `Cơ hội Đỗ gấp ${odds.toFixed(2)} lần Trượt` : `Cơ hội Trượt gấp ${(1 / odds).toFixed(2)} lần Đỗ`}</div>
+    </div>
+    <div class="pipe-step">
+      <div class="step-head"><span class="s-tag">BƯỚC 3</span><span class="s-formula">p = 1 / (1 + e⁻ᶻ)</span></div>
+      <div class="s-val" style="color:var(--cyan-bright);">P(Đỗ) = ${(p * 100).toFixed(2)}%</div>
+      <div class="s-sub">Nén mượt từ (-∞, +∞) về (0, 1)</div>
+    </div>
+    <div class="pipe-step">
+      <div class="step-head"><span class="s-tag">BƯỚC 4</span><span class="s-formula">So với P_cut = ${state.cutoff.toFixed(2)}</span></div>
+      <div class="s-val" style="color:${isPass ? 'var(--emerald-bright)' : 'var(--rose-bright)'};">
+        ⇒ ${isPass ? 'KẾT LUẬN: ĐỖ' : 'KẾT LUẬN: TRƯỢT'}
+      </div>
+      <div class="s-sub">${matchStu ? `Thực tế SV${matchStu.id}: <b>${matchStu.y === 1 ? 'Đỗ (1)' : 'Trượt (0)'}</b> (${matchStu.note})` : `x = ${x.toFixed(1)}h so với biên x* = ${isNaN(evalRes.xStar) ? 'N/A' : evalRes.xStar.toFixed(2) + 'h'}`}</div>
+    </div>
+  `;
+    }
+
+    function updateMlePanel(evalRes) {
+      const container = document.getElementById('mleCardsContainer');
+      if (!container) return;
+      let prodL = 1;
+      const cards = evalRes.items.map(it => {
+        prodL *= it.itemL;
+        const cls = it.itemL >= 0.7 ? 'hi' : (it.itemL < 0.5 ? 'lo' : '');
+        return `
+      <div class="mle-item ${cls}">
+        <div style="font-weight:700; color:var(--txt-main);">SV${it.id} (${it.x}h)</div>
+        <div style="color:${it.itemL >= 0.5 ? 'var(--emerald-bright)' : 'var(--rose-bright)'}; font-weight:700;">Lᵢ=${it.itemL.toFixed(3)}</div>
+        <div style="color:var(--txt-dim);">ln Lᵢ=${it.itemLL.toFixed(2)}</div>
+      </div>
+    `;
+      }).join('');
+
+      container.innerHTML = `
+    <div class="mle-grid">${cards}</div>
+    <div class="note-box" style="margin-top:8px; margin-bottom:4px;">
+      • <b>Tích Hợp lý 8 SV:</b> <code>L = ∏ Lᵢ = ${prodL.toExponential(4)}</code> (Cực đại = <code>8.183e-2</code>)<br>
+      • <b>Tổng Log-Likelihood:</b> <code>ln L = ${evalRes.ll.toFixed(4)}</code> (Đỉnh MLE = <code>-2.5030</code>)
+    </div>
+  `;
+    }
+
+    function updateGdPanel(evalRes) {
+      const box = document.getElementById('gdLiveMathBox');
+      if (!box) return;
+      const dw = evalRes.dw, db = evalRes.db;
+      box.innerHTML = `
+    • Gradient hiện tại: <b>∂J/∂w = ${dw >= 0 ? '+' : ''}${dw.toFixed(4)}</b> &nbsp;|&nbsp; <b>∂J/∂b = ${db >= 0 ? '+' : ''}${db.toFixed(4)}</b><br>
+    • Cập nhật kế tiếp: <code>w ← ${(state.w - state.gdLr * dw).toFixed(4)}</code> &nbsp;|&nbsp; <code>b ← ${(state.b - state.gdLr * db).toFixed(4)}</code>
+  `;
+      document.getElementById('gdEpochTxt').textContent = state.gdEpoch;
+    }
+
+    // ============================================================================
+    // 6. INTERACTIVE HANDLERS, SMOOTH ANIMATIONS & GRADIENT DESCENT
+    // ============================================================================
+    let animFrameId = null;
+    function animateToPreset(targetW, targetB) {
+      if (state.gdRunning) toggleGdRun();
+      if (animFrameId) cancelAnimationFrame(animFrameId);
+
+      const startW = state.w, startB = state.b;
+      const startTime = performance.now();
+      const duration = 380;
+
+      function tick(now) {
+        const t = clamp((now - startTime) / duration, 0, 1);
+        const ease = 1 - Math.pow(1 - t, 3);
+        state.w = startW + (targetW - startW) * ease;
+        state.b = startB + (targetB - startB) * ease;
+        renderAll();
+        if (t < 1) animFrameId = requestAnimationFrame(tick);
+      }
+      animFrameId = requestAnimationFrame(tick);
+    }
+
+    function onParamSliderInput() {
+      if (state.gdRunning) toggleGdRun();
+      state.w = parseFloat(document.getElementById('rangeW').value);
+      state.b = parseFloat(document.getElementById('rangeB').value);
+      renderAll();
+    }
+
+    function onSandboxInput() {
+      state.testHours = parseFloat(document.getElementById('testHours').value);
+      const match = DATA.find(d => Math.abs(d.x - state.testHours) < 0.05);
+      state.selectedId = match ? match.id : null;
+      renderAll();
+    }
+
+    function onCutoffChange() {
+      state.cutoff = parseFloat(document.getElementById('cutoffSlider').value);
+      document.getElementById('outCutoff').textContent = state.cutoff.toFixed(2);
+      renderAll();
+    }
+
+    function jumpToHours(h, stuId) {
+      state.testHours = h;
+      state.selectedId = stuId;
+      renderAll();
+    }
+
+    function toggleOption(key) {
+      state[key] = !state[key];
+      const mapBtn = {
+        showRegions: 'btnShowRegions',
+        showResiduals: 'btnShowResiduals',
+        showOLS: 'btnShowOLS',
+        logOddsMode: 'btnLogOdds'
+      };
+      document.getElementById(mapBtn[key]).classList.toggle('active', state[key]);
+      renderAll();
+    }
+
+    function togglePipeline() {
+      state.showPipeline = !state.showPipeline;
+      document.getElementById('btnTogglePipeline').classList.toggle('active', state.showPipeline);
+      renderAll();
+    }
+
+    function switchDataSubView(mode) {
+      state.dataSubView = mode;
+      document.getElementById('svTableBtn').classList.toggle('active', mode === 'table');
+      document.getElementById('svCmBtn').classList.toggle('active', mode === 'cm');
+      document.getElementById('subViewTable').style.display = mode === 'table' ? 'block' : 'none';
+      document.getElementById('subViewCM').style.display = mode === 'cm' ? 'block' : 'none';
+    }
+
+    function switchMethod(idx) {
+      state.activeMethod = idx;
+      for (let i = 0; i <= 3; i++) {
+        document.getElementById(`tab${i}`).classList.toggle('active', i === idx);
+        document.getElementById(`methodPane${i}`).style.display = i === idx ? 'block' : 'none';
+      }
+      requestAnimationFrame(resizeAllCanvases);
+    }
+
+    // Gradient Descent Stepper
+    function stepGradientDescent(steps = 1) {
+      for (let s = 0; s < steps; s++) {
+        const res = evaluateModel(state.w, state.b, state.cutoff);
+        state.w -= state.gdLr * res.dw;
+        state.b -= state.gdLr * res.db;
+        state.gdEpoch++;
+        const after = evaluateModel(state.w, state.b, state.cutoff);
+        state.gdPath.push({ w: state.w, b: state.b, loss: after.bceLoss });
+      }
+      renderAll();
+    }
+
+    function toggleGdRun() {
+      const btn = document.getElementById('btnGdToggle');
+      if (state.gdRunning) {
+        clearInterval(state.gdTimer);
+        state.gdRunning = false;
+        btn.textContent = '▶ Chạy Tự động';
+      } else {
+        state.gdRunning = true;
+        btn.textContent = '⏸ Tạm dừng';
+        state.gdTimer = setInterval(() => {
+          stepGradientDescent(2);
+          if (state.gdEpoch >= 500) toggleGdRun();
+        }, 50);
+      }
+    }
+
+    function resetGradientDescent() {
+      if (state.gdRunning) toggleGdRun();
+      state.w = 0;
+      state.b = 0;
+      state.gdEpoch = 0;
+      state.gdPath = [{ w: 0, b: 0, loss: Math.LN2 }];
+      renderAll();
+    }
+
+    function onLrChange() {
+      state.gdLr = parseFloat(document.getElementById('lrSlider').value);
+      document.getElementById('outLr').textContent = state.gdLr.toFixed(2);
+      renderAll();
+    }
+
+    // Interactive Pointer Events on Main Canvas
+    mainCanvas.addEventListener('pointermove', e => {
+      const rect = mainCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      const my = e.clientY - rect.top;
+
+      let hit = null;
+      DATA.forEach(d => {
+        const px = plotGeo.toX(d.x);
+        const py = plotGeo.toY(state.logOddsMode ? (d.y === 1 ? 5 : -5) : d.y);
+        if (Math.hypot(mx - px, my - py) < 20) hit = d;
+      });
+
+      state.hoverId = hit ? hit.id : null;
+      if (hit) {
+        const p = sigmoid(state.w * hit.x + state.b);
+        const itemL = hit.y === 1 ? p : (1 - p);
+        tooltip.style.opacity = '1';
+        tooltip.style.transform = 'translateY(0)';
+        tooltip.style.left = `${Math.min(rect.width - 230, mx + 14)}px`;
+        tooltip.style.top = `${Math.max(10, my - 28)}px`;
+        tooltip.innerHTML = `
+      <div style="font-weight:800; color:var(--amber-bright); margin-bottom:2px;">Sinh viên #${hit.id} (${hit.x}.0 giờ)</div>
+      <div>• Kết quả thực tế: <b style="color:${hit.y === 1 ? 'var(--emerald-bright)' : 'var(--rose-bright)'}">${hit.y === 1 ? 'ĐỖ (1)' : 'TRƯỢT (0)'}</b></div>
+      <div>• Dự đoán P(y=1): <b style="color:var(--cyan-bright)">${(p * 100).toFixed(1)}%</b></div>
+      <div>• Độ hợp lý Lᵢ: <b>${itemL.toFixed(3)}</b> (BCE = ${(-Math.log(clamp(itemL, 1e-9, 1))).toFixed(3)})</div>
+      <div style="font-size:10.5px; color:var(--txt-sub); margin-top:3px;">${hit.note}</div>
+    `;
+      } else {
+        tooltip.style.opacity = '0';
+      }
+      renderAll();
+    });
+
+    mainCanvas.addEventListener('pointerleave', () => {
+      state.hoverId = null;
+      tooltip.style.opacity = '0';
+      renderAll();
+    });
+
+    mainCanvas.addEventListener('click', e => {
+      const rect = mainCanvas.getBoundingClientRect();
+      const mx = e.clientX - rect.left;
+      if (mx >= plotGeo.pad.left && mx <= plotGeo.pad.left + plotGeo.w) {
+        const clickedX = clamp(Math.round(plotGeo.fromX(mx) * 10) / 10, 0, 10);
+        const match = DATA.find(d => Math.abs(d.x - clickedX) < 0.08);
+        jumpToHours(clickedX, match ? match.id : null);
+      }
+    });
+
+    // Interactive Drag/Click on 2D Contour Canvases to Pick (w, b) Directly
+    function bindContourPicker(canvasId) {
+      const c = document.getElementById(canvasId);
+      if (!c) return;
+      let dragging = false;
+      const pick = e => {
+        const r = c.getBoundingClientRect();
+        const nx = clamp((e.clientX - r.left) / r.width, 0, 1);
+        const ny = clamp((e.clientY - r.top) / r.height, 0, 1);
+        state.w = W_MIN + nx * (W_MAX - W_MIN);
+        state.b = B_MAX - ny * (B_MAX - B_MIN);
+        renderAll();
+      };
+      c.addEventListener('pointerdown', e => { dragging = true; pick(e); });
+      window.addEventListener('pointermove', e => { if (dragging) pick(e); });
+      window.addEventListener('pointerup', () => { dragging = false; });
+    }
+
+    function copyPyCode(btn) {
+      const code = document.getElementById('pyCodeBlock').innerText;
+      navigator.clipboard.writeText(code).then(() => {
+        btn.textContent = '✓ Đã chép!';
+        setTimeout(() => { btn.textContent = 'Sao chép mã'; }, 1800);
+      });
+    }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      buildContourCache();
+      bindContourPicker('mleContourCanvas');
+      bindContourPicker('gdContourCanvas');
+      resizeAllCanvases();
+    });
+  </script>
+  <footer style="padding:12px 18px; border-top:1px solid rgba(148,163,184,0.16); color:#94a3b8; font-size:12px; text-align:center;">
+    Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html" style="color:#22d3ee; text-decoration:none; font-weight:600;">← All Demos</a>
+  </footer>
+</body>
+
+</html>

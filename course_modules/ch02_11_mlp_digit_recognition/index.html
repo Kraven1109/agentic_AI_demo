@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Mạng nơ-ron nhiều tầng (MLP) 64 -> 64 -> 32 -> 10 nhận diện chữ số viết tay từ ảnh 8x8 = 64 đặc trưng: lưới điểm ảnh 8x8 tương tác, ma trận nhầm lẫn 10x10 vẽ từ số liệu Lab, đếm tường minh 6.570 trọng số + bias và bảng đối chuẩn SSoT trích một chiều từ 02_mang_noron_mnist_digit_recognition.py; kèm thước phim 24 ảnh đầu tập kiểm tra: lưới 8×8 vẽ từ mảng điểm ảnh Lab, nhãn dự đoán và 10 thanh xác suất mlp.predict_proba do Lab xuất sẵn.">
+<title>Mạng Nơ-ron Nhiều Tầng (MLP) Nhận Diện Chữ Số Viết Tay — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+#g8 rect.cell{cursor:pointer}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+table.cmt{font-size:.82em;margin-top:4px}
+table.cmt th,table.cmt td{border:1px solid var(--line);padding:5px 4px;text-align:center;font-variant-numeric:tabular-nums}
+table.cmt tr.sel th{color:var(--cam)}
+table.cmt td.selc{outline:2px solid var(--cam);outline-offset:-2px}
+.filmgrid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.filmgrid{grid-template-columns:minmax(0,1fr) minmax(0,1fr);align-items:start}}
+#gFilm rect.fcell{transition:fill .35s ease}
+#gProba rect.bar{transition:height .35s ease,y .35s ease}
+.badge{display:inline-block;padding:2px 9px;border-radius:999px;font-weight:700;border:1px solid var(--line2)}
+.badge.ok{color:var(--ok);border-color:rgba(52,211,153,.5);background:rgba(52,211,153,.12)}
+.badge.no{color:var(--táo);border-color:rgba(248,113,113,.5);background:rgba(248,113,113,.12)}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code{overflow-wrap:anywhere}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 2 · Mạng nơ-ron nhân tạo (MLP)</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Mạng Nơ-ron Nhiều Tầng (MLP) Nhận Diện Chữ Số Viết Tay</span></h1>
+<p class="lede">Mạng MLP cấu trúc 64 &rarr; 64 &rarr; 32 &rarr; 10 học nhận diện chữ số viết tay từ ảnh 8&times;8: mỗi ảnh là 64 đặc trưng điểm ảnh, tập dữ liệu có 1.797 ảnh. Toàn bộ số liệu — độ chính xác 96,89%, ma trận nhầm lẫn 10&times;10, số trọng số — trích một chiều từ bài thực hành <code>02_mang_noron_mnist_digit_recognition.py</code>. Lưu ý trung thực: các con số là kết quả lần chạy trong Lab với mức tối đa 200 vòng lặp (<code>max_iter</code>); Lab cố định <code>random_state=42</code>, nhưng chạy lại trên máy bạn — đặc biệt với phiên bản scikit-learn khác — có thể lệch đôi chút.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Ảnh 8×8 &amp; 64 đặc trưng</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Ma trận nhầm lẫn 10×10</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Đếm trọng số &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Tương tác · mỗi ảnh chữ số là một lưới 8×8 điểm ảnh</span>
+  <h2>Vùng vẽ của bạn: tô 64 ô điểm ảnh rồi kéo ngưỡng xám</h2>
+  <div class="ctl">
+   <label for="thrSel" class="note">Ngưỡng xám t (ô có mức xám &ge; t được tính là "bật"): <b id="val1"></b></label>
+   <input id="thrSel" type="range" min="1" max="16" step="1" value="8">
+   <button class="btn" id="btnClear" type="button">Xóa lưới (về 0)</button>
+  </div>
+  <svg id="g8" viewBox="0 0 344 344" role="img" aria-label="Lưới 8x8 điểm ảnh để sinh viên tô; nhấp vào một ô để tăng mức xám qua các mức 0, 4, 8, 12, 16"></svg>
+  <p class="note" id="gridInfo"></p>
+  <p class="note"><b>Đọc kỹ:</b> ảnh bạn tô là dữ liệu giả định để tập đọc lưới 64 ô — <b>không phải</b> ảnh trong tập 1.797 ảnh của Lab. Mỗi ô lưới lấy mức xám trong 0&ndash;16, đúng thang giá trị điểm ảnh của tập <code>load_digits</code> (giá trị thật trong tập: nhỏ nhất 0, lớn nhất 16).</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Ảnh 8&times;8 = 64 đặc trưng đầu vào</h2>
+  <div class="stat" id="stat1"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>x</mi><mo>=</mo><mo>(</mo><msub><mi>x</mi><mn>1</mn></msub><mo>,</mo><mo>&#8230;</mo><mo>,</mo><msub><mi>x</mi><mn>64</mn></msub><mo>)</mo><mo>&#8712;</mo><msup><mi>&#8477;</mi><mn>64</mn></msup></math></div>
+  <p class="note">Tầng vào có 64 nơ-ron, mỗi nơ-ron nhận một điểm ảnh: lưới 8&times;8 được trải (flatten) thành vector 64 chiều. Ảnh bạn tô không đi vào mô hình — mô hình trong Lab đã được huấn luyện trên 1.347 ảnh train và chỉ được chấm trên 450 ảnh test chưa từng gặp.</p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Animation · thước phim 24 ảnh THẬT đầu tập kiểm tra — mô hình KHÔNG chạy trong trình duyệt, mọi nhãn và xác suất do Lab xuất sẵn</span>
+ <h2>Thước phim 24 chữ số kiểm tra — MLP đoán gì trên từng ảnh?</h2>
+ <div class="ctl">
+  <button class="btn cta" id="filmPlay" type="button" aria-pressed="false">▶ Play</button>
+  <button class="btn" id="filmPause" type="button">⏸ Tạm dừng</button>
+  <button class="btn" id="filmStep" type="button">▸ Bước một ảnh</button>
+  <button class="btn" id="filmReset" type="button">↺ Chạy lại</button>
+ </div>
+ <div class="ctl">
+  <label for="filmSel" class="note">Ảnh số (0 → 23): <b id="val5"></b></label>
+  <input id="filmSel" type="range" min="0" max="23" step="1" value="0">
+ </div>
+ <p class="note" id="filmInfo"></p>
+ <div class="filmgrid">
+  <div>
+   <svg id="gFilm" viewBox="0 0 344 344" role="img" aria-label="Lưới 8x8 điểm ảnh của ảnh kiểm tra thứ k, vẽ từ mảng 64 giá trị 0-16 trong digits của Lab"></svg>
+  </div>
+  <div>
+   <svg id="gProba" viewBox="0 0 344 300" role="img" aria-label="10 thanh xác suất proba k của ảnh đang chiếu, vẽ từ ma trận 24 hang 10 cot do mlp.predict_proba xuất sẵn"></svg>
+  </div>
+ </div>
+ <p class="note">Ảnh 8&times;8 = 64 điểm ảnh chuẩn <code>sklearn.load_digits</code>, thang xám 0&ndash;16: đây đúng là mảng điểm ảnh <code>X_test[:24]</code> mà Lab đã dự đoán — <b>không phải</b> ảnh quét thật của MNIST gốc.</p>
+ <p class="note">10 thanh trên vẽ từ <code>proba[k]</code> — <code>mlp.predict_proba(X_test[:24])</code> làm tròn 3 chữ số mà Lab xuất sẵn: <b>24 ảnh &times; 10 nhãn = 240 xác suất</b> — xác suất <code>mlp.predict_proba</code> trên ĐÚNG 24 ảnh này. Thanh hổ phách = nhãn MLP dự đoán; thanh xanh lơ = nhãn thật.</p>
+ <table id="sliceTable">
+  <thead><tr><th>Bảng đếm đúng/sai trong thước phim</th><th class="ro">Đúng</th><th class="ro">Sai</th><th class="ro">Đã xem</th></tr></thead>
+  <tbody>
+   <tr><td>Tính đến ảnh số <span id="cntK">0</span> (đã chiếu)</td><td class="ro hi" id="cntOk">1</td><td class="ro" id="cntBad">0</td><td class="ro" id="cntSeen">1/24</td></tr>
+   <tr><td>Cả 24 ảnh của thước phim (không đổi)</td><td class="ro hi">23/24</td><td class="ro">1</td><td class="ro">24</td></tr>
+  </tbody>
+ </table>
+ <p class="note"><b>⚠ 24 ảnh là <u>phần đầu</u> của tập kiểm tra 450 mẫu — tỉ lệ 23/24 của 24 ảnh này <u>không phải</u> accuracy của Lab; accuracy của Lab là 0,9689 trên 450 mẫu (<code>acc</code>).</b></p>
+</div>
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Kết quả Lab trên tập test · ma trận nhầm lẫn 10×10</span>
+  <h2>Ma trận nhầm lẫn — dòng: chữ số thật, cột: chữ số mạng đoán</h2>
+  <div class="ctl">
+   <label for="digitSel" class="note">Đóng khung hàng/cột của chữ số: <b id="val2"></b></label>
+   <input id="digitSel" type="range" min="0" max="9" step="1" value="8">
+  </div>
+  <div id="cmWrap"></div>
+  <p class="note" id="cmLive"></p>
+  <p class="note">Ô càng đậm càng nhiều ảnh. Ô màu xanh lơ trên đường chéo là dự đoán đúng; ô màu hổ phách ngoài đường chéo là ảnh bị nhầm. Bảng do JavaScript vẽ trực tiếp từ <code>LAB.vars.cm</code> (ma trận xuất một chiều từ <code>confusion_matrix(y_test, y_pred)</code> trong Lab).</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Đọc to con số từ ma trận</span>
+  <h2>Bốn điều kiểm tra tay được</h2>
+  <p class="note">Trong 450 ảnh của tập test, mạng đoán đúng 436 ảnh và để nhầm 14 ảnh; độ chính xác 96,89% (436 &divide; 450).</p>
+  <p class="note">Cặp chữ số hay nhầm lẫn nhất: <b>9 &harr; 8</b>, với 3 lần nhầm trong tổng 14 lỗi — hai ảnh số 9 bị đoán thành 8, một ảnh số 8 bị đoán thành 9.</p>
+  <p class="note">Đứng sau là các cặp chỉ có 2 lỗi: 8 &rarr; 1 (2 ảnh), 5 &harr; 6 (2 ảnh). Tám cặp còn lại, mỗi cặp chỉ 1 ảnh bị nhầm.</p>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>acc</mi><mo>=</mo><mfrac><mn>436</mn><mn>450</mn></mfrac><mo>&#8776;</mo><mn>96</mn><mo>,</mo><mn>89</mn><mi>%</mi></math></div>
+  <div class="stat" id="stat2"></div>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Cầm tay đếm tham số · MLP 64 → 64 → 32 → 10</span>
+  <h2>Mạng có bao nhiêu trọng số + bias? Tính từng hạng một</h2>
+  <table id="wTable">
+   <thead><tr><th>Kết nối giữa hai tầng</th><th class="ro">Phép tính tường minh</th><th class="ro">Tham số</th></tr></thead>
+   <tbody>
+    <tr><td>Vào (64) &rarr; Ẩn 1 (64)</td><td class="ro">64&times;64 + 64 bias</td><td class="ro hi">4.160</td></tr>
+    <tr><td>Ẩn 1 (64) &rarr; Ẩn 2 (32)</td><td class="ro">64&times;32 + 32 bias</td><td class="ro hi">2.080</td></tr>
+    <tr><td>Ẩn 2 (32) &rarr; Ra (10)</td><td class="ro">32&times;10 + 10 bias</td><td class="ro hi">330</td></tr>
+    <tr><td><b>Tổng tham số của mạng</b></td><td class="ro">4.160 + 2.080 + 330</td><td class="ro hi">6.570</td></tr>
+   </tbody>
+  </table>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>W</mi><mo>=</mo><mo>(</mo><mn>64</mn><mo>&#183;</mo><mn>64</mn><mo>+</mo><mn>64</mn><mo>)</mo><mo>+</mo><mo>(</mo><mn>64</mn><mo>&#183;</mo><mn>32</mn><mo>+</mo><mn>32</mn><mo>)</mo><mo>+</mo><mo>(</mo><mn>32</mn><mo>&#183;</mo><mn>10</mn><mo>+</mo><mn>10</mn><mo>)</mo><mo>=</mo><mn>6.570</mn></math></div>
+  <div class="ctl">
+   <label for="h1Sel" class="note">Thử cấu hình khác — nơ-ron tầng ẩn 1: <b id="val3"></b></label>
+   <input id="h1Sel" type="range" min="16" max="128" step="16" value="64">
+   <label for="h2Sel" class="note">nơ-ron tầng ẩn 2: <b id="val4"></b></label>
+   <input id="h2Sel" type="range" min="8" max="64" step="8" value="32">
+  </div>
+  <p class="note" id="wLive"></p>
+  <p class="note">Mỗi nơ-ron ở tầng sau nhận một trọng số từ <i>mọi</i> nơ-ron tầng trước, cộng thêm một bias cho chính nó. Mỗi ảnh đi qua mạng chạm tới cả 6.570 tham số qua công thức từng nơ-ron <math xmlns="http://www.w3.org/1998/Math/MathML"><mi>z</mi><mo>=</mo><msup><mi>w</mi><mi>&#8868;</mi></msup><mi>x</mi><mo>+</mo><mi>b</mi></math> (tổng có trọng số cộng bias).</p>
+  <p class="note">Chia dữ liệu của Lab: <code>train_test_split(..., test_size=0.25, random_state=42)</code> trên 1.797 ảnh &rarr; <b>1.347 ảnh train (75%)</b> + <b>450 ảnh test (25%)</b>. Kiểm chéo được: tổng 100 ô của ma trận nhầm lẫn ở Tab 2 bằng đúng 450 ảnh test. Cấu hình Lab: <code>hidden_layer_sizes=(64, 32)</code>, <code>activation='relu'</code>, mạng chạy tối đa 200 vòng lặp (tham số <code>max_iter</code>).</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Bảng đối chuẩn SSoT · 02_mang_noron_mnist_digit_recognition.py</span>
+  <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+  <p class="note">Bảng dưới tổng hợp các đại lượng trích một chiều từ tệp Lab (ô code 1&ndash;9). M06&ndash;M08 và M10 tính từ <code>cm</code>; M09 tính từ số nơ-ron các tầng của Lab. Độ chính xác 96,89% là kết quả lần chạy được ghi lại khi xuất dữ liệu — không phải cam kết mọi lần chạy đều đạt.</p>
+  <table id="ssotTable">
+   <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+   <tbody>
+<tr><td><code>[M01]</code> Độ chính xác của mạng trên tập test <span class="sub">(acc)</span></td><td class="ro hi">96,89%</td></tr>
+<tr><td><code>[M02]</code> Tổng số ảnh của tập dữ liệu chữ số <span class="sub">(n_samples)</span></td><td class="ro hi">1.797</td></tr>
+<tr><td><code>[M03]</code> Số đặc trưng của mỗi ảnh 8&times;8 <span class="sub">(n_features)</span></td><td class="ro hi">64</td></tr>
+<tr><td><code>[M04]</code> Số nơ-ron của tầng ẩn thứ nhất <span class="sub">(hidden)</span></td><td class="ro hi">64</td></tr>
+<tr><td><code>[M05]</code> Số vòng lặp tối đa khi huấn luyện <span class="sub">(max_iter)</span></td><td class="ro hi">200</td></tr>
+<tr><td><code>[M06]</code> Số ảnh tập test — tổng 100 ô ma trận nhầm lẫn <span class="sub">(n_test)</span></td><td class="ro hi">450</td></tr>
+<tr><td><code>[M07]</code> Số ảnh đoán đúng — đường chéo ma trận <span class="sub">(n_correct)</span></td><td class="ro hi">436</td></tr>
+<tr><td><code>[M08]</code> Số ảnh bị nhầm — ngoài đường chéo <span class="sub">(n_wrong)</span></td><td class="ro hi">14</td></tr>
+<tr><td><code>[M09]</code> Tổng trọng số + bias của mạng 64&rarr;64&rarr;32&rarr;10 <span class="sub">(n_weights)</span></td><td class="ro hi">6.570</td></tr>
+<tr><td><code>[M10]</code> Số ảnh tập train — hiệu số 1.797 &minus; 450 <span class="sub">(n_train)</span></td><td class="ro hi">1.347</td></tr>
+   </tbody>
+  </table>
+ </div>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Trong ma trận nhầm lẫn 10&times;10, ô ở dòng 8 – cột 1 có giá trị 2. Ô đó nghĩa là gì?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Có 2 ảnh chữ số 8 bị mạng đoán nhầm thành 1</button><button class="opt" type="button" data-v="q1_2">Có 2 ảnh chữ số 1 bị mạng đoán nhầm thành 8</button><button class="opt" type="button" data-v="q1_3">Mạng đoán đúng chữ số 8 đúng 2 lần</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. MLP 64 &rarr; 64 &rarr; 32 &rarr; 10 trong Lab có tổng cộng bao nhiêu trọng số + bias?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">6.570 tham số</button><button class="opt" type="button" data-v="q2_2">4.160 tham số</button><button class="opt" type="button" data-v="q2_3">2.048 tham số</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Lab chia 1.797 ảnh của tập dữ liệu như thế nào để huấn luyện và chấm điểm?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">test_size=0.25: 1.347 ảnh train và 450 ảnh test (random_state=42)</button><button class="opt" type="button" data-v="q3_2">Chia đôi: 898 ảnh train và 899 ảnh test</button><button class="opt" type="button" data-v="q3_3">Dùng cả 1.797 ảnh để train, rồi chấm luôn trên chính chúng</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>02_mang_noron_mnist_digit_recognition.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9],"vars":{"acc":0.9688888889,"cm":[[43,0,0,0,0,0,0,0,0,0],[0,37,0,0,0,0,0,0,0,0],[0,0,37,1,0,0,0,0,0,0],[0,0,0,44,0,1,0,0,1,0],[0,0,0,0,55,0,0,0,0,0],[0,0,0,0,0,57,1,0,0,1],[1,0,0,0,0,1,43,0,0,0],[0,0,0,0,0,1,0,40,0,0],[0,2,1,0,0,0,0,0,34,1],[0,0,0,0,0,0,0,0,2,46]]},"derived":{"n_samples":1797,"n_features":64,"hidden":64,"max_iter":200,"n_test_total":450,"n_test_slice":24,"y_true_head":[6,9,3,7,2,1,5,2,5,2,1,9,4,0,4,2,3,7,8,8,4,3,9,7],"y_pred_head":[6,9,3,7,3,1,5,2,5,2,1,9,4,0,4,2,3,7,8,8,4,3,9,7],"digits":[[0,0,0,7,12,0,0,0,0,0,4,16,8,0,0,0,0,0,12,11,0,0,0,0,0,0,15,10,8,6,1,0,0,0,15,16,8,10,8,0,0,0,14,7,0,0,12,0,0,0,8,11,0,5,16,2,0,0,0,9,14,14,5,0],[0,0,11,16,8,0,0,0,0,6,16,11,13,9,0,0,0,7,16,0,9,16,0,0,0,2,15,12,16,16,3,0,0,0,5,7,7,16,4,0,0,0,0,0,5,16,5,0,0,0,3,7,16,11,0,0,0,0,13,16,11,1,0,0],[0,0,8,15,12,4,0,0,0,5,14,4,11,7,0,0,0,0,0,1,14,3,0,0,0,0,2,15,14,1,0,0,0,0,0,8,13,11,0,0,0,0,0,0,0,13,5,0,0,0,12,2,3,12,7,0,0,0,13,16,15,8,0,0],[0,0,2,12,12,12,9,2,0,0,9,15,12,13,16,5,0,0,12,8,0,8,10,0,0,1,16,3,3,15,2,0,0,1,3,0,12,7,0,0,0,0,0,4,13,0,0,0,0,0,0,13,9,0,0,0,0,0,3,15,3,0,0,0],[0,2,13,16,10,0,0,0,0,6,13,10,16,0,0,0,0,0,0,8,14,0,0,0,0,0,1,14,9,0,0,0,0,0,9,14,1,0,0,0,0,1,14,7,0,0,1,0,0,4,16,5,7,12,14,0,0,3,15,16,16,10,1,0],[0,0,14,10,0,0,0,0,0,0,15,13,0,0,0,0,0,11,16,16,2,0,0,0,0,3,10,16,5,0,0,0,0,0,0,14,10,0,0,0,0,0,0,10,14,0,0,0,0,0,9,14,16,11,6,0,0,0,12,16,16,16,16,9],[0,0,8,12,16,16,9,0,0,4,16,16,13,9,2,0,0,11,14,4,0,0,0,0,0,7,15,10,1,0,0,0,0,0,12,16,13,1,0,0,0,0,0,4,16,4,0,0,0,0,5,10,16,3,0,0,0,0,9,16,10,0,0,0],[0,0,4,16,16,4,0,0,0,0,12,11,7,11,0,0,0,0,9,2,5,12,0,0,0,0,0,0,7,11,0,0,0,0,0,0,13,6,0,0,0,0,0,2,16,1,0,0,0,0,1,15,15,10,1,0,0,0,5,16,8,11,11,0],[0,1,12,16,16,16,4,0,0,4,16,10,4,1,1,0,0,6,13,0,0,0,0,0,0,6,16,12,5,0,0,0,0,7,11,11,15,0,0,0,0,0,0,4,16,2,0,0,0,0,2,13,10,0,0,0,0,2,16,11,0,0,0,0],[0,4,15,15,8,0,0,0,0,8,16,16,16,3,0,0,0,1,0,1,15,5,0,0,0,0,0,0,11,6,0,0,0,0,0,3,15,2,0,0,0,0,4,15,16,14,6,0,0,6,16,16,15,11,3,0,0,7,14,11,0,0,0,0],[0,0,4,12,13,3,0,0,0,0,7,14,16,9,0,0,0,0,0,12,16,8,0,0,0,0,0,6,16,6,0,0,0,0,0,9,16,6,0,0,0,0,0,12,16,3,0,0,0,0,0,13,16,3,0,0,0,0,0,15,16,11,0,0],[0,0,0,0,8,14,10,0,0,0,0,9,7,9,12,0,0,0,9,8,0,12,9,0,0,4,16,8,12,16,2,0,0,5,16,16,10,15,0,0,0,0,4,0,5,11,0,0,0,0,0,0,8,9,0,0,0,0,0,0,10,10,0,0],[0,0,3,15,6,0,0,0,0,1,14,13,4,0,0,0,0,4,16,5,16,7,0,0,0,8,16,8,16,9,5,0,0,10,16,14,16,16,9,0,0,3,11,16,11,2,0,0,0,0,4,16,8,0,0,0,0,0,5,15,4,0,0,0],[0,0,5,12,9,1,0,0,0,0,14,14,13,13,0,0,0,3,12,1,1,13,4,0,0,7,8,0,0,6,8,0,0,8,8,0,0,5,8,0,0,5,10,0,0,11,4,0,0,1,15,9,11,13,0,0,0,0,7,15,12,2,0,0],[0,0,0,7,14,0,0,0,0,0,4,16,5,0,0,0,0,0,14,9,0,0,10,3,0,7,15,0,0,9,15,0,0,12,15,8,10,15,10,0,0,8,15,12,16,12,1,0,0,0,0,5,15,3,0,0,0,0,0,9,13,0,0,0],[0,0,11,16,10,0,0,0,0,6,15,16,16,6,0,0,0,0,0,2,11,12,0,0,0,0,0,0,9,8,0,0,0,0,0,4,15,2,0,0,0,1,9,15,9,3,0,0,0,0,16,16,16,16,7,0,0,0,10,13,8,4,1,0],[0,0,8,14,15,6,0,0,0,4,16,12,14,11,0,0,0,4,8,1,14,7,0,0,0,0,0,14,16,5,0,0,0,0,0,11,16,16,2,0,0,0,0,0,1,15,7,0,0,0,4,11,8,14,7,0,0,0,11,16,16,10,0,0],[0,0,7,16,16,16,13,0,0,0,8,9,8,15,15,0,0,0,0,0,4,16,7,0,0,0,4,8,12,16,5,0,0,3,16,16,16,14,7,0,0,0,3,8,16,3,0,0,0,0,0,15,13,0,0,0,0,0,7,16,3,0,0,0],[0,0,3,12,15,11,2,0,0,0,11,13,7,13,8,0,0,7,15,1,5,15,3,0,0,1,12,16,16,5,0,0,0,0,0,13,15,15,2,0,0,0,2,13,0,10,5,0,0,0,4,11,4,11,6,0,0,0,2,13,16,12,0,0],[0,1,13,14,2,0,0,0,0,7,14,9,5,0,0,0,0,6,13,3,12,6,4,0,0,1,14,12,14,16,4,0,0,0,2,16,16,7,0,0,0,0,11,14,8,13,0,0,0,4,16,4,2,14,2,0,0,1,12,14,13,6,0,0],[0,0,0,2,14,0,0,0,0,0,0,10,9,0,0,0,0,0,1,15,8,11,0,0,0,0,12,7,12,8,0,0,0,5,16,12,15,14,5,0,0,8,13,9,16,13,3,0,0,0,0,0,16,4,0,0,0,0,0,0,16,6,0,0],[0,3,12,15,16,16,3,0,0,6,16,9,9,16,6,0,0,0,3,0,11,15,1,0,0,0,0,4,16,7,0,0,0,0,0,7,16,4,0,0,0,0,0,0,13,11,0,0,0,0,4,5,15,14,0,0,0,3,16,16,15,6,0,0],[0,0,10,15,7,0,0,0,0,4,16,13,11,11,0,0,0,10,16,12,15,16,4,0,0,3,12,12,14,16,4,0,0,0,0,0,10,16,4,0,0,0,0,0,9,16,4,0,0,0,4,4,15,15,0,0,0,1,12,15,12,3,0,0],[0,0,8,15,16,10,0,0,0,0,7,10,10,15,0,0,0,0,0,0,7,13,0,0,0,0,0,4,14,12,1,0,0,3,16,16,16,12,4,0,0,1,10,16,7,0,0,0,0,0,8,9,0,0,0,0,0,0,13,1,0,0,0,0]],"proba":[[0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.053,0.0,0.0,0.0,0.947],[0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.999,0.0,0.001],[0.0,0.0,0.369,0.606,0.0,0.0,0.0,0.0,0.024,0.0],[0.0,0.781,0.133,0.0,0.0,0.0,0.0,0.0,0.085,0.0],[0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.994,0.005,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.999,0.0,0.0,0.0,0.0,0.001,0.0,0.0],[0.0,0.985,0.008,0.007,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.001,0.0,0.0,0.015,0.012,0.0,0.015,0.261,0.695],[0.0,0.0,0.0,0.0,0.999,0.0,0.0,0.001,0.0,0.0],[1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0],[0.0,0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0],[0.0,0.0,0.0,0.0,0.0,0.0,0.0,1.0,0.0,0.0]]}};
+const V = LAB.vars;
+const D = LAB.derived;
+const KEYS = ["acc", "n_samples", "n_features", "hidden", "max_iter", "n_test", "n_correct", "n_wrong", "n_weights", "n_train"];
+const LABELS = {"acc": "Độ chính xác của mạng trên tập test", "n_samples": "Tổng số ảnh của tập dữ liệu chữ số", "n_features": "Số đặc trưng của mỗi ảnh 8×8", "hidden": "Số nơ-ron của tầng ẩn thứ nhất", "max_iter": "Số vòng lặp tối đa khi huấn luyện", "n_test": "Số ảnh tập test — tổng 100 ô ma trận nhầm lẫn", "n_correct": "Số ảnh đoán đúng — đường chéo ma trận", "n_wrong": "Số ảnh bị nhầm — ngoài đường chéo", "n_weights": "Tổng trọng số + bias của mạng 64→64→32→10", "n_train": "Số ảnh tập train — hiệu số 1.797 − 450"};
+const dec = k => k === "acc" ? 2 : 0;
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const fvi = (x, nd = 2) => {
+  const s = x < 0 ? '-' : '';
+  const t = (Math.round(Math.abs(x) * 10 ** nd) / 10 ** nd).toFixed(nd);
+  const p = t.split('.');
+  return s + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (p[1] ? ',' + p[1] : '');
+};
+const fmtKey = k => k === "acc" ? fvi(V.acc * 100, dec(k)) + '%' : fvi(k in DER ? DER[k] : (k in V ? V[k] : D[k]), dec(k));
+
+// Đại lượng dẫn xuất — tính lại từ cm đúng như cổng parity tính:
+const DER = (() => {
+  const n_test = V.cm.reduce((a, r) => a + r.reduce((x, y) => x + y, 0), 0);
+  let n_correct = 0;
+  for (let k = 0; k < 10; k++) n_correct += V.cm[k][k];
+  return { n_test, n_correct, n_wrong: n_test - n_correct,
+           n_weights: D.n_features * 64 + 64 + 64 * 32 + 32 + 32 * 10 + 10,
+           n_train: D.n_samples - n_test };
+})();
+const CHIPS = (el, pairs) => { $(el).innerHTML = pairs.map(([b, sp]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(sp)}</span></div>`).join(''); };
+
+// ---- Tab 1: luoi 8x8 diem anh cua SV (du lieu gia dinh, KHONG phai anh trong tap) ----
+const LEVELS = [0, 4, 8, 12, 16];
+const GRID = new Array(64).fill(0);
+function renderTab1(){
+  const t = +$('#thrSel').value;
+  $('#val1').textContent = String(t);
+  const cs = 38, off = 26;
+  let svg = '';
+  for (let c = 0; c < 8; c++) svg += `<text class="ax" x="${off + c * cs + cs / 2}" y="14" text-anchor="middle">${c}</text>`;
+  for (let r = 0; r < 8; r++) svg += `<text class="ax" x="10" y="${off + r * cs + cs / 2 + 4}" text-anchor="middle">${r}</text>`;
+  for (let i = 0; i < 64; i++) {
+    const r = (i / 8) | 0, c = i % 8, v = GRID[i];
+    const alpha = (v / 16 * 0.92).toFixed(2);
+    const extra = v > 0 && v < t ? ' stroke="var(--cam)" stroke-dasharray="4 3" stroke-width="1.6"' : ' stroke="var(--line2)" stroke-width="1"';
+    svg += `<rect class="cell" data-i="${i}" x="${off + c * cs}" y="${off + r * cs}" width="${cs - 4}" height="${cs - 4}" rx="5" fill="rgba(148,163,184,${alpha})"${extra}/>`;
+  }
+  svg += `<text class="ax" x="172" y="336" text-anchor="middle">Lưới 8×8 điểm ảnh (mức xám 0–16) — ảnh bạn tô là dữ liệu tập đọc, không phải ảnh trong tập 1.797 ảnh của Lab</text>`;
+  $('#g8').innerHTML = svg;
+  const ink = GRID.filter(v => v > 0).length;
+  const on = GRID.filter(v => v >= t).length;
+  $('#gridInfo').textContent = `Lưới của bạn: ${ink}/64 ô có mực · ${on}/64 ô đạt ngưỡng t = ${t} (ô viền đứt: có mực nhưng dưới ngưỡng). Nhấp vào ô để tăng mức xám 0 → 4 → 8 → 12 → 16 → 0.`;
+  CHIPS('#stat1', [
+    [fvi(D.n_samples, 0), LABELS.n_samples],
+    [fvi(D.n_features, 0), LABELS.n_features],
+    ['0–16', 'Thang mức xám mỗi điểm ảnh (load_digits)'],
+    [String(t), 'Ngưỡng xám đang xem']
+  ]);
+}
+
+// ---- Tab 2: ma tran nham lan 10x10 ve tu LAB.vars.cm ----
+function renderTab2(){
+  const k = +$('#digitSel').value;
+  $('#val2').textContent = String(k);
+  const rowTot = V.cm.map(r => r.reduce((a, x) => a + x, 0));
+  const mx = Math.max(...V.cm.flat());
+  let h = '<table class="cmt"><thead><tr><th>Thật \\ Đoán</th>';
+  for (let j = 0; j < 10; j++) h += `<th${j === k ? ' style="color:var(--cam)"' : ''}>${j}</th>`;
+  h += '</tr></thead><tbody>';
+  for (let i = 0; i < 10; i++) {
+    h += `<tr${i === k ? ' class="sel"' : ''}><th${i === k ? ' style="color:var(--cam)"' : ''}>${i}</th>`;
+    for (let j = 0; j < 10; j++) {
+      const v = V.cm[i][j];
+      let st = '';
+      if (v > 0) st = ` style="background:rgba(${i === j ? '56,189,248' : '251,191,36'},${(0.14 + 0.78 * v / mx).toFixed(2)})"`;
+      h += `<td class="${i === j ? 'diag' : ''}${j === k ? ' selc' : ''}"${st}>${v}</td>`;
+    }
+    h += '</tr>';
+  }
+  h += '</tbody></table>';
+  $('#cmWrap').innerHTML = h;
+  const row = V.cm[k];
+  const ok = row[k];
+  let worst = -1, wv = 0;
+  row.forEach((v, j) => { if (j !== k && v > wv) { wv = v; worst = j; } });
+  $('#cmLive').textContent = `Chữ số ${k}: ${rowTot[k]} ảnh trong tập test, đoán đúng ${ok} ảnh, bị nhầm ${rowTot[k] - ok} ảnh` +
+    (wv ? ` — hay bị đoán thành ${worst} nhiều nhất (${wv} ảnh).` : ' — không bị nhầm với chữ số nào.');
+  CHIPS('#stat2', [
+    [fmtKey('n_test'), LABELS.n_test],
+    [fmtKey('n_correct'), LABELS.n_correct],
+    [fmtKey('n_wrong'), LABELS.n_wrong],
+    [fmtKey('acc'), LABELS.acc]
+  ]);
+}
+
+// ---- Tab 2: thuoc phim 24 anh THAT dau tap test (digits = X_test[:24]; nhan/proba do Lab xuat san,
+// mo hinh KHONG chay trong trinh duyet) ----
+const YT = D.y_true_head, YP = D.y_pred_head, DIG = D.digits, PB = D.proba, NSL = D.n_test_slice;
+let FK = 0, FT = null;
+function buildFilm(){
+  const cs = 38, off = 26;
+  let s = '';
+  for (let c = 0; c < 8; c++) s += `<text class="ax" x="${off + c * cs + cs / 2}" y="14" text-anchor="middle">${c}</text>`;
+  for (let r = 0; r < 8; r++) s += `<text class="ax" x="10" y="${off + r * cs + cs / 2 + 4}" text-anchor="middle">${r}</text>`;
+  for (let i = 0; i < 64; i++) {
+    const r = (i / 8) | 0, c = i % 8;
+    s += `<rect class="fcell" data-i="${i}" x="${off + c * cs}" y="${off + r * cs}" width="${cs - 4}" height="${cs - 4}" rx="5" fill="rgba(148,163,184,0.00)" stroke="var(--line2)" stroke-width="1"/>`;
+  }
+  s += `<text class="ax" x="172" y="336" text-anchor="middle">Lưới 8×8 ảnh X_test[k] · mức xám 0–16</text>`;
+  $('#gFilm').innerHTML = s;
+  const bx = 20, bw = 26, gap = 32, baseY = 246, maxH = 176;
+  let g = `<line class="ln" x1="12" y1="${baseY}" x2="334" y2="${baseY}"/>`;
+  for (let j = 0; j < 10; j++) {
+    g += `<rect class="bar" data-j="${j}" x="${bx + j * gap}" y="${baseY}" width="${bw}" height="0" rx="3" fill="var(--acc2)"/>`;
+    g += `<text class="ax" x="${bx + j * gap + bw / 2}" y="${baseY + 16}" text-anchor="middle">${j}</text>`;
+  }
+  g += `<text class="ax" x="172" y="290" text-anchor="middle">10 thanh xác suất proba[k] · thang 0 → 1</text>`;
+  $('#gProba').innerHTML = g;
+}
+function paintFilm(){
+  const k = FK, img = DIG[k];
+  $('#val5').textContent = String(k);
+  $('#filmSel').value = String(k);
+  document.querySelectorAll('#gFilm rect.fcell').forEach(el => {
+    const v = img[+el.dataset.i];
+    el.setAttribute('fill', `rgba(148,163,184,${(v / 16 * 0.92).toFixed(2)})`);
+  });
+  const ok = YT[k] === YP[k];
+  $('#filmInfo').innerHTML = `Ảnh số <b>${k}/23</b> · MLP đoán <b>${esc(YP[k])}</b> · nhãn thật <b>${esc(YT[k])}</b> · <span class="badge ${ok ? 'ok' : 'no'}">${ok ? 'ĐÚNG' : 'SAI'}</span>`;
+  const p = PB[k];
+  document.querySelectorAll('#gProba rect.bar').forEach(el => {
+    const j = +el.dataset.j, h = +(p[j] * 176).toFixed(1);
+    el.setAttribute('height', String(h));
+    el.setAttribute('y', String(246 - h));
+    el.setAttribute('fill', j === YP[k] ? 'var(--cam)' : (j === YT[k] ? 'var(--acc)' : 'var(--acc2)'));
+  });
+  let cOk = 0;
+  for (let i = 0; i <= k; i++) if (YT[i] === YP[i]) cOk++;
+  $('#cntK').textContent = String(k);
+  $('#cntOk').textContent = String(cOk);
+  $('#cntBad').textContent = String(k + 1 - cOk);
+  $('#cntSeen').textContent = `${k + 1}/24`;
+}
+function setFK(k){ FK = Math.max(0, Math.min(NSL - 1, k)); paintFilm(); }
+function playFilm(){
+  if (FT) return;
+  if (FK >= NSL - 1) setFK(0);
+  FT = setInterval(() => { if (FK >= NSL - 1) { pauseFilm(); return; } setFK(FK + 1); }, 750);
+  $('#filmPlay').setAttribute('aria-pressed', 'true');
+}
+function pauseFilm(){ if (FT) clearInterval(FT); FT = null; $('#filmPlay').setAttribute('aria-pressed', 'false'); }
+
+// ---- Tab 3: dem trong so theo cau hien tang an ----
+function renderTab3(){
+  const h1 = +$('#h1Sel').value, h2 = +$('#h2Sel').value;
+  $('#val3').textContent = String(h1);
+  $('#val4').textContent = String(h2);
+  const w1 = D.n_features * h1 + h1, w2 = h1 * h2 + h2, w3 = h2 * 10 + 10, W = w1 + w2 + w3;
+  $('#wLive').textContent = `Cấu hình đang xem (ẩn 1 = ${h1}, ẩn 2 = ${h2}): (${D.n_features}·${h1} + ${h1}) + (${h1}·${h2} + ${h2}) + (${h2}·10 + 10) = ${fvi(w1, 0)} + ${fvi(w2, 0)} + ${fvi(w3, 0)} = ${fvi(W, 0)} tham số` +
+    (h1 === 64 && h2 === 32 ? ' — đúng cấu hình Lab: hidden_layer_sizes=(64, 32).' : ' — KHÔNG phải cấu hình của Lab; bảng SSoT vẫn là số của (64, 32).');
+}
+
+function wireQuiz(){
+  const FB = {1:{"q1_1":["Đúng! Dòng là nhãn thật, cột là nhãn dự đoán: ô (8,1) = 2 ảnh số 8 bị đoán thành 1. Cả bảng chỉ có 14 trên 450 ảnh bị nhầm.",1],"q1_2":["Sai: ô (8,1) là chữ số THẬT 8 bị đoán thành 1; chiều ngược lại là ô (1,8), đang bằng 0.",0],"q1_3":["Sai: số lần đoán đúng chữ số 8 nằm ở ô đường chéo (8,8) = 34.",0]},
+   2:{"q2_1":["Chính xác! (64·64+64) + (64·32+32) + (32·10+10) = 4.160 + 2.080 + 330 = 6.570 tham số.",1],"q2_2":["Sai: 4.160 mới là hạng của tầng Vào→Ẩn 1; còn thiếu 2.080 + 330.",0],"q2_3":["Sai: 2.048 = 64×32, tức chỉ là phần trọng số của tầng Ẩn 1→Ẩn 2, chưa tính bias.",0]},
+   3:{"q3_1":["Đúng: test_size=0.25 cho 450 ảnh test; 1.797 − 450 = 1.347 ảnh train. Kiểm chéo: tổng 100 ô ma trận nhầm lẫn = đúng 450.",1],"q3_2":["Sai: Lab dùng test_size=0.25 (75/25), không phải chia đôi.",0],"q3_3":["Sai: chấm trên ảnh đã train sẽ thổi phồng điểm; Lab giữ lại 450 ảnh test chưa từng gặp.",0]}};
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#g8').addEventListener('click', e => {
+  const i = e.target && e.target.dataset ? e.target.dataset.i : undefined;
+  if (i === undefined) return;
+  const v = GRID[+i];
+  GRID[+i] = LEVELS[(LEVELS.indexOf(v) + 1) % LEVELS.length];
+  renderTab1();
+});
+$('#btnClear').onclick = () => { GRID.fill(0); renderTab1(); };
+$('#thrSel').oninput = renderTab1;
+$('#digitSel').oninput = renderTab2;
+$('#filmSel').oninput = () => { pauseFilm(); setFK(+$('#filmSel').value); };
+$('#filmPlay').onclick = playFilm;
+$('#filmPause').onclick = pauseFilm;
+$('#filmStep').onclick = () => { pauseFilm(); setFK(FK + 1); };
+$('#filmReset').onclick = () => { pauseFilm(); setFK(0); };
+$('#h1Sel').oninput = renderTab3;
+$('#h2Sel').oninput = renderTab3;
+$('#resetHero').onclick = () => {
+  $('#thrSel').value = 8;
+  $('#digitSel').value = 8;
+  $('#h1Sel').value = 64;
+  $('#h2Sel').value = 32;
+  pauseFilm(); setFK(0);
+  renderTab1(); renderTab2(); renderTab3();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); renderTab3(); buildFilm(); setFK(0); wireQuiz();
+</script>
+</body>
+</html>

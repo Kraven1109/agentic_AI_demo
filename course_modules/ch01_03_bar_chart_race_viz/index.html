@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bar chart race dựng lại bằng SVG thuần từ bảng số nhúng trong lab 02_bar_chart_race_animation.py: 10 nền kinh tế, 10 mốc năm 1980 đến 2024, đơn vị nghìn tỷ USD PPP. Kèm phép tính cầm tay suy từ ma trận pivot, so sánh dữ liệu dạng dài (melt) và dạng rộng (pivot), bảng SSoT và câu hỏi tự luyện. Giá trị là ước lượng minh hoạ, không phải bản trích xuất chính thức của World Bank.">
+<title>Bar Chart Race GDP 1980–2024 &amp; dữ liệu dài vs rộng — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+@media(max-width:640px){.pill{white-space:normal}}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:11px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+.num{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+.note.warn{color:var(--ink);border:1px solid rgba(251,191,36,.45);background:rgba(251,191,36,.09);
+padding:11px 13px;border-radius:12px;margin:10px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.calc{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.93em;font-variant-numeric:tabular-nums}
+pre{background:var(--panel2);border:1px solid var(--line);border-radius:12px;padding:10px 12px;overflow-x:auto;
+font-size:.86em;margin:8px 0}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+.scroll{overflow-x:auto;border:1px solid var(--line);border-radius:12px;padding:0 4px;margin:8px 0}
+.scroll table{min-width:780px;font-size:.84em}
+.scroll th,.scroll td{padding:6px 7px}
+#race .gbar{transition:transform .2s ease-out}
+#race .gbar rect{transition:width .2s ease-out}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 1 · Trực quan hóa dữ liệu động</span>
+<span class="pill a">bar_chart_race dựng lại bằng SVG</span>
+</div>
+<h1><span class="gr">Bar Chart Race GDP 1980–2024 &amp; dữ liệu dạng dài vs dạng rộng</span></h1>
+<p class="lede">Module dựng lại đúng ý đồ <code>bcr.bar_chart_race(df=df_pivot_gdp)</code> của lab <code>02_bar_chart_race_animation.py</code> bằng SVG thuần: 10 thanh ngang đua theo 10 mốc năm, kèm bước nội suy giữa các mốc (giống <code>steps_per_period</code>). <b>Trung thực số liệu:</b> mọi con số lấy từ <b>bảng số nhúng minh hoạ trong Lab</b> — giá trị ước lượng, KHÔNG phải bản trích xuất chính thức của World Bank — và chỉ được dùng khi Lab không tải được KaggleHub.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Về mốc 2024 của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Đua bar chart (SVG)</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường về đích &amp; phép tính</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Dài vs Rộng &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Bar chart race · bấm Chạy đua hoặc kéo thanh trượt</span>
+  <h2>10 nền kinh tế đua nhau theo mốc năm (1980 → 2024)</h2>
+  <div class="ctl">
+   <button class="btn cta" id="playBtn" type="button" aria-pressed="false">Chạy đua ▶</button>
+   <button class="btn" id="btnDefault1" type="button">Về mốc 2024</button>
+   <label for="yearSel" class="note">Mốc thời gian — mỗi cặp mốc có 10 bước nội suy (như <code>steps_per_period</code> trong lab): <b id="val1"></b></label>
+   <input id="yearSel" type="range" min="0" max="90" step="1" value="90">
+  </div>
+  <svg id="race" viewBox="0 0 440 406" role="img" aria-label="Bar chart race 10 quốc gia, thanh nằm ngang xếp giảm dần, giá trị GDP nghìn tỷ USD PPP tại mốc năm đang xem"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>v</mi><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><mo>(</mo><mn>1</mn><mo>&#8722;</mo><mi>&#945;</mi><mo>)</mo><mo>&#8901;</mo><msub><mi>v</mi><mi>k</mi></msub><mo>+</mo><mi>&#945;</mi><mo>&#8901;</mo><msub><mi>v</mi><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow></msub></math></div>
+  <p class="note">Đơn vị trục: <b>nghìn tỷ USD (PPP)</b>. Thanh và thứ hạng tính trực tiếp từ ma trận <code>pivot</code> (10 mốc × 10 quốc gia) mà lab xuất ra sau <code>df_gdp_melted.pivot_table(index='Year', columns='Country', values='GDP')</code>. Thứ tự sắp xếp giảm dần và bước nội suy mô phỏng đúng <code>sort='desc'</code>, <code>steps_per_period=10</code> của <code>bar_chart_race</code>.</p>
+  <div class="note warn"><b>Trung thực dữ liệu (đọc trước khi dùng số):</b> bảng số trong module là <b>bảng nhúng minh hoạ trong Lab</b>, giá trị <b>ước lượng</b>, <b>KHÔNG phải bản trích xuất chính thức của World Bank</b>, và chỉ được Lab dùng ở nhánh dự phòng <b>khi không tải được KaggleHub</b>. Khi Lab chạy với mạng, bộ dữ liệu mở <code>codebynadiia/gdp-1975-2025</code> sẽ cho số khác (nhiều quốc gia và nhiều năm hơn, top 15). Biến <code>DU_LIEU_NGUON</code> trong lab ghi đúng điều này — xem dòng [M01] ở tab 03.</div>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái bảng số &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Đường về đích · 3 nền kinh tế trên cùng trục</span>
+  <h2>United States, China, India qua 10 mốc năm</h2>
+  <svg id="lines" viewBox="0 0 440 310" role="img" aria-label="Biểu đồ đường GDP của United States, China và India qua 10 mốc 1980 đến 2024, nghìn tỷ USD PPP"></svg>
+  <p class="note">Đường vẽ từ đúng 30 giá trị của ba quốc gia trong ma trận <code>pivot</code>; điểm tròn to là mốc cuối 2024.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Phép tính cầm tay · ghi nguyên văn từ pivot</span>
+  <h2>Tỷ số tăng trưởng 1980 → 2024 và hiệu tuyệt đối 2024</h2>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mfrac><mrow><mi>GDP</mi><mo>(</mo><mn>2024</mn><mo>)</mo></mrow><mrow><mi>GDP</mi><mo>(</mo><mn>1980</mn><mo>)</mo></mrow></mfrac><mo>=</mo><mfrac><mrow><mi>g</mi><msub><mi>d</mi><mi>2024</mi></msub></mrow><mrow><mi>g</mi><msub><mi>d</mi><mi>1980</mi></msub></mrow></mfrac></math></div>
+  <div class="formula calc">China 1980 → 2024: 21,78 / 0,32 = 68,06 lần<br>
+United States 1980 → 2024: 20,56 / 6,56 = 3,13 lần<br>
+India 1980 → 2024: 5,54 / 0,36 = 15,39 lần<br>
+Hiệu tuyệt đối tại 2024: 21,78 &#8722; 20,56 = 1,22 nghìn tỷ USD</div>
+  <div class="stat" id="stat2"></div>
+  <p class="note">Đọc theo cột mốc: Hoa Kỳ dẫn đầu tới mốc 2022 (19,22 so với 19,08); Trung Quốc vượt từ mốc 2023 (20,31 so với 19,92) và giữ ngôi đầu tới 2024. Mọi số phái sinh ở mục này tính thẳng từ ma trận <code>pivot</code> nhúng trong <code>const LAB</code>, không nhập tay.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Hai định dạng · cùng một dữ liệu, hai cách xếp hàng</span>
+ <h2>Dạng rộng (wide) cho bar_chart_race — dạng dài (long/melt) cho seaborn</h2>
+ <p class="note"><b>Dạng RỘNG</b> dưới đây chính là <code>df_pivot_gdp</code> trong lab: mỗi <b>hàng là một mốc năm</b>, mỗi <b>cột là một quốc gia</b>. <code>bar_chart_race</code> đọc trực tiếp: trục thời gian = hàng, mỗi cột = một thanh đua. Đó là lý do lab phải gọi <code>pivot_table(index='Year', columns='Country', values='GDP')</code> trước khi vẽ animation.</p>
+ <div class="scroll"><table id="wideTable"></table></div>
+ <p class="note"><b>Dạng DÀI (melt)</b> là <code>df_gdp_melted</code>: mỗi hàng là một bộ ba <i>Năm – Quốc gia – GDP</i>. Seaborn <code>barplot(x='Country', y='GDP')</code> ở Mục 4 của lab cần đúng cột dài này để nhóm màu theo quốc gia. Ví dụ 4 hàng đầu của 300 hàng (10 năm × 10 quốc gia):</p>
+ <table>
+  <thead><tr><th>Year</th><th>Country</th><th class="ro">GDP</th></tr></thead>
+  <tbody>
+   <tr><td>1980</td><td>China</td><td class="ro">0,32</td></tr>
+   <tr><td>1980</td><td>United States</td><td class="ro">6,56</td></tr>
+   <tr><td>2024</td><td>China</td><td class="ro">21,78</td></tr>
+   <tr><td>2024</td><td>United States</td><td class="ro">20,56</td></tr>
+  </tbody>
+ </table>
+ <pre><code># Lab 02_bar_chart_race_animation.py — hai chiều biến hình của dữ liệu:
+df_gdp_melted = pd.melt(df_gdp, id_vars=['Country'], value_vars=year_columns,
+                        var_name='Year', value_name='GDP')          # rộng &#8594; dài (seaborn)
+df_pivot_gdp = df_gdp_melted.pivot_table(index='Year', columns='Country',
+                                         values='GDP').fillna(0)    # dài &#8594; rộng (bar_chart_race)</code></pre>
+ <p class="note"><code>bar_chart_race</code> hiện chưa tương thích pandas 3 (bên trong gọi <code>fillna(method=...)</code> đã bị loại), nên lab bọc lời gọi trong nhánh <code>try/except</code>; module này dựng lại animation đó bằng SVG từ chính <code>df_pivot_gdp</code>.</p>
+</div>
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 02_bar_chart_race_animation.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Nguồn dữ liệu Lab ghi lúc chạy <span class="sub">(DU_LIEU_NGUON)</span></td><td>Bảng số nhúng trong lab (10 quốc gia, 1980-2024) - gia tri uoc luong minh hoa, chi dung khi khong tai duoc KaggleHub</td></tr>
+<tr><td><code>[M02]</code> Mốc năm mới nhất trong bảng <span class="sub">(latest_year)</span></td><td class="ro hi">2024</td></tr>
+<tr><td><code>[M03]</code> Số quốc gia trong bảng nhúng <span class="sub">(n_countries)</span></td><td class="ro hi">10</td></tr>
+<tr><td><code>[M04]</code> Số mốc năm của bảng nhúng <span class="sub">(n_years)</span></td><td class="ro hi">10</td></tr>
+<tr><td><code>[M05]</code> Quốc gia dẫn đầu tại mốc mới nhất <span class="sub">(top_country)</span></td><td class="ro hi">China</td></tr>
+<tr><td><code>[M06]</code> GDP dẫn đầu tại mốc mới nhất, nghìn tỷ USD (PPP) <span class="sub">(top_gdp)</span></td><td class="ro hi">21,78</td></tr>
+<tr><td><code>[M07]</code> Ma trận pivot năm × quốc gia (bảng 10 × 10 ở trên, 100 giá trị) <span class="sub">(pivot)</span></td><td class="ro hi">10 × 10</td></tr>
+  </tbody>
+ </table>
+ <p class="note">Toàn bộ số trong bảng trên được cổng <code>parity.py</code> đối chiếu một chiều với <code>parity_source.json</code> — tệp do <code>export_lab_data.py</code> xuất từ chính lab SSoT.</p>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra — bấm đáp án để xem giải thích bằng số của bảng Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Bạn An lấy số 0,32 (dòng China, cột mốc 1980) so với số 20,56 (dòng United States, cột mốc 2024) rồi kết luận về quy mô hiện tại của hai nền kinh tế. Vì sao phép so đó không hợp lệ?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Vì hai số thuộc hai quốc gia khác nhau ở hai mốc năm khác nhau — muốn so hiện tại phải dùng cùng mốc 2024</button><button class="opt" type="button" data-v="q1_2">Vì 0,32 là số nhỏ nên không được phép đưa vào phép chia</button><button class="opt" type="button" data-v="q1_3">Vì phải đổi cả hai số về đơn vị tỷ USD rồi mới được chia</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Đọc bảng tại mốc 2024: quốc gia nào dẫn đầu và hơn quốc gia đứng thứ hai bao nhiêu nghìn tỷ USD?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">China dẫn đầu 21,78; hơn United States (20,56) đúng 1,22</button><button class="opt" type="button" data-v="q2_2">United States dẫn đầu 20,56; hơn China đúng 1,22</button><button class="opt" type="button" data-v="q2_3">China dẫn đầu; hơn Japan (5,52) tới 16,06</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Lab gọi bcr.bar_chart_race(df=df_pivot_gdp) nhưng seaborn barplot ở Mục 4 lại đọc từ df_gdp_melted. Hai DataFrame này khác nhau thế nào?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">df_pivot_gdp dạng RỘNG: mỗi hàng một mốc năm, mỗi cột một quốc gia; df_gdp_melted dạng DÀI: mỗi hàng một bộ ba Năm–Quốc gia–GDP</button><button class="opt" type="button" data-v="q3_2">Cả hai đều dạng dài, chỉ khác mỗi tên biến</button><button class="opt" type="button" data-v="q3_3">df_pivot_gdp có thêm cột GDP, còn df_gdp_melted có thêm cột Country</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>02_bar_chart_race_animation.py</code>. Số liệu là bảng nhúng minh hoạ (ước lượng) dùng khi Lab không tải được KaggleHub — khi có mạng, Lab tải bộ mở <code>codebynadiia/gdp-1975-2025</code> và số sẽ khác.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10,11],"vars":{"DU_LIEU_NGUON":"Bảng số nhúng trong lab (10 quốc gia, 1980-2024) - gia tri uoc luong minh hoa, chi dung khi khong tai duoc KaggleHub","latest_year":2024},"derived":{"n_countries":10,"n_years":10,"top_country":"China","top_gdp":21.78,"pivot":{"1980":{"Brazil":0.66,"China":0.32,"France":0.87,"Germany":1.31,"India":0.36,"Italy":0.74,"Japan":1.18,"Russia":1.39,"United Kingdom":0.93,"United States":6.56},"1990":{"Brazil":0.89,"China":0.91,"France":1.23,"Germany":1.86,"India":0.61,"Italy":1.11,"Japan":2.45,"Russia":1.76,"United Kingdom":1.38,"United States":9.44},"2000":{"Brazil":1.39,"China":2.26,"France":1.72,"Germany":2.44,"India":1.03,"Italy":1.62,"Japan":3.68,"Russia":1.59,"United Kingdom":1.97,"United States":12.56},"2010":{"Brazil":2.13,"China":6.12,"France":2.44,"Germany":3.16,"India":2.29,"Italy":2.22,"Japan":4.58,"Russia":2.43,"United Kingdom":2.7,"United States":15.05},"2015":{"Brazil":2.52,"China":10.42,"France":2.71,"Germany":3.59,"India":3.2,"Italy":2.37,"Japan":4.87,"Russia":2.84,"United Kingdom":3.12,"United States":16.8},"2020":{"Brazil":2.48,"China":16.06,"France":2.76,"Germany":3.64,"India":3.65,"Italy":2.34,"Japan":4.87,"Russia":3.01,"United Kingdom":3.13,"United States":17.46},"2021":{"Brazil":2.64,"China":18.26,"France":2.95,"Germany":3.9,"India":4.02,"Italy":2.52,"Japan":5.09,"Russia":3.36,"United Kingdom":3.35,"United States":18.29},"2022":{"Brazil":2.93,"China":19.08,"France":3.21,"Germany":4.2,"India":4.55,"Italy":2.73,"Japan":5.26,"Russia":3.62,"United Kingdom":3.6,"United States":19.22},"2023":{"Brazil":3.11,"China":20.31,"France":3.4,"Germany":4.39,"India":5.02,"Italy":2.86,"Japan":5.38,"Russia":3.63,"United Kingdom":3.76,"United States":19.92},"2024":{"Brazil":3.27,"China":21.78,"France":3.52,"Germany":4.54,"India":5.54,"Italy":2.97,"Japan":5.52,"Russia":3.9,"United Kingdom":3.9,"United States":20.56}}}};
+const V = LAB.vars;
+const D = LAB.derived;
+const P = D.pivot;
+const G = Object.keys(P).map(Number);              // 10 mốc năm, đúng thứ tự lab xuất
+const Y0 = String(G[0]), Y1 = String(G[G.length - 1]);
+const C = Object.keys(P[Y0]);                       // 10 quốc gia
+const KEYS = ["latest_year", "n_countries", "n_years", "top_country", "top_gdp"];
+const LABELS = {"latest_year": "Mốc năm mới nhất trong bảng", "n_countries": "Số quốc gia trong bảng nhúng", "n_years": "Số mốc năm của bảng nhúng", "top_country": "Quốc gia dẫn đầu tại mốc mới nhất", "top_gdp": "GDP dẫn đầu tại mốc mới nhất (nghìn tỷ USD)"};
+const DEC = {"latest_year": () => String(V.latest_year), "n_countries": () => String(D.n_countries), "n_years": () => String(D.n_years), "top_country": () => D.top_country, "top_gdp": () => fvi(D.top_gdp, 2)};
+const dec = k => DEC[k]();
+const FB = {1:{"q1_1":["Đúng! 0,32 là GDP Trung Quốc tại mốc 1980, còn 20,56 là GDP Hoa Kỳ tại mốc 2024 — hai đại lượng khác thời điểm, khác quốc gia. Cùng mốc 2024, tỷ số đúng là 21,78 / 20,56 = 1,06 và hiệu là 1,22.",1],"q1_2":["Sai. Số nhỏ vẫn tính bình thường; lỗi là trộn mốc 1980 với mốc 2024 và trộn quốc gia khi suy luận về cùng một thời điểm.",0],"q1_3":["Sai. Hai số đã cùng đơn vị nghìn tỷ USD (PPP); nhân/đổi đơn vị không sửa được lỗi so khác mốc thời gian.",0]},2:{"q2_1":["Đúng! Tại 2024: China 21,78 (hạng nhất — đúng biến top_country/top_gdp của lab), United States 20,56 (hạng nhì); hiệu 21,78 - 20,56 = 1,22.",1],"q2_2":["Sai. Tại mốc 2024 trong bảng nhúng, United States (20,56) xếp sau China (21,78). Hoa Kỳ chỉ dẫn tới mốc 2022 (19,22 so với 19,08).",0],"q2_3":["Sai. Japan tại 2024 chỉ có 5,52; hiệu China - Japan là 16,26, còn 16,06 là GDP của China tại mốc 2020.",0]},3:{"q3_1":["Chính xác! bar_chart_race cần bảng RỘNG (hàng = năm, cột = quốc gia) như df_pivot_gdp; seaborn barplot cần bảng DÀI có cột Year/Country/GDP như df_gdp_melted. Lab chuyển rộng -> dài bằng pd.melt rồi dài -> rộng bằng pivot_table.",1],"q3_2":["Sai. df_pivot_gdp là bảng rộng: 10 hàng năm × 10 cột quốc gia, không có cột GDP riêng.",0],"q3_3":["Sai. Bảng rộng không có cột GDP; cột Country có trong bảng dài df_gdp_melted (id_vars).",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const fvi = (x, nd = 2) => {
+  const s = x < 0 ? '-' : '';
+  const t = (Math.round(Math.abs(x) * 10 ** nd) / 10 ** nd).toFixed(nd);
+  const p = t.split('.');
+  return s + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (p[1] ? ',' + p[1] : '');
+};
+
+const PALETTE = {"Brazil":"#14b8a6","China":"#f87171","France":"#38bdf8","Germany":"#fbbf24","India":"#a78bfa","Italy":"#34d399","Japan":"#f472b6","Russia":"#60a5fa","United Kingdom":"#facc15","United States":"#cbd5e1"};
+const LINECOL = {"United States":"#60a5fa","China":"#f87171","India":"#a78bfa"};
+const DVMAX = Math.ceil(Math.max(...C.flatMap(c => G.map(y => P[y][c])))/5)*5;
+
+// ---------- TAB 1: bar chart race ----------
+const NPOS = 10 * (G.length - 1);
+let tCur = NPOS, playInt = null;
+const RX0 = 126, RW = 300, RTOP = 42, RROW = 34;
+let BARS = null;
+function stateAt(t) {
+  const i = Math.min(Math.floor(t / 10), G.length - 2);
+  const a = (t - i * 10) / 10;
+  const map = {};
+  C.forEach(c => { map[c] = a ? P[G[i]][c] * (1 - a) + P[G[i + 1]][c] * a : P[G[i]][c]; });
+  return { i, a, map };
+}
+function yearLabel(s) {
+  if (!s.a) return String(G[s.i]);
+  if (s.a === 1) return String(G[s.i + 1]);
+  return '≈ ' + Math.round(G[s.i] + (G[s.i + 1] - G[s.i]) * s.a);
+}
+function initRace() {
+  let s = '';
+  for (let k = 0; k <= DVMAX; k += 5) {
+    const x = RX0 + k / DVMAX * RW;
+    s += `<line class="ln" x1="${x}" y1="${RTOP - 8}" x2="${x}" y2="${RTOP + G.length * RROW - 10}" opacity=".5"/>`;
+    s += `<text class="ax" x="${x}" y="${RTOP + G.length * RROW + 6}" text-anchor="middle">${k}</text>`;
+  }
+  s += `<text id="yLbl" x="12" y="26" style="font-size:18px;font-weight:800" fill="var(--ink)"></text>`;
+  s += `<text id="aLbl" x="428" y="26" text-anchor="end" class="ax"></text>`;
+  s += `<text class="ax" x="276" y="${RTOP + G.length * RROW + 18}" text-anchor="middle">nghìn tỷ USD (PPP) — giá trị ước lượng minh hoạ</text>`;
+  s += '<g id="bars">';
+  C.forEach((c, ci) => {
+    s += `<g class="gbar" id="b${ci}" transform="translate(0,${RTOP + ci * RROW})"><rect x="${RX0}" y="0" width="0" height="22" rx="4" fill="${PALETTE[c]}"/><text x="${RX0 - 5}" y="15" text-anchor="end" fill="var(--ink)" style="font-size:10.5px">${esc(c)}</text><text class="vv" x="${RX0 + 4}" y="15" fill="var(--mut)" style="font-size:10.5px"></text></g>`;
+  });
+  s += '</g>';
+  $('#race').innerHTML = s;
+  BARS = {};
+  C.forEach((c, ci) => {
+    const g = $('#b' + ci);
+    BARS[c] = { g, rect: g.querySelector('rect'), val: g.querySelector('text.vv') };
+  });
+}
+function renderRace() {
+  if (!BARS) initRace();
+  const st = stateAt(tCur);
+  const ranked = C.map(c => [c, st.map[c]]).sort((x, y) => y[1] - x[1]);
+  ranked.forEach(([c, v], r) => {
+    const b = BARS[c], w = Math.max(1.5, v / DVMAX * RW);
+    b.g.setAttribute('transform', `translate(0,${RTOP + r * RROW})`);
+    b.rect.setAttribute('width', w.toFixed(1));
+    b.val.setAttribute('x', (RX0 + w + 4).toFixed(1));
+    b.val.textContent = fvi(v, 2);
+  });
+  const yl = yearLabel(st);
+  $('#yLbl').textContent = yl;
+  $('#aLbl').textContent = st.a === 1 ? 'đúng mốc ' + G[st.i + 1]
+    : st.a ? 'bước nội suy ' + fvi(tCur % 10, 0) + '/10 (α=' + fvi(st.a, 1) + ')'
+    : 'đúng mốc ' + G[st.i];
+  $('#val1').textContent = yl + (st.a && st.a < 1 ? ' (nội suy)' : '');
+  const top = ranked[0], second = ranked[1];
+  $('#stat1').innerHTML = [
+    [yl, 'Mốc năm đang xem'],
+    [top[0], 'Dẫn đầu tại mốc xem'],
+    [fvi(top[1], 2), 'GDP dẫn đầu (nghìn tỷ USD)'],
+    [String(D.n_countries), 'Số quốc gia trong bảng']
+  ].map(([b, sp]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(sp)}</span></div>`).join('');
+  const rows = KEYS.map(k => [LABELS[k] + ' (' + k + ')', dec(k)]);
+  rows.push(['Hạng nhất tại mốc đang xem', top[0] + ' · ' + fvi(top[1], 2)]);
+  rows.push(['Hiệu hạng nhất − hạng nhì tại mốc xem', fvi(top[1] - second[1], 2)]);
+  $('#liveTable tbody').innerHTML = rows.map(([a, b]) => `<tr><td>${esc(a)}</td><td class="ro hi">${esc(b)}</td></tr>`).join('');
+  $('#insight1').innerHTML = `Mốc đang xem <b>${esc(yl)}</b> · thanh và thứ hạng dựng lại <code>bar_chart_race(sort='desc', steps_per_period=10)</code> từ bảng ${esc(D.n_years)} mốc × ${esc(D.n_countries)} quốc gia trong <code>02_bar_chart_race_animation.py</code>.`;
+}
+
+// ---------- TAB 2: duong ve dich ----------
+function buildLines() {
+  const x0 = 52, dx = (430 - 52) / (G.length - 1), y0 = 252, H = 212;
+  const xi = k => x0 + k * dx;
+  const yv = v => y0 - v / DVMAX * H;
+  let s = '<line class="ln" x1="' + (x0 - 8) + '" y1="' + y0 + '" x2="432" y2="' + y0 + '"/>';
+  for (let k = 0; k <= DVMAX; k += 5) {
+    s += `<line class="ln" x1="${x0 - 8}" y1="${yv(k).toFixed(1)}" x2="432" y2="${yv(k).toFixed(1)}" opacity=".45"/>`;
+    s += `<text class="ax" x="${x0 - 12}" y="${(yv(k) + 3).toFixed(1)}" text-anchor="end">${k}</text>`;
+  }
+  G.forEach((y, k) => s += `<text class="ax" x="${xi(k).toFixed(1)}" y="${y0 + 15}" text-anchor="middle" style="font-size:9.5px">${y}</text>`);
+  s += '<text class="ax" x="6" y="140" transform="rotate(-90 6 140)" text-anchor="middle">nghìn tỷ USD (PPP)</text>';
+  ['United States', 'China', 'India'].forEach(c => {
+    const pts = G.map((y, k) => `${xi(k).toFixed(1)},${yv(P[y][c]).toFixed(1)}`).join(' ');
+    s += `<polyline fill="none" stroke="${LINECOL[c]}" stroke-width="3" points="${pts}"/>`;
+    G.forEach((y, k) => { s += `<circle cx="${xi(k).toFixed(1)}" cy="${yv(P[y][c]).toFixed(1)}" r="3" fill="${LINECOL[c]}"/>`; });
+  });
+  s += `<circle cx="${xi(9).toFixed(1)}" cy="${yv(P[Y1]['China']).toFixed(1)}" r="5" fill="#f87171"/><text x="${(xi(9) - 6).toFixed(1)}" y="${(yv(P[Y1]['China']) - 9).toFixed(1)}" text-anchor="end" style="font-size:11px;font-weight:700" fill="var(--ink)">China ${esc(fvi(P[Y1]['China'], 2))}</text>`;
+  s += `<circle cx="${xi(9).toFixed(1)}" cy="${yv(P[Y1]['United States']).toFixed(1)}" r="5" fill="#60a5fa"/><text x="${(xi(9) - 6).toFixed(1)}" y="${(yv(P[Y1]['United States']) + 15).toFixed(1)}" text-anchor="end" style="font-size:11px;font-weight:700" fill="var(--ink)">United States ${esc(fvi(P[Y1]['United States'], 2))}</text>`;
+  s += `<circle cx="${xi(9).toFixed(1)}" cy="${yv(P[Y1]['India']).toFixed(1)}" r="5" fill="#a78bfa"/><text x="${(xi(9) - 6).toFixed(1)}" y="${(yv(P[Y1]['India']) - 8).toFixed(1)}" text-anchor="end" style="font-size:11px;font-weight:700" fill="var(--ink)">India ${esc(fvi(P[Y1]['India'], 2))}</text>`;
+  s += `<text x="${(x0 + 14).toFixed(1)}" y="${(yv(P[Y0]['China']) - 9).toFixed(1)}" style="font-size:10px" fill="var(--mut)">0,32 · 1980</text>`;
+  s += `<text x="${(x0 + 2).toFixed(1)}" y="${(yv(P[Y0]['United States']) - 8).toFixed(1)}" style="font-size:10px" fill="var(--mut)">United States 6,56 · 1980</text>`;
+  ['United States','China','India'].forEach((c, i) => {
+    const lx = x0 + 4, ly = 292 - (i === 2 ? 0 : 0);
+    s += `<rect x="${lx + i * 128}" y="${286}" width="10" height="10" rx="2" fill="${LINECOL[c]}"/><text class="ax" x="${lx + i * 128 + 14}" y="295">${esc(c)}</text>`;
+  });
+  $('#lines').innerHTML = s;
+  const rCN = P[Y1]['China'] / P[Y0]['China'], rUS = P[Y1]['United States'] / P[Y0]['United States'],
+        rIN = P[Y1]['India'] / P[Y0]['India'], dif = P[Y1]['China'] - P[Y1]['United States'];
+  $('#stat2').innerHTML = [
+    [fvi(rCN, 2) + ' lần', 'China: 21,78 / 0,32'],
+    [fvi(rUS, 2) + ' lần', 'United States: 20,56 / 6,56'],
+    [fvi(rIN, 2) + ' lần', 'India: 5,54 / 0,36'],
+    [fvi(dif, 2), 'Hiệu China − US tại 2024']
+  ].map(([b, sp]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(sp)}</span></div>`).join('');
+}
+
+// ---------- TAB 3: bang rong ----------
+function buildWide() {
+  let s = '<thead><tr><th>Năm</th>' + C.map(c => `<th class="num">${esc(c)}</th>`).join('') + '</tr></thead><tbody>';
+  G.forEach(y => {
+    s += `<tr><th>${y}</th>` + C.map(c => `<td class="num">${esc(fvi(P[y][c], 2))}</td>`).join('') + '</tr>';
+  });
+  $('#wideTable').innerHTML = s + '</tbody>';
+}
+
+// ---------- tab 4 + dieu khien ----------
+function wireQuiz() {
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#yearSel').oninput = () => { tCur = +$('#yearSel').value; renderRace(); };
+$('#btnDefault1').onclick = () => { stopPlay(); tCur = NPOS; $('#yearSel').value = String(NPOS); renderRace(); };
+function stopPlay() {
+  if (playInt) { clearInterval(playInt); playInt = null; }
+  $('#playBtn').textContent = 'Chạy đua ▶';
+  $('#playBtn').setAttribute('aria-pressed', 'false');
+}
+$('#playBtn').onclick = () => {
+  if (playInt) { stopPlay(); return; }
+  if (tCur >= NPOS) { tCur = 0; $('#yearSel').value = '0'; renderRace(); }
+  $('#playBtn').textContent = 'Tạm dừng ⏸';
+  $('#playBtn').setAttribute('aria-pressed', 'true');
+  playInt = setInterval(() => {
+    tCur = tCur >= NPOS ? 0 : tCur + 1;
+    $('#yearSel').value = String(tCur);
+    renderRace();
+  }, 90);
+};
+$('#resetHero').onclick = () => { stopPlay(); tCur = NPOS; $('#yearSel').value = String(NPOS); renderRace(); };
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderRace(); buildLines(); buildWide(); wireQuiz();
+</script>
+</body>
+</html>

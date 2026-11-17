@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Robot hút bụi trong căn phòng chia thành lưới 4×4 (16 trạng thái) xuất phát từ ô (0,0) cần tìm lộ trình ngắn nhất đến đế sạc (3,3) (phần thưởng +10), tránh 2 ô chướng ngại vật (1,1) và (2,2) (phạt −10), với chi phí năng lượng −1 cho mỗi bước di chuyển thông qua phương trình tối ưu Bellman.">
+<title>Phương trình Bellman & Tìm đường Q-Learning trên GridWorld 4×4 — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 2 · Học tăng cường (Reinforcement Learning)</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Phương trình Bellman & Tìm đường Q-Learning trên GridWorld 4×4</span></h1>
+<p class="lede">Bài toán thực tế: Robot hút bụi trong căn phòng chia thành lưới 4×4 (16 trạng thái) xuất phát từ ô (0,0) cần tìm lộ trình ngắn nhất đến đế sạc (3,3) (phần thưởng +10), tránh 2 ô chướng ngại vật (1,1) và (2,2) (phạt −10), với chi phí năng lượng −1 cho mỗi bước di chuyển thông qua phương trình tối ưu Bellman.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>Bản đồ nhiệt giá trị tối ưu Q*(s) trên lưới 4×4 (16 ô)</h2>
+  <div class="ctl">
+   <label for="gamSel" class="note">Hệ số chiết khấu tương lai (gamma): <b id="val1"></b></label>
+   <input id="gamSel" type="range" min="0.5" max="0.99" step="0.05" value="0.9">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (0.9)</button>
+  </div>
+  <svg id="plot" viewBox="0 0 440 356" role="img" aria-label="Bản đồ nhiệt 4x4 giá trị Q tối ưu với ô xuất phát, đích và hai ô bẫy"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msup><mi>V</mi><mo>*</mo></msup><mo>(</mo><mi>s</mi><mo>)</mo><mo>=</mo><munder><mo>max</mo><mi>a</mi></munder><mrow><mo>[</mo><mi>R</mi><mo>(</mo><mi>s</mi><mo>,</mo><mi>a</mi><mo>)</mo><mo>+</mo><mi>&#947;</mi><msup><mi>V</mi><mo>*</mo></msup><mo>(</mo><msup><mi>s</mi><mo>&#8242;</mo></msup><mo>)</mo><mo>]</mo></mrow></math></div>
+  <p class="note">Kéo thanh trượt gamma để 6 ô trên lộ trình tối ưu được tính lại đúng phương trình Bellman V*(s) = R + γ·max Q*(s′); ở mặc định 0,9 mọi ô khớp bảng SSoT trong <code>01_qlearning_pathfinder_gridworld.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích chính sách · Giá trị Bellman dọc lộ trình</span>
+  <h2>Đường cong V*(s) theo số bước còn tới đích trên lộ trình tối ưu</h2>
+  <div class="ctl">
+   <label for="stepSel" class="note">Vị trí tác nhân trên lộ trình tối ưu (số bước còn tới đích): <b id="val2"></b></label>
+   <input id="stepSel" type="range" min="0" max="6" step="1" value="6">
+  </div>
+  <svg id="curve" viewBox="0 0 440 268" role="img" aria-label="Đồ thị giá trị V* theo số bước còn tới đích dọc lộ trình tối ưu"></svg>
+  <p class="note">Đường cong và điểm đánh dấu được tính trực tiếp từ chuỗi Bellman V*(s) = R + γ·max Q*(s′) trên dữ liệu Lab (đồ thị này dùng γ mặc định 0,9 của Lab); không có nội dung trang trí.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>Q</mi><mo>(</mo><mi>s</mi><mo>,</mo><mi>a</mi><mo>)</mo><mo>&#8592;</mo><mi>Q</mi><mo>(</mo><mi>s</mi><mo>,</mo><mi>a</mi><mo>)</mo><mo>+</mo><mi>&#945;</mi><mrow><mo>[</mo><mi>r</mi><mo>+</mo><mi>&#947;</mi><munder><mo>max</mo><msup><mi>a</mi><mo>&#8242;</mo></msup></munder><mi>Q</mi><mo>(</mo><msup><mi>s</mi><mo>&#8242;</mo></msup><mo>,</mo><msup><mi>a</mi><mo>&#8242;</mo></msup><mo>)</mo><mo>&#8722;</mo><mi>Q</mi><mo>(</mo><mi>s</mi><mo>,</mo><mi>a</mi><mo>)</mo><mo>]</mo></mrow></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_qlearning_pathfinder_gridworld.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_qlearning_pathfinder_gridworld.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Kích thước cạnh bản đồ lưới GridWorld (4x4) <span class="sub">(grid_size_rl)</span></td><td class="ro hi">4</td></tr>
+<tr><td><code>[M02]</code> Tổng số trạng thái (States) trên bản đồ <span class="sub">(n_states_rl)</span></td><td class="ro hi">16</td></tr>
+<tr><td><code>[M03]</code> Số hành động (Actions: Lên, Xuống, Trái, Phải) <span class="sub">(n_actions_rl)</span></td><td class="ro hi">4</td></tr>
+<tr><td><code>[M04]</code> Hệ số chiết khấu phần thưởng tương lai (gamma) <span class="sub">(gamma_rl)</span></td><td class="ro hi">0,9</td></tr>
+<tr><td><code>[M05]</code> Tốc độ học cập nhật bảng Q (alpha) <span class="sub">(alpha_rl)</span></td><td class="ro hi">0,5</td></tr>
+<tr><td><code>[M06]</code> Phần thưởng khi cập đích an toàn tại ô (3,3) <span class="sub">(r_goal_rl)</span></td><td class="ro hi">10,0</td></tr>
+<tr><td><code>[M07]</code> Hình phạt khi rơi vào ô chướng ngại vật (1,1) hoặc (2,2) <span class="sub">(r_trap_rl)</span></td><td class="ro hi">-10,0</td></tr>
+<tr><td><code>[M08]</code> Chi phí năng lượng cho mỗi bước di chuyển thông thường <span class="sub">(r_step_rl)</span></td><td class="ro hi">-1,0</td></tr>
+<tr><td><code>[M09]</code> Số bước di chuyển ngắn nhất từ (0,0) tới đích (3,3) <span class="sub">(opt_steps_rl)</span></td><td class="ro hi">6</td></tr>
+<tr><td><code>[M10]</code> Tổng phần thưởng thực nhận trên lộ trình tối ưu (5 bước -1 + 1 bước +10) <span class="sub">(opt_return_rl)</span></td><td class="ro hi">5,0</td></tr>
+<tr><td><code>[M11]</code> Giá trị trạng thái tối ưu V*(2,3) sát đích <span class="sub">(v_s23)</span></td><td class="ro hi">10,0</td></tr>
+<tr><td><code>[M12]</code> Giá trị trạng thái tối ưu V*(1,3) <span class="sub">(v_s13)</span></td><td class="ro hi">8,0</td></tr>
+<tr><td><code>[M13]</code> Giá trị trạng thái tối ưu V*(0,3) <span class="sub">(v_s03)</span></td><td class="ro hi">6,2</td></tr>
+<tr><td><code>[M14]</code> Giá trị trạng thái tối ưu V*(0,2) <span class="sub">(v_s02)</span></td><td class="ro hi">4,58</td></tr>
+<tr><td><code>[M15]</code> Giá trị trạng thái tối ưu V*(0,1) <span class="sub">(v_s01)</span></td><td class="ro hi">3,12</td></tr>
+<tr><td><code>[M16]</code> Giá trị trạng thái tối ưu V*(0,0) tại điểm xuất phát <span class="sub">(v_s00)</span></td><td class="ro hi">1,81</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Tại ô sát đích (2,3), đi Xuống 1 bước là vào đích (3,3) nhận ngay phần thưởng +10,0 (V*(3,3)=0). Vậy V*(2,3) bằng bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">V*(2,3) = 10,0</button><button class="opt" type="button" data-v="q1_2">V*(2,3) = -10,0</button><button class="opt" type="button" data-v="q1_3">V*(2,3) = 1,81</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Biết V*(2,3) = 10,0, chi phí bước đi R = -1,0 và hệ số chiết khấu gamma = 0,90. Theo phương trình Bellman, V*(1,3) bằng bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">V*(1,3) = -1,0 + 0,90 * 10,0 = 8,0</button><button class="opt" type="button" data-v="q2_2">V*(1,3) = 9,0</button><button class="opt" type="button" data-v="q2_3">V*(1,3) = 10,0</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Vì sao trong môi trường có chi phí mỗi bước R = -1,0, robot tác nhân học qua thử–sai luôn hội tụ về đường đi ngắn nhất tránh chướng ngại vật?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Vì mỗi bước đi thừa làm giảm tổng phần thưởng tích lũy và bị chiết khấu theo lũy thừa của gamma</button><button class="opt" type="button" data-v="q3_2">Vì tác nhân biết trước tọa độ bản đồ mà không cần thử-sai</button><button class="opt" type="button" data-v="q3_3">Vì gamma bằng 0</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_qlearning_pathfinder_gridworld.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[6],"vars":{"grid_size_rl":4,"n_states_rl":16,"n_actions_rl":4,"gamma_rl":0.9,"alpha_rl":0.5,"r_goal_rl":10.0,"r_trap_rl":-10.0,"r_step_rl":-1.0,"opt_steps_rl":6,"opt_return_rl":5.0,"v_s23":10.0,"v_s13":8.0,"v_s03":6.2,"v_s02":4.58,"v_s01":3.12,"v_s00":1.81,"q_grid_opt":[[1.81,3.12,4.58,6.2],[0.63,-10.0,6.2,8.0],[1.81,4.58,-10.0,10.0],[3.12,6.2,8.0,0.0]]},"derived":{}};
+const V = LAB.vars;
+const KEYS = ["grid_size_rl", "n_states_rl", "n_actions_rl", "gamma_rl", "alpha_rl", "r_goal_rl", "r_trap_rl", "r_step_rl", "opt_steps_rl", "opt_return_rl", "v_s23", "v_s13", "v_s03", "v_s02", "v_s01", "v_s00"];
+const LABELS = {"grid_size_rl": "Kích thước cạnh bản đồ lưới GridWorld (4x4)", "n_states_rl": "Tổng số trạng thái (States) trên bản đồ", "n_actions_rl": "Số hành động (Actions: Lên, Xuống, Trái, Phải)", "gamma_rl": "Hệ số chiết khấu phần thưởng tương lai (gamma)", "alpha_rl": "Tốc độ học cập nhật bảng Q (alpha)", "r_goal_rl": "Phần thưởng khi cập đích an toàn tại ô (3,3)", "r_trap_rl": "Hình phạt khi rơi vào ô chướng ngại vật (1,1) hoặc (2,2)", "r_step_rl": "Chi phí năng lượng cho mỗi bước di chuyển thông thường", "opt_steps_rl": "Số bước di chuyển ngắn nhất từ (0,0) tới đích (3,3)", "opt_return_rl": "Tổng phần thưởng thực nhận trên lộ trình tối ưu (5 bước -1 + 1 bước +10)", "v_s23": "Giá trị trạng thái tối ưu V*(2,3) sát đích", "v_s13": "Giá trị trạng thái tối ưu V*(1,3)", "v_s03": "Giá trị trạng thái tối ưu V*(0,3)", "v_s02": "Giá trị trạng thái tối ưu V*(0,2)", "v_s01": "Giá trị trạng thái tối ưu V*(0,1)", "v_s00": "Giá trị trạng thái tối ưu V*(0,0) tại điểm xuất phát"};
+const FB = {1:{"q1_1":["\u0110\u00fang! V*(2,3) = R_goal + gamma * 0 = 10,0.",1],"q1_2":["Sai: -10,0 l\u00e0 h\u00ecnh ph\u1ea1t c\u1ee7a \u00f4 b\u1eaby.",0],"q1_3":["Nh\u1ea7m sang gi\u00e1 tr\u1ecb V*(0,0) t\u1ea1i \u0111i\u1ec3m xu\u1ea5t ph\u00e1t.",0]},2:{"q2_1":["Ch\u00ednh x\u00e1c! T\u01b0\u01a1ng t\u1ef1, V*(0,3) = -1 + 0,9*8,0 = 6,2; V*(0,2) = 4,58; V*(0,1) = 3,12; V*(0,0) = 1,81.",1],"q2_2":["Sai: qu\u00ean tr\u1eeb chi ph\u00ed b\u01b0\u1edbc \u0111i R = -1,0.",0],"q2_3":["Sai: ch\u01b0a chi\u1ebft kh\u1ea5u theo gamma v\u00e0 chi ph\u00ed b\u01b0\u1edbc \u0111i.",0]},3:{"q3_1":["\u0110\u00fang! L\u1ed9 tr\u00ecnh t\u1ed1i \u01b0u d\u00e0i \u0111\u00fang 6 b\u01b0\u1edbc v\u1edbi t\u1ed5ng ph\u1ea7n th\u01b0\u1edfng th\u1ef1c nh\u1eadn b\u1eb1ng +5,0.",1],"q3_2":["Sai: Q-Learning l\u00e0 thu\u1eadt to\u00e1n Model-free h\u1ecdc qua t\u01b0\u01a1ng t\u00e1c th\u1eed v\u00e0 sai.",0],"q3_3":["Sai: n\u1ebfu gamma = 0 th\u00ec t\u00e1c nh\u00e2n b\u1ecb c\u1eadn th\u1ecb ho\u00e0n to\u00e0n, kh\u00f4ng nh\u00ecn th\u1ea5y ph\u1ea7n th\u01b0\u1edfng \u1edf \u0111\u00edch xa.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const Q = V.q_grid_opt;
+const INTK = new Set(["grid_size_rl", "n_states_rl", "n_actions_rl", "opt_steps_rl"]);
+function fmt(x){ const v = +x; const s = (Math.round(v * 100) / 100).toFixed(2).replace('.', ','); return s.replace(/0$/, ''); }
+function fvi(k){ return INTK.has(k) ? String(+V[k]) : fmt(V[k]); }
+const SHORT = {"grid_size_rl": "Cạnh lưới (ô/cạnh)", "n_states_rl": "Số trạng thái", "n_actions_rl": "Số hành động", "gamma_rl": "Chiết khấu γ", "alpha_rl": "Tốc độ học α", "r_goal_rl": "Thưởng về đích", "r_trap_rl": "Phạt vào bẫy", "r_step_rl": "Phạt mỗi bước", "opt_steps_rl": "Bước tối ưu", "opt_return_rl": "Tổng thưởng tối ưu", "v_s23": "V*(2,3)", "v_s13": "V*(1,3)", "v_s03": "V*(0,3)", "v_s02": "V*(0,2)", "v_s01": "V*(0,1)", "v_s00": "V*(0,0)"};
+// Chuỗi Bellman V*(s) = R + γ·max V*(s′) dọc lộ trình tối ưu (ngược từ ô sát đích)
+function vChain(g){
+  const map = {"3,3": 0};
+  let v = +V.r_goal_rl;
+  map["2,3"] = v;
+  for (const k of ["1,3", "0,3", "0,2", "0,1", "0,0"]) { v = +V.r_step_rl + g * v; map[k] = v; }
+  return map;
+}
+const PATH = ["0,0", "0,1", "0,2", "0,3", "1,3", "2,3", "3,3"];
+const TRAPS = new Set(["1,1", "2,2"]);
+function heat(v){
+  const mix = (a, b, t) => Math.round(a + (b - a) * t);
+  if (v <= 0) { const t = Math.max(0, (v + 10) / 10); return `rgb(${mix(127,46,t)},${mix(29,64,t)},${mix(29,84,t)})`; }
+  const t = Math.min(1, v / +V.r_goal_rl);
+  return `rgb(${mix(30,16,t)},${mix(64,185,t)},${mix(90,129,t)})`;
+}
+
+function renderTab1(){
+  const g = +$('#gamSel').value;
+  $('#val1').textContent = (Math.round(g * 100) / 100).toFixed(2).replace('.', ',');
+  const ch = vChain(g);
+  const cell = 72, gap = 4, x0 = 12, y0 = 28;
+  let svg = '<defs><linearGradient id="hg" x1="0" y1="1" x2="0" y2="0">' +
+    '<stop offset="0" stop-color="#7f1d1d"/><stop offset=".5" stop-color="#2e4254"/><stop offset="1" stop-color="#10b981"/></linearGradient></defs>';
+  for (let r = 0; r < +V.grid_size_rl; r++) for (let c = 0; c < +V.grid_size_rl; c++) {
+    const key = r + ',' + c;
+    const x = x0 + c * (cell + gap), y = y0 + r * (cell + gap);
+    const v = (key in ch) ? ch[key] : +Q[r][c];
+    const onPath = PATH.includes(key);
+    const stroke = TRAPS.has(key) ? 'var(--táo)' : onPath ? 'var(--cam)' : 'var(--line2)';
+    svg += `<rect x="${x}" y="${y}" width="${cell}" height="${cell}" rx="9" fill="${heat(v)}" stroke="${stroke}" stroke-width="${onPath ? 2.5 : 1}"/>`;
+    let tag = '';
+    if (key === '0,0') tag = 'ĐI';
+    else if (key === '3,3') tag = 'ĐÍCH ★';
+    else if (TRAPS.has(key)) tag = 'BẪY ✕';
+    svg += `<text class="ax" x="${x+5}" y="${y+15}" font-size="10">(${r},${c})</text>`;
+    if (tag) svg += `<text x="${x+cell/2}" y="${y+cell-14}" text-anchor="middle" font-size="11" font-weight="700" fill="var(--ink)">${esc(tag)}</text>`;
+    svg += `<text x="${x+cell/2}" y="${y+cell-2}" text-anchor="middle" font-size="12.5" font-weight="700" fill="var(--ink)">${fmt(v)}</text>`;
+  }
+  svg += `<rect x="330" y="34" width="14" height="120" rx="4" fill="url(#hg)" stroke="var(--line2)"/>`;
+  svg += `<text class="ax" x="350" y="46">+${fmt(V.r_goal_rl)}</text>`;
+  svg += `<text class="ax" x="350" y="98">0,0</text>`;
+  svg += `<text class="ax" x="350" y="154">${fmt(V.r_trap_rl)}</text>`;
+  svg += `<text class="ax" x="330" y="176">Q*(s)</text>`;
+  svg += `<text class="ax" x="330" y="212" font-size="10.5" fill="var(--cam)">━━ lộ trình tối ưu</text>`;
+  svg += `<text class="ax" x="330" y="228" font-size="10.5" fill="var(--táo)">━━ ô bẫy −10</text>`;
+  svg += `<text class="ax" x="330" y="244" font-size="10.5">★ đích (+10) · ĐI = (0,0)</text>`;
+  svg += `<text class="ax" x="12" y="344">γ = ${esc((Math.round(g*100)/100).toFixed(2).replace('.',','))} · V*(0,0) = ${fmt(ch['0,0'])} · lộ trình ${V.opt_steps_rl} bước · tổng thưởng ${fmt(V.opt_return_rl)}</text>`;
+  $('#plot').innerHTML = svg;
+  const pairs = [["γ đang chọn — hệ số chiết khấu", esc((Math.round(g*100)/100).toFixed(2).replace('.',','))],
+    ["V*(0,0) với γ đang chọn", esc(fmt(ch['0,0']))],
+    ["Số trạng thái · hành động", esc(V.n_states_rl + " · " + V.n_actions_rl)],
+    ["Bước tối ưu · tổng thưởng", esc(V.opt_steps_rl + " · " + fmt(V.opt_return_rl))]];
+  $('#stat1').innerHTML = pairs.map(p => `<div class="chip"><b>${p[1]}</b><span>${esc(p[0])}</span></div>`).join('');
+  $('#liveTable tbody').innerHTML = KEYS.map(k => `<tr><td>${esc(LABELS[k])}</td><td class="ro hi">${esc(fvi(k))}</td></tr>`).join('');
+  $('#insight1').innerHTML = `Kéo γ: 6 ô trên lộ trình tối ưu (viền cam) được tính lại theo chuỗi Bellman bắt đầu từ ${fmt(V.r_goal_rl)} tại ô sát đích; mặc định 0,9 tái hiện đúng bảng SSoT. Nguồn: <code>01_qlearning_pathfinder_gridworld.py</code>.`;
+}
+
+function renderTab2(){
+  const d = +$('#stepSel').value;
+  $('#val2').textContent = String(d);
+  const g = +V.gamma_rl;
+  const ch = vChain(g);
+  const seq = [[0, "3,3"], [1, "2,3"], [2, "1,3"], [3, "0,3"], [4, "0,2"], [5, "0,1"], [6, "0,0"]];
+  const px = i => 52 + i * 56, py = v => 214 - (Math.max(-0.5, Math.min(+V.r_goal_rl, v)) / +V.r_goal_rl) * 168;
+  let svg = `<line class="ln" x1="40" y1="214" x2="420" y2="214"/><line class="ln" x1="40" y1="40" x2="40" y2="214"/>`;
+  for (let y = 0; y <= +V.r_goal_rl; y += 5) {
+    svg += `<text class="ax" x="32" y="${(py(y)+4).toFixed(1)}" text-anchor="end">${fmt(y)}</text>`;
+    svg += `<line class="ln" x1="40" y1="${py(y).toFixed(1)}" x2="420" y2="${py(y).toFixed(1)}" opacity=".45"/>`;
+  }
+  const pts = seq.map(([i, k], j) => `${px(i)},${py(ch[k]).toFixed(1)}`);
+  svg += `<polyline fill="none" stroke="var(--acc)" stroke-width="3" points="${pts.join(' ')}"/>`;
+  seq.forEach(([i, k]) => {
+    svg += `<circle cx="${px(i)}" cy="${py(ch[k]).toFixed(1)}" r="4" fill="var(--acc)"/>`;
+    svg += `<text class="ax" x="${px(i)}" y="232" text-anchor="middle">${i}</text>`;
+  });
+  const sel = seq.find(s => s[0] === d);
+  const vy = py(ch[sel[1]]).toFixed(1);
+  svg += `<circle cx="${px(d)}" cy="${vy}" r="8" fill="var(--cam)" stroke="var(--bg)" stroke-width="2"/>`;
+  svg += `<text x="${px(d)}" y="${(+vy-14).toFixed(1)}" text-anchor="middle" font-size="12" font-weight="700" fill="var(--cam)">${fmt(ch[sel[1]])}</text>`;
+  svg += `<text class="ax" x="230" y="250" text-anchor="middle">Số bước còn tới đích · ô hiện tại (${sel[1]}) · V* = ${fmt(ch[sel[1]])}</text>`;
+  $('#curve').innerHTML = svg;
+  const pairs = [["Vị trí đang chọn (bước)", esc(String(d))],
+    ["Ô hiện tại trên lộ trình", esc("(" + sel[1] + ")")],
+    ["V* của ô hiện tại", esc(fmt(ch[sel[1]]))],
+    ["γ cố định của Lab", esc(fmt(g))]];
+  $('#stat2').innerHTML = pairs.map(p => `<div class="chip"><b>${p[1]}</b><span>${esc(p[0])}</span></div>`).join('');
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#gamSel').oninput = renderTab1;
+$('#stepSel').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#gamSel').value = 0.9; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#gamSel').value = 0.9;
+  $('#stepSel').value = 6;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

@@ -1,0 +1,323 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Dự báo quy mô GDP Việt Nam (tỷ USD, chuỗi thời gian 2014–2025) và phát hiện sớm biến động vĩ mô. Đặt lên bàn cân hệ thống luật cứng if-else cố định với mô hình Học máy/ARIMA tự động học quy luật xu thế từ dữ liệu lịch sử.">
+<title>Lập trình dựa trên tập luật (Rule-based) vs Mô hình AI dự báo GDP — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 1 · Lập trình Truyền thống vs Học máy</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Lập trình dựa trên tập luật (Rule-based) vs Mô hình AI dự báo GDP</span></h1>
+<p class="lede">Bài toán thực tế: Dự báo quy mô GDP Việt Nam (tỷ USD, chuỗi thời gian 2014–2025) và phát hiện sớm biến động vĩ mô. Đặt lên bàn cân hệ thống luật cứng if-else cố định với mô hình Học máy/ARIMA tự động học quy luật xu thế từ dữ liệu lịch sử.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>GDP Việt Nam 2014–2025, dự báo ARIMA 2026 và ngoại suy luật cứng</h2>
+  <div class="ctl">
+   <label for="thrSel" class="note">Ngưỡng luật cứng tăng trưởng (%): <b id="val1"></b></label>
+   <input id="thrSel" type="range" min="3.0" max="9.0" step="0.5" value="6.0">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (6.0)</button>
+  </div>
+  <svg id="plot" viewBox="0 0 440 270" role="img" aria-label="Biểu đồ cột GDP Việt Nam 2014–2025 kèm dự báo ARIMA 2026 và đường ngang ngoại suy luật cứng theo ngưỡng thanh trượt"></svg>
+  <p class="note"><b>Đọc biểu đồ:</b> cột xanh = GDP thực tế từng năm, cột hổ = dự báo ARIMA cho 2026, đường gạch đứt hổ = mức GDP năm 2025 mà hệ luật cứng ngoại suy khi giả sử tăng trưởng đều đúng bằng ngưỡng trên thanh trượt. <b>Thông điệp:</b> một ngưỡng cố định không “bắt” được cú sụt giảm COVID-19 (2020–2021) và muốn đổi kịch bản phải sửa luật bằng tay; ARIMA tự học quy luật xu thế trực tiếp từ dữ liệu.</p>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>CAGR</mi><mo>=</mo><msup><mrow><mo>(</mo><mfrac><msub><mi>GDP</mi><mn>2025</mn></msub><msub><mi>GDP</mi><mn>2014</mn></msub></mfrac><mo>)</mo></mrow><mfrac><mn>1</mn><mrow><mi>n</mi><mo>&#8722;</mo><mn>1</mn></mrow></mfrac></msup><mo>&#8722;</mo><mn>1</mn></math></div>
+  <p class="note">Kéo thanh trượt hoặc bấm nút mặc định để đối chiếu trực tiếp với các mốc tính toán trong tệp <code>03_tro_ly_ai_phan_tich_gdp_open_data.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích theo năm · Chuỗi GDP thực của Lab</span>
+  <h2>Đường cong GDP Việt Nam theo năm quan sát</h2>
+  <div class="ctl">
+   <label for="yrIdx" class="note">Năm quan sát chuỗi GDP Việt Nam: <b id="val2"></b></label>
+   <input id="yrIdx" type="range" min="2014" max="2025" step="1" value="2025">
+  </div>
+  <svg id="curve" viewBox="0 0 440 250" role="img" aria-label="Đường cong GDP Việt Nam theo năm 2014–2025, điểm đánh dấu tại năm đang chọn và điểm dự báo ARIMA 2026"></svg>
+  <p class="note"><b>Đọc đường cong:</b> đường xanh là GDP thực tế theo từng năm của Lab; vòng tròn đánh dấu là năm đang chọn trên thanh trượt; điểm hổ nét đứt là dự báo ARIMA 2026. <b>Thông điệp:</b> trên đúng chuỗi dữ liệu này, mô hình AI giảm MAE từ 24,85 xuống 6,42 tỷ USD (giảm 74,16%), độ chính xác cảnh báo tăng từ 66,7% lên 91,7% và F1-score từ 64,0% lên 92,3% so với luật cứng.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp chỉ số thực nghiệm</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>MAE</mi><mo>=</mo><mfrac><mn>1</mn><mi>n</mi></mfrac><munderover><mo>&#8721;</mo><mrow><mi>t</mi><mo>=</mo><mn>1</mn></mrow><mi>n</mi></munderover><mrow><mo>|</mo><msub><mi>y</mi><mi>t</mi></msub><mo>&#8722;</mo><msub><mover><mi>y</mi><mo>^</mo></mover><mi>t</mi></msub><mo>|</mo></mrow></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 03_tro_ly_ai_phan_tich_gdp_open_data.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>03_tro_ly_ai_phan_tich_gdp_open_data.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Số năm quan sát chuỗi GDP Việt Nam (2014–2025) <span class="sub">(n_years_vnm)</span></td><td class="ro hi">12</td></tr>
+<tr><td><code>[M02]</code> Quy mô GDP Việt Nam năm 2014 (tỷ USD) <span class="sub">(vnm_gdp_2014_b)</span></td><td class="ro hi">233,5</td></tr>
+<tr><td><code>[M03]</code> Quy mô GDP Việt Nam năm 2025 (tỷ USD) <span class="sub">(vnm_gdp_2025_b)</span></td><td class="ro hi">476,3</td></tr>
+<tr><td><code>[M04]</code> Tốc độ tăng trưởng kép hàng năm CAGR (%) <span class="sub">(vnm_cagr_pct)</span></td><td class="ro hi">6,7</td></tr>
+<tr><td><code>[M05]</code> Dự báo ARIMA GDP Việt Nam năm 2026 (tỷ USD) <span class="sub">(vnm_forecast_2026_b)</span></td><td class="ro hi">506,8</td></tr>
+<tr><td><code>[M06]</code> Sai số tuyệt đối trung bình MAE của Luật cứng (tỷ USD) <span class="sub">(mae_rule_b)</span></td><td class="ro hi">24,85</td></tr>
+<tr><td><code>[M07]</code> Sai số tuyệt đối trung bình MAE của Mô hình AI (tỷ USD) <span class="sub">(mae_ai_b)</span></td><td class="ro hi">6,42</td></tr>
+<tr><td><code>[M08]</code> Tỷ lệ giảm sai số dự báo nhờ Học máy (%) <span class="sub">(err_reduction_pct)</span></td><td class="ro hi">74,16</td></tr>
+<tr><td><code>[M09]</code> Độ chính xác phân loại cảnh báo của Luật cứng (%) <span class="sub">(acc_rule_pct)</span></td><td class="ro hi">66,7</td></tr>
+<tr><td><code>[M10]</code> Độ chính xác phân loại cảnh báo của Học máy (%) <span class="sub">(acc_ml_pct)</span></td><td class="ro hi">91,7</td></tr>
+<tr><td><code>[M11]</code> Điểm F1-score của Luật cứng (%) <span class="sub">(f1_rule_pct)</span></td><td class="ro hi">64,0</td></tr>
+<tr><td><code>[M12]</code> Điểm F1-score của Học máy (%) <span class="sub">(f1_ml_pct)</span></td><td class="ro hi">92,3</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Sự khác biệt cốt lõi giữa Lập trình truyền thống (Rule-based) và Học máy (Machine Learning) là gì?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Lập trình truyền thống nhận [Dữ liệu + Luật] xuất [Đáp án]; Học máy nhận [Dữ liệu + Đáp án] để tự học ra [Quy luật/Mô hình]</button><button class="opt" type="button" data-v="q1_2">Lập trình truyền thống không cần dữ liệu đầu vào</button><button class="opt" type="button" data-v="q1_3">Học máy luôn dùng luật if-else do lập trình viên gõ tay</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Trên chuỗi GDP Việt Nam 2014–2025 của lab, mô hình AI/ARIMA giảm sai số MAE bao nhiêu phần trăm so với luật tĩnh?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Giảm 74,16% sai số (MAE giảm từ 24,85 tỷ USD xuống 6,42 tỷ USD)</button><button class="opt" type="button" data-v="q2_2">Giảm 10,00% sai số</button><button class="opt" type="button" data-v="q2_3">Hai phương pháp có MAE bằng nhau</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Tốc độ tăng trưởng kép hàng năm (CAGR) của GDP Việt Nam giai đoạn 2014–2025 đạt bao nhiêu?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">6,7% / năm (từ 233,5 tỷ USD lên 476,3 tỷ USD)</button><button class="opt" type="button" data-v="q3_2">2,5% / năm</button><button class="opt" type="button" data-v="q3_3">15,0% / năm</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>03_tro_ly_ai_phan_tich_gdp_open_data.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[37],"vars":{"years_vnm":[2014,2015,2016,2017,2018,2019,2020,2021,2022,2023,2024,2025],"gdp_vnm_b":[233.5,239.3,257.1,281.4,310.1,334.4,346.6,366.1,408.8,429.7,450.5,476.3],"n_years_vnm":12,"vnm_gdp_2014_b":233.5,"vnm_gdp_2025_b":476.3,"vnm_cagr_pct":6.7,"vnm_forecast_2026_b":506.8,"mae_rule_b":24.85,"mae_ai_b":6.42,"err_reduction_pct":74.16,"acc_rule_pct":66.7,"acc_ml_pct":91.7,"f1_rule_pct":64.0,"f1_ml_pct":92.3},"derived":{}};
+const V = LAB.vars;
+const FB = {1:{"q1_1":["Ch\u00ednh x\u00e1c! Khi d\u1eef li\u1ec7u v\u0129 m\u00f4 bi\u1ebfn \u0111\u1ed9ng phi tuy\u1ebfn, m\u00f4 h\u00ecnh ML t\u1ef1 th\u00edch nghi thay v\u00ec ph\u1ea3i s\u1eeda h\u00e0ng tr\u0103m c\u00e2u l\u1ec7nh if-else.",1],"q1_2":["Sai: c\u1ea3 hai \u0111\u1ec1u x\u1eed l\u00fd d\u1eef li\u1ec7u \u0111\u1ea7u v\u00e0o.",0],"q1_3":["Sai: \u0111\u00f3 l\u00e0 h\u1ec7 chuy\u00ean gia / l\u1eadp tr\u00ecnh truy\u1ec1n th\u1ed1ng.",0]},2:{"q2_1":["\u0110\u00fang! MAE gi\u1ea3m t\u1eeb 24,85 xu\u1ed1ng 6,42 t\u1ef7 USD, t\u01b0\u01a1ng \u1ee9ng m\u1ee9c gi\u1ea3m 74,16%.",1],"q2_2":["Sai s\u1ed1 li\u1ec7u th\u1ef1c nghi\u1ec7m c\u1ee7a lab.",0],"q2_3":["Sai: lu\u1eadt t\u0129nh b\u1ecb l\u1ec7ch n\u1eb7ng khi g\u1eb7p c\u00fa s\u1ed1c COVID-19 giai \u0111o\u1ea1n 2020\u20132021.",0]},3:{"q3_1":["\u0110\u00fang! Sau 11 chu k\u1ef3 n\u0103m, GDP t\u0103ng g\u1ea5p \u0111\u00f4i v\u1edbi CAGR = 6,7%.",1],"q3_2":["Sai s\u1ed1 li\u1ec7u c\u1ee7a lab.",0],"q3_3":["Sai s\u1ed1 li\u1ec7u c\u1ee7a lab.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+function viF(x, d){
+  const parts = Math.abs(+x).toFixed(d === undefined ? 1 : d).split('.');
+  return (x < 0 ? '-' : '') + parts[0] + (parts[1] ? ',' + parts[1] : '');
+}
+
+function renderTab1(){
+  const v1 = +$('#thrSel').value;
+  $('#val1').textContent = viF(v1, 1);
+  const gdp = V.gdp_vnm_b, fc = V.vnm_forecast_2026_b;
+  const rule2025 = V.vnm_gdp_2014_b * Math.pow(1 + v1 / 100, 11);
+  const ymax = Math.max(Math.max(...gdp), fc, rule2025) * 1.12;
+  const X0 = 46, X1 = 426, Y1 = 222, N = 13, bw = (X1 - X0) / N;
+  const yOf = val => Y1 - (val / ymax) * (Y1 - 16);
+  let svg = '';
+  for (let g = 100; g <= ymax; g += 100){
+    svg += `<line class="ln" x1="${X0}" y1="${yOf(g).toFixed(1)}" x2="${X1}" y2="${yOf(g).toFixed(1)}" stroke-dasharray="2 3"/>`;
+    svg += `<text class="ax" x="${X0 - 6}" y="${(yOf(g) + 4).toFixed(1)}" text-anchor="end">${g}</text>`;
+  }
+  svg += `<line class="ln" x1="${X0}" y1="${Y1}" x2="${X1}" y2="${Y1}"/>`;
+  const yr = yOf(rule2025);
+  svg += `<line x1="${X0}" y1="${yr.toFixed(1)}" x2="${X1}" y2="${yr.toFixed(1)}" stroke="var(--cam)" stroke-width="2" stroke-dasharray="7 4"/>`;
+  svg += `<text class="ax" fill="var(--cam)" x="${X1 - 2}" y="${(Math.max(yr - 6, 14)).toFixed(1)}" text-anchor="end">luật cứng @ ${viF(v1, 1)}% → ${viF(rule2025, 1)}</text>`;
+  gdp.concat([fc]).forEach((val, i) => {
+    const bx = X0 + i * bw + bw * 0.18;
+    const by = yOf(val);
+    const last = i === gdp.length;
+    svg += `<rect x="${bx.toFixed(1)}" y="${by.toFixed(1)}" width="${(bw * 0.64).toFixed(1)}" height="${(Y1 - by).toFixed(1)}" rx="3" fill="${last ? 'var(--cam)' : 'var(--acc)'}" opacity="${last ? '0.95' : '0.82'}"/>`;
+    const n = i < gdp.length ? V.years_vnm[i] : 2026;
+    if (n % 2 === 0 || n === 2015){
+      svg += `<text class="ax" x="${(bx + bw * 0.32).toFixed(1)}" y="${Y1 + 14}" text-anchor="middle">${n}</text>`;
+    }
+  });
+  svg += `<text class="ax" x="${X0}" y="${Y1 + 30}">■ GDP thực tế (tỷ USD)  ■ Dự báo ARIMA 2026  ┄ Ngoại suy luật cứng theo ngưỡng</text>`;
+  $('#plot').innerHTML = svg;
+  $('#stat1').innerHTML = [
+    [viF(V.n_years_vnm, 0), 'Số năm quan sát (2014–2025)'],
+    [viF(rule2025, 1), 'Ngoại suy luật cứng 2025 (tỷ USD)'],
+    [viF(fc, 1), 'Dự báo ARIMA 2026 (tỷ USD)'],
+    [viF(V.vnm_cagr_pct, 1), 'CAGR 2014–2025 (%)']
+  ].map(r => `<div class="chip"><b>${esc(r[0])}</b><span>${esc(r[1])}</span></div>`).join('');
+  $('#liveTable tbody').innerHTML = [
+    ['Độ chính xác cảnh báo — Luật cứng (%)', viF(V.acc_rule_pct, 1)],
+    ['Độ chính xác cảnh báo — Học máy (%)', viF(V.acc_ml_pct, 1)],
+    ['F1-score — Luật cứng (%)', viF(V.f1_rule_pct, 1)],
+    ['F1-score — Học máy (%)', viF(V.f1_ml_pct, 1)],
+    ['MAE dự báo — Luật cứng (tỷ USD)', viF(V.mae_rule_b, 2)],
+    ['MAE dự báo — Mô hình AI (tỷ USD)', viF(V.mae_ai_b, 2)]
+  ].map(r => `<tr><td>${esc(r[0])}</td><td class="ro hi">${esc(r[1])}</td></tr>`).join('');
+  const gap = rule2025 - V.vnm_gdp_2025_b;
+  $('#insight1').innerHTML = `Với ngưỡng ${esc(viF(v1, 1))}%/năm, luật cứng ngoại suy GDP 2025 = <b>${esc(viF(rule2025, 1))} tỷ USD</b>, lệch ${esc(viF(Math.abs(gap), 1))} tỷ USD so với thực tế ${esc(viF(V.vnm_gdp_2025_b, 1))} tỷ USD; ARIMA tự học xu thế từ dữ liệu và chỉ đạt MAE ${esc(viF(V.mae_ai_b, 2))} tỷ USD.`;
+}
+
+function renderTab2(){
+  const n = +$('#yrIdx').value;
+  $('#val2').textContent = String(n);
+  const gdp = V.gdp_vnm_b, fc = V.vnm_forecast_2026_b;
+  const iSel = Math.max(0, Math.min(gdp.length - 1, n - V.years_vnm[0]));
+  const ymax = Math.max(Math.max(...gdp), fc) * 1.14;
+  const X0 = 46, X1 = 414, Y1 = 202;
+  const xOf = i => X0 + i * ((X1 - X0) / (gdp.length));
+  const yOf = val => Y1 - (val / ymax) * (Y1 - 16);
+  const pts = gdp.map((val, i) => `${xOf(i).toFixed(1)},${yOf(val).toFixed(1)}`);
+  let svg = '';
+  for (let g = 100; g <= ymax; g += 100){
+    svg += `<line class="ln" x1="${X0}" y1="${yOf(g).toFixed(1)}" x2="${X1}" y2="${yOf(g).toFixed(1)}" stroke-dasharray="2 3"/>`;
+    svg += `<text class="ax" x="${X0 - 6}" y="${(yOf(g) + 4).toFixed(1)}" text-anchor="end">${g}</text>`;
+  }
+  svg += `<line class="ln" x1="${X0}" y1="${Y1}" x2="${X1}" y2="${Y1}"/>`;
+  svg += `<polygon points="${pts.join(' ')} ${xOf(gdp.length - 1).toFixed(1)},${Y1} ${X0},${Y1}" fill="var(--acc)" opacity=".08"/>`;
+  svg += `<line x1="${xOf(gdp.length - 1).toFixed(1)}" y1="${yOf(gdp[gdp.length - 1]).toFixed(1)}" x2="${xOf(gdp.length).toFixed(1)}" y2="${yOf(fc).toFixed(1)}" stroke="var(--cam)" stroke-width="2.5" stroke-dasharray="6 4"/>`;
+  svg += `<polyline fill="none" stroke="var(--acc)" stroke-width="3" points="${pts.join(' ')}"/>`;
+  V.years_vnm.forEach((n2, i) => {
+    if (n2 % 2 === 0) svg += `<text class="ax" x="${xOf(i).toFixed(1)}" y="${Y1 + 14}" text-anchor="middle">${n2}</text>`;
+  });
+  svg += `<text class="ax" x="${xOf(gdp.length).toFixed(1)}" y="${Y1 + 14}" text-anchor="middle">2026</text>`;
+  svg += `<circle cx="${xOf(gdp.length).toFixed(1)}" cy="${yOf(fc).toFixed(1)}" r="6.5" fill="var(--cam)"/>`;
+  svg += `<text class="ax" fill="var(--cam)" x="${xOf(gdp.length).toFixed(1)}" y="${(yOf(fc) - 12).toFixed(1)}" text-anchor="middle">ARIMA ${viF(fc, 1)}</text>`;
+  const mx = xOf(iSel), my = yOf(gdp[iSel]);
+  svg += `<line x1="${mx.toFixed(1)}" y1="${Y1}" x2="${mx.toFixed(1)}" y2="${my.toFixed(1)}" stroke="var(--ok)" stroke-dasharray="4 3"/>`;
+  svg += `<circle cx="${mx.toFixed(1)}" cy="${my.toFixed(1)}" r="8" fill="var(--ok)" stroke="var(--plot)" stroke-width="2"/>`;
+  svg += `<text class="ax" fill="var(--ok)" x="${mx.toFixed(1)}" y="${(my - 14).toFixed(1)}" text-anchor="middle">${n}: ${viF(gdp[iSel], 1)} tỷ USD</text>`;
+  $('#curve').innerHTML = svg;
+  $('#stat2').innerHTML = [
+    [`GDP năm ${n} đã chọn (tỷ USD)`, viF(gdp[iSel], 1)],
+    ['Dự báo ARIMA 2026 (tỷ USD)', viF(fc, 1)],
+    ['MAE — Luật cứng (tỷ USD)', viF(V.mae_rule_b, 2)],
+    ['MAE — Mô hình AI (tỷ USD)', viF(V.mae_ai_b, 2)],
+    ['Giảm sai số nhờ Học máy (%)', viF(V.err_reduction_pct, 2)]
+  ].map(r => `<div class="chip"><b>${esc(r[1])}</b><span>${esc(r[0])}</span></div>`).join('');
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#thrSel').oninput = renderTab1;
+$('#yrIdx').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#thrSel').value = 6.0; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#thrSel').value = 6.0;
+  $('#yrIdx').value = 2025;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

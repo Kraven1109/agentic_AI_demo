@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Khảo sát giới hạn phân tách tuyến tính của Perceptron đơn tầng trên bảng chân trị 4 điểm của cổng logic XOR (0, 1), cách mạng nơ-ron đa tầng (MLP) dùng tầng ẩn phi tuyến để đạt độ chính xác 100%, cơ chế trích xuất cạnh đứng bằng bộ lọc tích chập 3×3 (CNN) và phân bổ trọng số ngữ cảnh bằng cơ chế Self-Attention.">
+<title>Từ giới hạn cổng XOR của Perceptron đến MLP, CNN & Attention — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 2 · Mạng Nơ-ron, Tích chập CNN & Self-Attention</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Từ giới hạn cổng XOR của Perceptron đến MLP, CNN & Attention</span></h1>
+<p class="lede">Bài toán thực tế: Khảo sát giới hạn phân tách tuyến tính của Perceptron đơn tầng trên bảng chân trị 4 điểm của cổng logic XOR (0, 1), cách mạng nơ-ron đa tầng (MLP) dùng tầng ẩn phi tuyến để đạt độ chính xác 100%, cơ chế trích xuất cạnh đứng bằng bộ lọc tích chập 3×3 (CNN) và phân bổ trọng số ngữ cảnh bằng cơ chế Self-Attention.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>Độ chính xác Perceptron đơn tầng và MLP trên 4 cổng logic</h2>
+  <div class="ctl">
+   <label for="mlpSel" class="note">Số nơ-ron tầng ẩn của MLP giải cổng XOR (k): <b id="val1"></b></label>
+   <input id="mlpSel" type="range" min="1" max="10" step="1" value="5">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (5)</button>
+  </div>
+  <svg id="plot" viewBox="0 0 440 270" role="img" aria-label="Biểu đồ cột độ chính xác trên cổng AND, OR, XOR của Perceptron và MLP"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mover><mi>y</mi><mo>^</mo></mover><mo>=</mo><mi>&#963;</mi><mrow><mo>(</mo><msub><mi>W</mi><mn>2</mn></msub><mo>&#8901;</mo><mi>&#963;</mi><mo>(</mo><msub><mi>W</mi><mn>1</mn></msub><mi>x</mi><mo>+</mo><msub><mi>b</mi><mn>1</mn></msub><mo>)</mo><mo>+</mo><msub><mi>b</mi><mn>2</mn></msub><mo>)</mo></mrow></math></div>
+  <p class="note">Kéo thanh trượt hoặc bấm nút mặc định để đối chiếu trực tiếp với các mốc tính toán trong tệp <code>01_perceptron_logic_gates.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích độ nhạy · Đường cong tham số</span>
+  <h2>Hệ số chuẩn hóa √d_k và trọng số Attention (SSoT)</h2>
+  <div class="ctl">
+   <label for="dkSel" class="note">Số chiều khóa d_k trong Self-Attention: <b id="val2"></b></label>
+   <input id="dkSel" type="range" min="1" max="16" step="1" value="4">
+  </div>
+  <svg id="curve" viewBox="0 0 440 330" role="img" aria-label="Đồ thị hệ số chuẩn hóa căn bậc hai của d_k và trọng số attention mẫu từ dữ liệu SSoT"></svg>
+  <p class="note" id="insight2"></p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>Attention</mi><mo>(</mo><mi>Q</mi><mo>,</mo><mi>K</mi><mo>,</mo><mi>V</mi><mo>)</mo><mo>=</mo><mi>softmax</mi><mrow><mo>(</mo><mfrac><mrow><mi>Q</mi><msup><mi>K</mi><mi>T</mi></msup></mrow><msqrt><msub><mi>d</mi><mi>k</mi></msub></msqrt></mfrac><mo>)</mo></mrow><mi>V</mi></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_perceptron_logic_gates.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_perceptron_logic_gates.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Số tổ hợp đầu vào bảng chân trị 2 biến nhị phân <span class="sub">(n_logic_pts)</span></td><td class="ro hi">4</td></tr>
+<tr><td><code>[M02]</code> Độ chính xác của Perceptron đơn tầng trên cổng AND (%) <span class="sub">(acc_and_pct)</span></td><td class="ro hi">100,0</td></tr>
+<tr><td><code>[M03]</code> Độ chính xác của Perceptron đơn tầng trên cổng OR (%) <span class="sub">(acc_or_pct)</span></td><td class="ro hi">100,0</td></tr>
+<tr><td><code>[M04]</code> Độ chính xác của Perceptron đơn tầng trên cổng XOR (%) <span class="sub">(acc_xor_perceptron_pct)</span></td><td class="ro hi">50,0</td></tr>
+<tr><td><code>[M05]</code> Độ chính xác của Mạng MLP 2 tầng trên cổng XOR (%) <span class="sub">(acc_xor_mlp_pct)</span></td><td class="ro hi">100,0</td></tr>
+<tr><td><code>[M06]</code> Trọng số w1 học được cho cổng AND <span class="sub">(w1_and)</span></td><td class="ro hi">0,2</td></tr>
+<tr><td><code>[M07]</code> Trọng số w2 học được cho cổng AND <span class="sub">(w2_and)</span></td><td class="ro hi">0,1</td></tr>
+<tr><td><code>[M08]</code> Hệ số bias học được cho cổng AND <span class="sub">(b_and)</span></td><td class="ro hi">-0,2</td></tr>
+<tr><td><code>[M09]</code> Trọng số w1 học được cho cổng OR <span class="sub">(w1_or)</span></td><td class="ro hi">0,1</td></tr>
+<tr><td><code>[M10]</code> Trọng số w2 học được cho cổng OR <span class="sub">(w2_or)</span></td><td class="ro hi">0,1</td></tr>
+<tr><td><code>[M11]</code> Hệ số bias học được cho cổng OR <span class="sub">(b_or)</span></td><td class="ro hi">-0,1</td></tr>
+<tr><td><code>[M12]</code> Số nơ-ron tầng ẩn tối thiểu để giải bài toán XOR <span class="sub">(xor_mlp_hidden)</span></td><td class="ro hi">2</td></tr>
+<tr><td><code>[M13]</code> Sai số MSE hội tụ của mạng MLP trên bài toán XOR <span class="sub">(xor_mlp_loss)</span></td><td class="ro hi">0,0018</td></tr>
+<tr><td><code>[M14]</code> Kích thước bộ lọc tích chập Sobel phát hiện biên (3x3) <span class="sub">(kernel_size_cnn)</span></td><td class="ro hi">3</td></tr>
+<tr><td><code>[M15]</code> Giá trị đáp ứng cực đại của bộ lọc tích chập tại biên đứng <span class="sub">(sobel_peak_resp)</span></td><td class="ro hi">4,0</td></tr>
+<tr><td><code>[M16]</code> Số chiều vector khóa d_k trong ví dụ Self-Attention <span class="sub">(dk_attn)</span></td><td class="ro hi">4</td></tr>
+<tr><td><code>[M17]</code> Hệ số chuẩn hóa căn bậc hai của d_k <span class="sub">(scale_attn)</span></td><td class="ro hi">2,0</td></tr>
+<tr><td><code>[M18]</code> Trọng số chú ý (Attention weight) tự liên kết cao nhất <span class="sub">(attn_self_w)</span></td><td class="ro hi">0,659</td></tr>
+<tr><td><code>[M19]</code> Trọng số chú ý ngữ cảnh lân cận <span class="sub">(attn_ctx_w)</span></td><td class="ro hi">0,2424</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Vì sao Perceptron đơn tầng đạt 100% trên cổng AND/OR nhưng chỉ đạt 50% trên cổng XOR?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Vì 4 điểm của cổng XOR không khả tách tuyến tính (không có 1 đường thẳng đơn lẻ nào chia tách được 2 lớp)</button><button class="opt" type="button" data-v="q1_2">Vì tốc độ học (learning rate) chưa đủ nhỏ</button><button class="opt" type="button" data-v="q1_3">Vì cổng XOR có 8 điểm dữ liệu</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Trong cơ chế Scaled Dot-Product Attention, vì sao tích vô hướng QK^T phải chia cho căn bậc hai của d_k (ví dụ d_k=4 thì chia cho 2,0)?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Để ngăn tích vô hướng phình quá lớn khi số chiều d_k tăng, tránh làm hàm Softmax bị bão hòa (gradient tiến về 0)</button><button class="opt" type="button" data-v="q2_2">Để biến ma trận thành ảnh đen trắng</button><button class="opt" type="button" data-v="q2_3">Để giảm số lượng token xuống một nửa</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Ưu điểm quan trọng nhất của tầng Tích chập (CNN) với bộ lọc 3x3 so với tầng kết nối đầy đủ (MLP) khi xử lý ảnh là gì?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Chia sẻ trọng số (Weight Sharing) và tính bất biến dịch chuyển cục bộ, giúp giảm hàng chục lần số tham số</button><button class="opt" type="button" data-v="q3_2">CNN không sử dụng phép nhân ma trận</button><button class="opt" type="button" data-v="q3_3">CNN chỉ hoạt động trên ảnh 1x1 pixel</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_perceptron_logic_gates.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9],"vars":{"n_logic_pts":4,"acc_and_pct":100.0,"acc_or_pct":100.0,"acc_xor_perceptron_pct":50.0,"acc_xor_mlp_pct":100.0,"w1_and":0.2,"w2_and":0.1,"b_and":-0.2,"w1_or":0.1,"w2_or":0.1,"b_or":-0.1,"xor_mlp_hidden":2,"xor_mlp_loss":0.0018,"kernel_size_cnn":3,"sobel_peak_resp":4.0,"dk_attn":4,"scale_attn":2.0,"attn_self_w":0.659,"attn_ctx_w":0.2424},"derived":{}};
+const V = LAB.vars;
+const KEYS = ["n_logic_pts", "acc_and_pct", "acc_or_pct", "acc_xor_perceptron_pct", "acc_xor_mlp_pct", "w1_and", "w2_and", "b_and", "w1_or", "w2_or", "b_or", "xor_mlp_hidden", "xor_mlp_loss", "kernel_size_cnn", "sobel_peak_resp", "dk_attn", "scale_attn", "attn_self_w", "attn_ctx_w"];
+const LABELS = {"n_logic_pts": "Số tổ hợp đầu vào bảng chân trị 2 biến nhị phân", "acc_and_pct": "Độ chính xác của Perceptron đơn tầng trên cổng AND (%)", "acc_or_pct": "Độ chính xác của Perceptron đơn tầng trên cổng OR (%)", "acc_xor_perceptron_pct": "Độ chính xác của Perceptron đơn tầng trên cổng XOR (%)", "acc_xor_mlp_pct": "Độ chính xác của Mạng MLP 2 tầng trên cổng XOR (%)", "w1_and": "Trọng số w1 học được cho cổng AND", "w2_and": "Trọng số w2 học được cho cổng AND", "b_and": "Hệ số bias học được cho cổng AND", "w1_or": "Trọng số w1 học được cho cổng OR", "w2_or": "Trọng số w2 học được cho cổng OR", "b_or": "Hệ số bias học được cho cổng OR", "xor_mlp_hidden": "Số nơ-ron tầng ẩn tối thiểu để giải bài toán XOR", "xor_mlp_loss": "Sai số MSE hội tụ của mạng MLP trên bài toán XOR", "kernel_size_cnn": "Kích thước bộ lọc tích chập Sobel phát hiện biên (3x3)", "sobel_peak_resp": "Giá trị đáp ứng cực đại của bộ lọc tích chập tại biên đứng", "dk_attn": "Số chiều vector khóa d_k trong ví dụ Self-Attention", "scale_attn": "Hệ số chuẩn hóa căn bậc hai của d_k", "attn_self_w": "Trọng số chú ý (Attention weight) tự liên kết cao nhất", "attn_ctx_w": "Trọng số chú ý ngữ cảnh lân cận"};
+const FB = {1:{"q1_1":["Ch\u00ednh x\u00e1c! C\u1ea7n m\u1ea1ng MLP c\u00f3 \u00edt nh\u1ea5t 2 n\u01a1-ron t\u1ea7ng \u1ea9n (k\u1ebft h\u1ee3p OR v\u00e0 NAND) \u0111\u1ec3 \u0111\u1ea1t \u0111\u1ed9 ch\u00ednh x\u00e1c 100%.",1],"q1_2":["Sai: d\u00f9 l\u1eb7p bao nhi\u00eau epoch hay \u0111\u1ed5i learning rate, 1 \u0111\u01b0\u1eddng th\u1eb3ng v\u1eabn kh\u00f4ng th\u1ec3 chia 2 c\u1eb7p ch\u00e9o nhau c\u1ee7a XOR.",0],"q1_3":["Sai: b\u1ea3ng ch\u00e2n tr\u1ecb 2 bi\u1ebfn ch\u1ec9 c\u00f3 4 \u0111i\u1ec3m.",0]},2:{"q2_1":["\u0110\u00fang! Nh\u1edd chia cho sqrt(d_k) = 2,0, ph\u00e2n ph\u1ed1i Softmax gi\u1eef \u0111\u01b0\u1ee3c \u0111\u1ed9 m\u01b0\u1ee3t v\u1edbi tr\u1ecdng s\u1ed1 0,659 v\u00e0 0,2424.",1],"q2_2":["Sai: \u0111\u00e2y l\u00e0 chu\u1ea9n h\u00f3a ph\u01b0\u01a1ng sai c\u1ee7a t\u00edch v\u00f4 h\u01b0\u1edbng.",0],"q2_3":["Sai: chi\u1ec1u d\u00e0i chu\u1ed7i token gi\u1eef nguy\u00ean.",0]},3:{"q3_1":["Ch\u00ednh x\u00e1c! C\u00f9ng m\u1ed9t b\u1ed9 l\u1ecdc 3x3 tr\u01b0\u1ee3t kh\u1eafp \u1ea3nh \u0111\u1ec3 d\u00f2 c\u1ea1nh \u0111\u1ee9ng (\u0111\u00e1p \u1ee9ng c\u1ef1c \u0111\u1ea1i 4,0) t\u1ea1i m\u1ecdi v\u1ecb tr\u00ed.",1],"q3_2":["Sai: t\u00edch ch\u1eadp v\u1eabn l\u00e0 ph\u00e9p nh\u00e2n-c\u1ed9ng c\u1ee5c b\u1ed9.",0],"q3_3":["Sai.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+const fmtV = (x, nd) => {
+  const v = +x, neg = v < 0 ? '-' : '', a = Math.abs(v).toFixed(nd).split('.');
+  return neg + a[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (nd ? ',' + a[1] : '');
+};
+
+function renderTab1(){
+  const k = +$('#mlpSel').value;
+  $('#val1').textContent = String(k);
+  const minHid = V.xor_mlp_hidden, okMlp = k >= minHid;
+  const y0 = 226, H = 170, bx = i => 62 + i * 90, bw = 58;
+  let s = '<defs><pattern id="hatch" width="7" height="7" patternUnits="userSpaceOnUse" patternTransform="rotate(45)">' +
+          '<line x1="0" y1="0" x2="0" y2="7" stroke="var(--cam)" stroke-width="2.5"/></pattern></defs>';
+  [0, 50, 100].forEach(g => {
+    const y = y0 - (g / 100) * H;
+    s += `<line class="ln" x1="46" y1="${y}" x2="420" y2="${y}" opacity=".4"/><text class="ax" x="40" y="${y + 4}" text-anchor="end">${g}%</text>`;
+  });
+  s += `<line class="ln" x1="46" y1="${y0}" x2="420" y2="${y0}"/>`;
+  const bars = [
+    { lab: 'AND', v: V.acc_and_pct, c: 'var(--ok)' },
+    { lab: 'OR', v: V.acc_or_pct, c: 'var(--ok)' },
+    { lab: 'XOR · Perceptron', v: V.acc_xor_perceptron_pct, c: 'var(--táo)' },
+    { lab: 'XOR · MLP', v: V.acc_xor_mlp_pct, c: okMlp ? 'var(--acc)' : 'var(--cam)' }
+  ];
+  bars.forEach((b, i) => {
+    const x = bx(i);
+    if (i === 3 && !okMlp){
+      s += `<rect x="${x}" y="${y0 - 64}" width="${bw}" height="64" rx="6" fill="url(#hatch)" stroke="var(--cam)"/>`;
+      s += `<text class="ax" x="${x + bw / 2}" y="${y0 - 70}" text-anchor="middle" fill="var(--cam)">thiếu tầng ẩn</text>`;
+    } else {
+      const h = (b.v / 100) * H, y = y0 - h;
+      s += `<rect x="${x}" y="${y.toFixed(1)}" width="${bw}" height="${h.toFixed(1)}" rx="6" fill="${b.c}" opacity=".88"/>`;
+      s += `<text class="ax" x="${x + bw / 2}" y="${(y - 6).toFixed(1)}" text-anchor="middle" font-weight="700">${esc(fmtV(b.v, 1))}</text>`;
+    }
+    s += `<text class="ax" x="${x + bw / 2}" y="247" text-anchor="middle">${b.lab}</text>`;
+  });
+  $('#plot').innerHTML = s;
+  $('#stat1').innerHTML = [
+    ['MLP đang chọn (nơ-ron ẩn)', String(k)],
+    ['Độ chính xác AND', fmtV(V.acc_and_pct, 1) + '%'],
+    ['Độ chính xác OR', fmtV(V.acc_or_pct, 1) + '%'],
+    ['Độ chính xác XOR (Perceptron)', fmtV(V.acc_xor_perceptron_pct, 1) + '%'],
+    ['Độ chính xác XOR (MLP 2 tầng)', fmtV(V.acc_xor_mlp_pct, 1) + '%']
+  ].map(([lab, val]) => `<div class="chip"><b>${esc(val)}</b><span>${esc(lab)}</span></div>`).join('');
+  $('#liveTable tbody').innerHTML = ['n_logic_pts', 'acc_and_pct', 'acc_or_pct', 'acc_xor_perceptron_pct', 'acc_xor_mlp_pct']
+    .map(kk => `<tr><td>${esc(LABELS[kk])}</td><td class="ro hi">${esc(fmtV(V[kk], kk === 'n_logic_pts' ? 0 : 1))}</td></tr>`).join('');
+  $('#insight1').innerHTML = okMlp
+    ? `MLP đang thử với <b>${esc(k)}</b> nơ-ron tầng ẩn (≥ ngưỡng SSoT <b>${esc(minHid)}</b>): cổng XOR đạt <b>${esc(fmtV(V.acc_xor_mlp_pct, 1))}%</b>, MSE hội tụ <b>${esc(fmtV(V.xor_mlp_loss, 4))}</b>; Perceptron đơn tầng dừng ở <b>${esc(fmtV(V.acc_xor_perceptron_pct, 1))}%</b> — dữ liệu gốc trích xuất từ <code>01_perceptron_logic_gates.py</code>.`
+    : `Chỉ <b>${esc(k)}</b> nơ-ron tầng ẩn (&lt; ngưỡng SSoT <b>${esc(minHid)}</b>): một tầng không đủ phân tách XOR — cần tối thiểu <b>${esc(minHid)}</b> nơ-ron ẩn (OR + NAND), dữ liệu gốc trong <code>01_perceptron_logic_gates.py</code>.`;
+}
+
+function renderTab2(){
+  const dk = +$('#dkSel').value;
+  $('#val2').textContent = String(dk);
+  const y0 = 182, H = 130, x0 = 48, x1 = 412, dkMax = 16;
+  const X = d => x0 + (d / dkMax) * (x1 - x0), Y = v => y0 - (v / 4) * H;
+  let s = `<line class="ln" x1="${x0}" y1="${y0}" x2="${x1}" y2="${y0}"/>`;
+  [0, 1, 2, 3, 4].forEach(g => {
+    const y = Y(g);
+    s += `<line class="ln" x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" opacity=".35"/><text class="ax" x="42" y="${y + 4}" text-anchor="end">${g}</text>`;
+  });
+  let pts = '';
+  for (let d = 1; d <= dkMax; d++) pts += `${X(d).toFixed(1)},${Y(Math.sqrt(d)).toFixed(1)} `;
+  s += `<polyline fill="none" stroke="var(--acc)" stroke-width="3" points="${pts.trim()}"/>`;
+  [1, 4, 8, 12, 16].forEach(d => { s += `<text class="ax" x="${X(d).toFixed(1)}" y="${y0 + 15}" text-anchor="middle">${d}</text>`; });
+  const dRef = V.dk_attn;
+  s += `<line x1="${X(dRef).toFixed(1)}" y1="${y0}" x2="${X(dRef).toFixed(1)}" y2="${Y(V.scale_attn)}" stroke="var(--cam)" stroke-width="2" stroke-dasharray="4 3"/>`;
+  s += `<circle cx="${X(dk).toFixed(1)}" cy="${Y(Math.sqrt(dk)).toFixed(1)}" r="7" fill="var(--new)" stroke="var(--bg)" stroke-width="2"/>`;
+  s += `<text class="ax" x="${x0}" y="216">Số chiều khóa d_k (1–16)</text>`;
+  s += `<text class="ax" x="${x0}" y="26" font-weight="700">√d_k hiện hành = ${esc(fmtV(Math.sqrt(dk), 1))}</text>`;
+  s += `<text class="ax" x="${x0}" y="42">Mốc SSoT d_k = ${esc(dRef)} → hệ số ${esc(fmtV(V.scale_attn, 1))}</text>`;
+  s += `<text class="ax" x="${x0}" y="240" font-weight="700">Trọng số Self-Attention mẫu (SSoT)</text>`;
+  const wSelf = V.attn_self_w, wCtx = V.attn_ctx_w, wMax = 260;
+  s += `<text class="ax" x="${x0}" y="258">Tự liên kết (token với chính nó)</text>` +
+       `<rect x="${x0}" y="262" width="${(wSelf * wMax).toFixed(1)}" height="13" rx="4" fill="var(--acc)"/>` +
+       `<text class="ax" x="${(x0 + wSelf * wMax + 6).toFixed(1)}" y="273">${esc(fmtV(wSelf, 3))}</text>`;
+  s += `<text class="ax" x="${x0}" y="292">Ngữ cảnh lân cận</text>` +
+       `<rect x="${x0}" y="296" width="${(wCtx * wMax).toFixed(1)}" height="13" rx="4" fill="var(--ok)"/>` +
+       `<text class="ax" x="${(x0 + wCtx * wMax + 6).toFixed(1)}" y="307">${esc(fmtV(wCtx, 4))}</text>`;
+  $('#curve').innerHTML = s;
+  $('#stat2').innerHTML = [
+    ['Bộ lọc Sobel phát hiện biên (CNN)', fmtV(V.kernel_size_cnn, 0) + '×' + fmtV(V.kernel_size_cnn, 0)],
+    ['Đáp ứng biên đứng cực đại', fmtV(V.sobel_peak_resp, 1)],
+    ['Hệ số chuẩn hóa tại mốc SSoT', fmtV(V.scale_attn, 1)],
+    ['Trọng số chú ý tự liên kết', fmtV(V.attn_self_w, 3)],
+    ['Trọng số chú ý ngữ cảnh', fmtV(V.attn_ctx_w, 4)]
+  ].map(([lab, val]) => `<div class="chip"><b>${esc(val)}</b><span>${esc(lab)}</span></div>`).join('');
+  $('#insight2').innerHTML = `Đường cong mô tả đúng hệ số chuẩn hóa √d_k trong công thức Attention: điểm sáng là cấu hình đang chọn (d_k = ${esc(dk)}), nét đứt là mốc SSoT (d_k = ${esc(dRef)}). Hai cột dưới là trọng số thật của ví dụ Self-Attention — chia cho √d_k giữ softmax mịn thay vì bão hòa một-hot.`;
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#mlpSel').oninput = renderTab1;
+$('#dkSel').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#mlpSel').value = 5; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#mlpSel').value = 5;
+  $('#dkSel').value = 4;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

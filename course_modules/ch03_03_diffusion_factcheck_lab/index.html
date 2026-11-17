@@ -1,0 +1,345 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Khôi phục siêu phân giải (Super-Resolution x4, từ 64x64 px lên 256x256 px) cho ảnh chụp biển số xe bị mờ nhòe từ camera giao thông. Mô phỏng lịch trình cộng nhiễu Gaussian tích lũy qua 1.000 bước khuếch tán (Diffusion) và đối chiếu chỉ số PSNR cũng như tỷ lệ đọc đúng ký tự (OCR) giữa nội suy Bicubic, mạng GAN (ESRGAN) và mô hình Diffusion.">
+<title>Quá trình Khuếch tán Thuận/Ngược & Kiểm chứng Ảo giác Thị giác — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.axb{fill:var(--ink);font-size:11px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 3 · Mô hình Khuếch tán (Diffusion) & Kiểm chứng Đa phương tiện</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Quá trình Khuếch tán Thuận/Ngược & Kiểm chứng Ảo giác Thị giác</span></h1>
+<p class="lede">Bài toán thực tế: Khôi phục siêu phân giải (Super-Resolution x4, từ 64x64 px lên 256x256 px) cho ảnh chụp biển số xe bị mờ nhòe từ camera giao thông. Mô phỏng lịch trình cộng nhiễu Gaussian tích lũy qua 1.000 bước khuếch tán (Diffusion) và đối chiếu chỉ số PSNR cũng như tỷ lệ đọc đúng ký tự (OCR) giữa nội suy Bicubic, mạng GAN (ESRGAN) và mô hình Diffusion.</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Khuếch tán thuận · kéo thanh trượt để chọn bước t</span>
+  <h2>Phân rã tín hiệu/nhiễu theo lịch trình α̅_t (tín hiệu mất dần, nhiễu tăng dần)</h2>
+  <div class="ctl">
+   <label for="tStep" class="note">Bước thời gian khuếch tán t (0 -> 999): <b id="val1"></b></label>
+   <input id="tStep" type="range" min="0" max="999" step="1" value="300">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (300)</button>
+  </div>
+  <svg id="plot" viewBox="0 0 440 270" role="img" aria-label="Cột phân rã phương sai tín hiệu và nhiễu của lịch trình khuếch tán tại t bằng 0, 100, 300, 600, 999 cùng vạch đánh dấu bước t hiện tại"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>x</mi><mi>t</mi></msub><mo>=</mo><msqrt><msub><mover><mi>&#945;</mi><mo>&#175;</mo></mover><mi>t</mi></msub></msqrt><msub><mi>x</mi><mn>0</mn></msub><mo>+</mo><msqrt><mrow><mn>1</mn><mo>&#8722;</mo><msub><mover><mi>&#945;</mi><mo>&#175;</mo></mover><mi>t</mi></msub></mrow></msqrt><mspace width="0.2em"/><mi>&#1013;</mi><mo>,</mo><mspace width="1em"/><mi>&#1013;</mi><mo>&#8764;</mo><mi>N</mi><mo>(</mo><mn>0</mn><mo>,</mo><mi>I</mi><mo>)</mo></math></div>
+  <p class="note">Mỗi cột là một mốc t của Lab: phần <b>cyan</b> là tỉ lệ phương sai tín hiệu còn lại (α̅_t), phần <b>hổ phách</b> là phương sai nhiễu đã cộng vào (1 − α̅_t). Vạch đứng vàng là bước t đang chọn trên thanh trượt. Kéo thanh trượt hoặc bấm nút mặc định để đối chiếu trực tiếp với các mốc tính toán trong tệp <code>01_image_super_resolution_gan_vs_diffusion.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích đa phương pháp · kéo thanh trượt để đặt ngưỡng OCR</span>
+  <h2>So sánh PSNR (dB) và OCR (%) giữa Bicubic, ESRGAN và Diffusion</h2>
+  <div class="ctl">
+   <label for="cfgSel" class="note">Ngưỡng OCR tối thiểu chấp nhận được cho biển số (%): <b id="val2"></b></label>
+   <input id="cfgSel" type="range" min="0" max="100" step="5" value="80">
+  </div>
+  <svg id="curve" viewBox="0 0 440 250" role="img" aria-label="Biểu đồ cột so sánh chỉ số PSNR và OCR của ba phương pháp Bicubic, ESRGAN và Diffusion với ngưỡng OCR đang chọn"></svg>
+  <p class="note">Số liệu PSNR/OCR là giá trị kịch bản chuẩn ghi trong tệp .py của Lab (không phải kết quả đo benchmark tại chỗ): cột cao hơn nghĩa là phục hồi biển số tốt hơn. Cột OCR dưới ngưỡng đỏ là không đủ để đọc đúng ký tự biển số.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>PSNR</mi><mo>=</mo><mn>10</mn><msub><mo>log</mo><mn>10</mn></msub><mrow><mo>(</mo><mfrac><msup><mi>MAX</mi><mn>2</mn></msup><mi>MSE</mi></mfrac><mo>)</mo></mrow><mspace width="0.5em"/><mtext>(dB)</mtext></math></div>
+  <p class="note">Trong kịch bản của Lab, Diffusion vượt Bicubic về PSNR và bỏ xa về OCR — một lý do Diffusion ngày càng được ưu tiên hơn GAN (ESRGAN) khi phục hồi ảnh biển số xe.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 01_image_super_resolution_gan_vs_diffusion.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_image_super_resolution_gan_vs_diffusion.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Độ phân giải ảnh biển số gốc chất lượng thấp (pixel) <span class="sub">(lr_res_px)</span></td><td class="ro hi">64</td></tr>
+<tr><td><code>[M02]</code> Độ phân giải ảnh sau khi nâng cấp siêu phân giải (pixel) <span class="sub">(hr_res_px)</span></td><td class="ro hi">256</td></tr>
+<tr><td><code>[M03]</code> Hệ số phóng đại kích thước cạnh ảnh (x4) <span class="sub">(upscale_factor)</span></td><td class="ro hi">4</td></tr>
+<tr><td><code>[M04]</code> Tổng số bước thời gian T của lịch trình khuếch tán <span class="sub">(max_diff_steps)</span></td><td class="ro hi">1000</td></tr>
+<tr><td><code>[M05]</code> Phương sai nhiễu khởi đầu beta_1 tại t = 0 <span class="sub">(beta_start_val)</span></td><td class="ro hi">0,0001</td></tr>
+<tr><td><code>[M06]</code> Phương sai nhiễu cuối cùng beta_T tại t = 999 <span class="sub">(beta_end_val)</span></td><td class="ro hi">0,02</td></tr>
+<tr><td><code>[M07]</code> Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 0 <span class="sub">(alpha_bar_0)</span></td><td class="ro hi">0,9999</td></tr>
+<tr><td><code>[M08]</code> Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 100 <span class="sub">(alpha_bar_100)</span></td><td class="ro hi">0,8951</td></tr>
+<tr><td><code>[M09]</code> Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 300 <span class="sub">(alpha_bar_300)</span></td><td class="ro hi">0,394</td></tr>
+<tr><td><code>[M10]</code> Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 600 <span class="sub">(alpha_bar_600)</span></td><td class="ro hi">0,0256</td></tr>
+<tr><td><code>[M11]</code> Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 999 (nhiễu trắng) <span class="sub">(alpha_bar_999)</span></td><td class="ro hi">0,00004</td></tr>
+<tr><td><code>[M12]</code> Chỉ số PSNR của phương pháp nội suy Bicubic (dB) <span class="sub">(psnr_bicubic_db)</span></td><td class="ro hi">24,8</td></tr>
+<tr><td><code>[M13]</code> Chỉ số PSNR của mạng đối kháng ESRGAN (dB) <span class="sub">(psnr_esrgan_db)</span></td><td class="ro hi">26,45</td></tr>
+<tr><td><code>[M14]</code> Chỉ số PSNR của mô hình Khuếch tán Diffusion (dB) <span class="sub">(psnr_diffusion_db)</span></td><td class="ro hi">31,2</td></tr>
+<tr><td><code>[M15]</code> Tỷ lệ đọc đúng ký tự biển số (OCR) sau nội suy Bicubic (%) <span class="sub">(ocr_bicubic_pct)</span></td><td class="ro hi">62,5</td></tr>
+<tr><td><code>[M16]</code> Tỷ lệ đọc đúng ký tự biển số (OCR) sau ESRGAN (%) <span class="sub">(ocr_esrgan_pct)</span></td><td class="ro hi">75,0</td></tr>
+<tr><td><code>[M17]</code> Tỷ lệ đọc đúng ký tự biển số (OCR) sau Diffusion (%) <span class="sub">(ocr_diffusion_pct)</span></td><td class="ro hi">96,5</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Trong quá trình Khuếch tán thuận (Forward Diffusion), tại bước t = 999 khi hệ số alpha_bar_999 = 0,00004, bức ảnh biến thành gì?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Gần như hoàn toàn là nhiễu Gaussian trắng chuẩn N(0, I), không còn nhận diện được cấu trúc gốc</button><button class="opt" type="button" data-v="q1_2">Ảnh gốc rõ nét hơn gấp 4 lần</button><button class="opt" type="button" data-v="q1_3">Ảnh toàn màu đen tuyệt đối</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Vì sao các mô hình GAN thế hệ cũ (như ESRGAN) dần bị thay thế bởi Diffusion Models trong bài toán phục hồi ảnh biển số xe?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Vì GAN dễ rơi vào Mode Collapse và sinh ra vân gai giả tạo (Artifacts / Hallucination) làm sai lệch nét chữ, trong khi Diffusion đạt PSNR 31,2 dB và OCR 96,5%</button><button class="opt" type="button" data-v="q2_2">Vì Bicubic đạt độ chính xác OCR 100%</button><button class="opt" type="button" data-v="q2_3">Vì GAN không dùng mạng nơ-ron</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Khi sử dụng ảnh/video hoặc thông tin do GenAI tạo ra trong báo cáo học thuật, nguyên tắc kiểm chứng (Fact-checking) nào là bắt buộc?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Đối chiếu chéo với nguồn dữ liệu gốc (GSO, văn bản pháp quy, ảnh gốc) và công bố rõ công cụ AI đã sử dụng</button><button class="opt" type="button" data-v="q3_2">Tin tuyệt đối vào mọi hình ảnh có độ phân giải 256x256 trở lên</button><button class="opt" type="button" data-v="q3_3">Chỉ kiểm tra kích thước file ảnh</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_image_super_resolution_gan_vs_diffusion.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[17],"vars":{"lr_res_px":64,"hr_res_px":256,"upscale_factor":4,"max_diff_steps":1000,"beta_start_val":0.0001,"beta_end_val":0.02,"alpha_bar_0":0.9999,"alpha_bar_100":0.8951,"alpha_bar_300":0.394,"alpha_bar_600":0.0256,"alpha_bar_999":4e-05,"psnr_bicubic_db":24.8,"psnr_esrgan_db":26.45,"psnr_diffusion_db":31.2,"ocr_bicubic_pct":62.5,"ocr_esrgan_pct":75.0,"ocr_diffusion_pct":96.5},"derived":{}};
+const V = LAB.vars;
+const KEYS = ["lr_res_px", "hr_res_px", "upscale_factor", "max_diff_steps", "beta_start_val", "beta_end_val", "alpha_bar_0", "alpha_bar_100", "alpha_bar_300", "alpha_bar_600", "alpha_bar_999", "psnr_bicubic_db", "psnr_esrgan_db", "psnr_diffusion_db", "ocr_bicubic_pct", "ocr_esrgan_pct", "ocr_diffusion_pct"];
+const LABELS = {"lr_res_px": "Độ phân giải ảnh biển số gốc chất lượng thấp (pixel)", "hr_res_px": "Độ phân giải ảnh sau khi nâng cấp siêu phân giải (pixel)", "upscale_factor": "Hệ số phóng đại kích thước cạnh ảnh (x4)", "max_diff_steps": "Tổng số bước thời gian T của lịch trình khuếch tán", "beta_start_val": "Phương sai nhiễu khởi đầu beta_1 tại t = 0", "beta_end_val": "Phương sai nhiễu cuối cùng beta_T tại t = 999", "alpha_bar_0": "Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 0", "alpha_bar_100": "Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 100", "alpha_bar_300": "Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 300", "alpha_bar_600": "Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 600", "alpha_bar_999": "Hệ số giữ tín hiệu tích lũy alpha_bar tại t = 999 (nhiễu trắng)", "psnr_bicubic_db": "Chỉ số PSNR của phương pháp nội suy Bicubic (dB)", "psnr_esrgan_db": "Chỉ số PSNR của mạng đối kháng ESRGAN (dB)", "psnr_diffusion_db": "Chỉ số PSNR của mô hình Khuếch tán Diffusion (dB)", "ocr_bicubic_pct": "Tỷ lệ đọc đúng ký tự biển số (OCR) sau nội suy Bicubic (%)", "ocr_esrgan_pct": "Tỷ lệ đọc đúng ký tự biển số (OCR) sau ESRGAN (%)", "ocr_diffusion_pct": "Tỷ lệ đọc đúng ký tự biển số (OCR) sau Diffusion (%)"};
+const FB = {1:{"q1_1":["\u0110\u00fang! V\u00ec sqrt(alpha_bar_999) ~ 0 v\u00e0 sqrt(1 - alpha_bar_999) ~ 1, m\u1ea1ng kh\u1eed nhi\u1ec5u U-Net/DiT s\u1ebd h\u1ecdc qu\u00e1 tr\u00ecnh \u0111\u1ea3o ng\u01b0\u1ee3c t\u1eeb nhi\u1ec5u tr\u1eafng n\u00e0y v\u1ec1 \u1ea3nh s\u1eafc n\u00e9t.",1],"q1_2":["Sai: qu\u00e1 tr\u00ecnh thu\u1eadn l\u00e0 qu\u00e1 tr\u00ecnh ph\u00e1 h\u1ee7y th\u00f4ng tin b\u1eb1ng nhi\u1ec5u.",0],"q1_3":["Sai: \u0111\u00f3 l\u00e0 nhi\u1ec5u tr\u1eafng ng\u1eabu nhi\u00ean Gaussian.",0]},2:{"q2_1":["Ch\u00ednh x\u00e1c! Trong gi\u00e1m s\u00e1t giao th\u00f4ng, vi\u1ec7c GAN 'b\u1ecba' th\u00eam n\u00e9t ch\u1eef sai nguy hi\u1ec3m h\u01a1n c\u1ea3 \u1ea3nh m\u1edd.",1],"q2_2":["Sai: Bicubic b\u1ecb nh\u00f2e bi\u00ean n\u00ean OCR ch\u1ec9 \u0111\u1ea1t 62,5%.",0],"q2_3":["Sai: GAN g\u1ed3m 2 m\u1ea1ng Generator v\u00e0 Discriminator.",0]},3:{"q3_1":["\u0110\u00fang! Kh\u00f4ng bao gi\u1edd coi \u0111\u1ea7u ra c\u1ee7a m\u00f4 h\u00ecnh t\u1ea1o sinh l\u00e0 b\u1eb1ng ch\u1ee9ng th\u1ef1c nghi\u1ec7m n\u1ebfu ch\u01b0a ki\u1ec3m ch\u1ee9ng ngu\u1ed3n g\u1ed1c.",1],"q3_2":["Sai: Deepfake/Diffusion t\u1ea1o ra \u1ea3nh \u0111\u1ed9 ph\u00e2n gi\u1ea3i cao r\u1ea5t thuy\u1ebft ph\u1ee5c nh\u01b0ng c\u00f3 th\u1ec3 ho\u00e0n to\u00e0n h\u01b0 c\u1ea5u.",0],"q3_3":["Sai.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+// Định dạng số kiểu Việt Nam khớp chuẩn cổng parity: dùng dấu phẩy thập phân,
+// giữ tối thiểu 1 chữ số thập phân, cắt số 0 thừa, ngăn cách hàng nghìn bằng dấu chấm.
+function viNum(x, dec = 5){
+  const v = +x, s = Math.abs(v).toFixed(dec).replace(/0+$/, '').replace(/\.$/, '.0');
+  let [a, b] = s.split('.');
+  a = a.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+  return (v < 0 ? '-' : '') + a + ',' + b;
+}
+function viInt(x){ return String(Math.round(+x)).replace(/\B(?=(\d{3})+(?!\d))/g, '.'); }
+
+// alpha_bar_t theo đúng lịch trình Linear beta của Lab: beta_t = beta_1 + (beta_T - beta_1)*t/(T-1), alpha_bar_t = cumprod(1-beta).
+function alphaBarAt(t){
+  const T = V.max_diff_steps, b0 = V.beta_start_val, b1 = V.beta_end_val;
+  let ab = 1;
+  for (let i = 0; i <= t; i++) ab *= 1 - (b0 + (b1 - b0) * i / (T - 1));
+  return ab;
+}
+const TS = [0, 100, 300, 600, 999];
+const AB_KEY = {0: "alpha_bar_0", 100: "alpha_bar_100", 300: "alpha_bar_300", 600: "alpha_bar_600", 999: "alpha_bar_999"};
+
+function renderTab1(){
+  const t = +$('#tStep').value;
+  $('#val1').textContent = String(t);
+  const ab = alphaBarAt(Math.min(t, V.max_diff_steps - 1));
+  const sig = Math.sqrt(ab), noi = Math.sqrt(Math.max(0, 1 - ab));
+  $('#stat1').innerHTML = [
+    ['Bước t đang chọn', String(t)],
+    ['Tín hiệu còn lại √α̅_t', viNum(100 * sig, 1) + '%'],
+    ['Nhiễu đã cộng √(1−α̅_t)', viNum(100 * noi, 1) + '%'],
+    ['Ảnh LR gốc (px)', viInt(V.lr_res_px) + ' × ' + viInt(V.lr_res_px)]
+  ].map(([l, b]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(l)}</span></div>`).join('');
+
+  const xL = 45, xR = 415, yBase = 232, yTop = 44, H = yBase - yTop, T1 = V.max_diff_steps - 1;
+  let svg = `<line class="ln" x1="${xL}" y1="${yBase}" x2="${xR}" y2="${yBase}"/>` +
+            `<line class="ln" x1="${xL}" y1="${yTop}" x2="${xR}" y2="${yTop}"/>` +
+            `<text class="ax" x="${xL - 6}" y="${yBase}" text-anchor="end">0%</text>` +
+            `<text class="ax" x="${xL - 6}" y="${yTop + 4}" text-anchor="end">100%</text>` +
+            `<text class="ax" x="${xL}" y="262">Lịch trình khuếch tán thuận: cột = mốc t của Lab</text>`;
+  TS.forEach(tk => {
+    const abk = V[AB_KEY[tk]];
+    const cx = 63 + (tk / T1) * 334, w = 30;
+    const hs = H * abk, hn = H * (1 - abk);
+    const hl = tk === t;
+    svg += `<rect x="${(cx - w / 2).toFixed(1)}" y="${(yBase - hs).toFixed(1)}" width="${w}" height="${hs.toFixed(1)}" fill="var(--acc)" opacity="${hl ? '1' : '.85'}"/>`;
+    svg += `<rect x="${(cx - w / 2).toFixed(1)}" y="${(yBase - hs - hn).toFixed(1)}" width="${w}" height="${hn.toFixed(1)}" rx="4" fill="var(--cam)" opacity="${hl ? '1' : '.8'}"/>`;
+    const vy = (yBase - hs - hn - 6).toFixed(1);
+    svg += `<text class="axb" x="${cx.toFixed(1)}" y="${vy}" text-anchor="middle">${esc(viNum(abk))}</text>`;
+    svg += `<text class="ax" x="${cx.toFixed(1)}" y="249" text-anchor="middle">t = ${tk}</text>`;
+  });
+  const mx = 63 + (t / T1) * 334;
+  const anchor = mx > 380 ? 'end' : (mx < 70 ? 'start' : 'middle');
+  svg += `<line x1="${mx.toFixed(1)}" y1="${yTop - 6}" x2="${mx.toFixed(1)}" y2="${yBase}" stroke="var(--táo)" stroke-width="2" stroke-dasharray="4 3"/>`;
+  svg += `<text class="axb" x="${mx.toFixed(1)}" y="${yTop - 12}" text-anchor="${anchor}">t = ${t} · còn ${viNum(100 * ab, 1)}% phương sai tín hiệu</text>`;
+  svg += `<rect x="292" y="${yTop + 8}" width="12" height="12" fill="var(--acc)"/><text class="ax" x="309" y="${yTop + 18}">tín hiệu α̅_t</text>`;
+  svg += `<rect x="292" y="${yTop + 26}" width="12" height="12" fill="var(--cam)"/><text class="ax" x="309" y="${yTop + 36}">nhiễu 1−α̅_t</text>`;
+  $('#plot').innerHTML = svg;
+
+  $('#liveTable tbody').innerHTML = TS.map(tk => {
+    const k = AB_KEY[tk];
+    return `<tr><td>${esc(LABELS[k])}</td><td class="ro hi">${esc(viNum(V[k]))}</td></tr>`;
+  }).join('') + `<tr><td>Hệ số phóng đại siêu phân giải</td><td class="ro hi">x${esc(String(V.upscale_factor))} (${esc(viInt(V.lr_res_px))} → ${esc(viInt(V.hr_res_px))} px)</td></tr>`;
+  $('#insight1').innerHTML = `Tại bước t = <b>${esc(String(t))}</b>, chỉ còn <b>${esc(viNum(100 * ab, 1))}%</b> phương sai tín hiệu; lịch trình β tăng tuyến tính từ β₁ = 0,0001 đến β_T = 0,02 qua T = ${esc(viInt(V.max_diff_steps))} bước, khớp từng mốc α̅ của <code>01_image_super_resolution_gan_vs_diffusion.py</code>.`;
+}
+
+function renderTab2(){
+  const thr = +$('#cfgSel').value;
+  $('#val2').textContent = String(thr);
+  const methods = [
+    ['Bicubic', V.psnr_bicubic_db, V.ocr_bicubic_pct, 'var(--mut)'],
+    ['ESRGAN', V.psnr_esrgan_db, V.ocr_esrgan_pct, 'var(--táo)'],
+    ['Diffusion', V.psnr_diffusion_db, V.ocr_diffusion_pct, 'var(--ok)']
+  ];
+  const yBase = 208, psMax = 35, x0 = 52, gw = 60, w = 40;
+  let svg = `<text class="ax" x="${x0 + 60}" y="24" text-anchor="middle">PSNR (dB)</text>` +
+            `<text class="ax" x="${x0 + 60}" y="232" text-anchor="middle">3 phương pháp phục hồi biển số</text>`;
+  methods.forEach(([name, psnr], i) => {
+    const cx = x0 + i * gw, h = (psnr / psMax) * 165;
+    svg += `<rect x="${cx}" y="${(yBase - h).toFixed(1)}" width="${w}" height="${h.toFixed(1)}" rx="4" fill="${['var(--mut)', 'var(--cam)', 'var(--acc)'][i]}" opacity=".9"/>`;
+    svg += `<text class="axb" x="${cx + w / 2}" y="${(yBase - h - 6).toFixed(1)}" text-anchor="middle">${esc(viNum(psnr))}</text>`;
+    svg += `<text class="ax" x="${cx + w / 2}" y="223" text-anchor="middle">${esc(name)}</text>`;
+  });
+  svg += `<line class="ln" x1="40" y1="${yBase}" x2="${x0 + 2 * gw + w + 8}" y2="${yBase}"/>`;
+  const x2 = 268, gw2 = 52, w2 = 36, oMax = 100, H2 = 165;
+  const thrY = yBase - (thr / oMax) * H2;
+  svg += `<text class="ax" x="${x2 + 58}" y="24" text-anchor="middle">OCR đọc đúng ký tự (%)</text>` +
+         `<text class="ax" x="${x2 + 58}" y="232" text-anchor="middle">ngưỡng chấp nhận: ${esc(String(thr))}%</text>`;
+  methods.forEach(([name, , ocr, ], i) => {
+    const cx = x2 + i * gw2, h = (ocr / oMax) * H2, pass = ocr >= thr;
+    svg += `<rect x="${cx}" y="${(yBase - h).toFixed(1)}" width="${w2}" height="${h.toFixed(1)}" rx="4" fill="${pass ? 'var(--ok)' : 'var(--táo)'}" opacity=".9"/>`;
+    svg += `<text class="axb" x="${cx + w2 / 2}" y="${(yBase - h - 6).toFixed(1)}" text-anchor="middle">${esc(viNum(ocr))}</text>`;
+    svg += `<text class="ax" x="${cx + w2 / 2}" y="223" text-anchor="middle">${esc(name)}</text>`;
+  });
+  svg += `<line x1="252" y1="${thrY.toFixed(1)}" x2="424" y2="${thrY.toFixed(1)}" stroke="var(--táo)" stroke-width="2" stroke-dasharray="5 3"/>`;
+  svg += `<text class="ax" x="252" y="${(thrY - 6).toFixed(1)}">${esc(String(thr))}%</text>`;
+  svg += `<line class="ln" x1="252" y1="${yBase}" x2="424" y2="${yBase}"/>`;
+  $('#curve').innerHTML = svg;
+  $('#stat2').innerHTML = [
+    ['PSNR Bicubic (dB)', viNum(V.psnr_bicubic_db)],
+    ['PSNR ESRGAN (dB)', viNum(V.psnr_esrgan_db)],
+    ['PSNR Diffusion (dB)', viNum(V.psnr_diffusion_db)],
+    ['OCR Bicubic (%)', viNum(V.ocr_bicubic_pct)],
+    ['OCR ESRGAN (%)', viNum(V.ocr_esrgan_pct)],
+    ['OCR Diffusion (%)', viNum(V.ocr_diffusion_pct)]
+  ].map(([l, b]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(l)}</span></div>`).join('');
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#tStep').oninput = renderTab1;
+$('#cfgSel').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#tStep').value = 300; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#tStep').value = 300;
+  $('#cfgSel').value = 80;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

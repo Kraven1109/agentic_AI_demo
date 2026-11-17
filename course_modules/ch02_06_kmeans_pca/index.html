@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Bài toán thực tế: Quy hoạch vị trí đặt trạm trung chuyển (depot) cho 12 điểm giao nhận hàng hóa chưa có nhãn phân loại trên mặt phẳng tọa độ. Thuật toán K-Means lặp lại hai bước gán cụm và cập nhật trọng tâm để cực tiểu hóa tổng bình phương khoảng cách nội cụm (WCSS), kết hợp phương pháp Khuỷu tay (Elbow) chọn số cụm K tối ưu và Phân tích thành phần chính (PCA).">
+<title>Phân cụm K-Means, Phương pháp Khuỷu tay (Elbow) & Giảm chiều PCA — UTH AI Interactive Lab</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
+.btn.cta{border:none;background:var(--grad);color:#04121f}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5}
+nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent}
+main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
+section{display:none}
+section.on{display:block}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.12em;margin:.2em 0 .6em}
+.sub{color:var(--mut);font-size:.92em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.18fr) minmax(300px,.82fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 200px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.95em}
+th,td{border-bottom:1px solid var(--line);padding:8px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.84em;text-transform:uppercase;letter-spacing:.05em}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(125px,1fr));margin-bottom:10px}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 12px}
+.chip b{display:block;font-size:1.25em;font-variant-numeric:tabular-nums}
+.chip span{color:var(--mut);font-size:.84em}
+.note{color:var(--mut);font-size:.95em;margin:6px 0 0}
+math{font-size:1.06em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:12px 14px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;width:100%;gap:8px;align-items:center;padding:11px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:pointer;color:var(--ink);text-align:left}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+code.path{overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 2 · Học không giám sát: K-Means & PCA</span>
+<span class="pill a">Mô phỏng tương tác</span>
+</div>
+<h1><span class="gr">Phân cụm K-Means, Phương pháp Khuỷu tay (Elbow) & Giảm chiều PCA</span></h1>
+<p class="lede">Bài toán thực tế: Quy hoạch vị trí đặt trạm trung chuyển (depot) cho 12 điểm giao nhận hàng hóa chưa có nhãn phân loại trên mặt phẳng tọa độ. Thuật toán K-Means lặp lại hai bước gán cụm và cập nhật trọng tâm để cực tiểu hóa tổng bình phương khoảng cách nội cụm (WCSS), kết hợp phương pháp Khuỷu tay (Elbow) chọn số cụm K tối ưu và Phân tích thành phần chính (PCA).</p>
+<div class="heroctl">
+<button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Thực nghiệm · kéo thanh trượt để quan sát</span>
+  <h2>Mô phỏng tương tác trên dữ liệu thực nghiệm của Lab</h2>
+  <div class="ctl">
+   <label for="iterSel" class="note">Vòng lặp K-Means (Iteration): <b id="val1"></b></label>
+   <input id="iterSel" type="range" min="0" max="3" step="1" value="3">
+   <button class="btn" id="btnDefault1" type="button">Về mặc định (3)</button>
+  </div>
+   <svg id="plot" viewBox="0 0 440 270" role="img" aria-label="Sơ đồ phân cụm K-Means 12 điểm P1..P12 với tâm cụm C1, C2, C3 theo từng vòng lặp"></svg>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>WCSS</mi><mo>=</mo><munderover><mo>&#8721;</mo><mrow><mi>k</mi><mo>=</mo><mn>1</mn></mrow><mi>K</mi></munderover><munder><mo>&#8721;</mo><mrow><msub><mi>x</mi><mi>i</mi></msub><mo>&#8712;</mo><msub><mi>S</mi><mi>k</mi></msub></mrow></munder><msup><mrow><mo>&#8741;</mo><msub><mi>x</mi><mi>i</mi></msub><mo>&#8722;</mo><msub><mi>&#956;</mi><mi>k</mi></msub><mo>&#8741;</mo></mrow><mn>2</mn></msup></math></div>
+  <p class="note">Kéo thanh trượt hoặc bấm nút mặc định để đối chiếu trực tiếp với các mốc tính toán trong tệp <code>02_kmeans_clustering_va_elbow.py</code>.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <div class="stat" id="stat1"></div>
+  <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
+  <p class="note" id="insight1"></p>
+ </div>
+</div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+ <div class="card">
+  <span class="eyebrow">Phân tích độ nhạy · Đường cong tham số</span>
+  <h2>Đường cong Khuỷu tay (Elbow): WCSS theo số cụm K</h2>
+  <div class="ctl">
+   <label for="kClust" class="note">Số cụm K trên đường cong Elbow: <b id="val2"></b></label>
+   <input id="kClust" type="range" min="1" max="5" step="1" value="3">
+  </div>
+   <svg id="curve" viewBox="0 0 440 250" role="img" aria-label="Đường cong Khuỷu tay WCSS theo số cụm K từ 1 đến 5"></svg>
+   <p class="note">Đường cong WCSS (Inertia) tính trực tiếp trên 12 điểm P1..P12 của Lab; đường đứt màu hổ phách đánh dấu K đang chọn, điểm tròn lớn là WCSS tương ứng — trùng điểm khuỷu tay tại K = 3.</p>
+ </div>
+ <div class="card">
+  <span class="eyebrow">Tổng hợp tham số</span>
+  <h2>Chỉ số tại điểm khảo sát</h2>
+  <div class="stat" id="stat2"></div>
+  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>&#956;</mi><mi>k</mi></msub><mo>=</mo><mfrac><mn>1</mn><mrow><mo>|</mo><msub><mi>S</mi><mi>k</mi></msub><mo>|</mo></mrow></mfrac><munder><mo>&#8721;</mo><mrow><msub><mi>x</mi><mi>i</mi></msub><mo>&#8712;</mo><msub><mi>S</mi><mi>k</mi></msub></mrow></munder><msub><mi>x</mi><mi>i</mi></msub></math></div>
+  <p class="note">Đối chiếu trực tiếp công thức toán học với các tham số thực nghiệm của bài học.</p>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Bảng đối chuẩn SSoT · 02_kmeans_clustering_va_elbow.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
+ <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>02_kmeans_clustering_va_elbow.py</code>:</p>
+ <table id="ssotTable">
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <tbody>
+<tr><td><code>[M01]</code> Số điểm dữ liệu trong bảng Lab (P1..P12) <span class="sub">(n_pts_km)</span></td><td class="ro hi">12</td></tr>
+<tr><td><code>[M02]</code> Số cụm tối ưu theo phương pháp Elbow <span class="sub">(k_opt_km)</span></td><td class="ro hi">3</td></tr>
+<tr><td><code>[M03]</code> Số vòng lặp để K-Means hội tụ hoàn toàn <span class="sub">(n_iters_km)</span></td><td class="ro hi">3</td></tr>
+<tr><td><code>[M04]</code> Hoành độ tâm cụm C1 sau hội tụ <span class="sub">(c1_x)</span></td><td class="ro hi">12,0</td></tr>
+<tr><td><code>[M05]</code> Tung độ tâm cụm C1 sau hội tụ <span class="sub">(c1_y)</span></td><td class="ro hi">8,67</td></tr>
+<tr><td><code>[M06]</code> Hoành độ tâm cụm C2 sau hội tụ <span class="sub">(c2_x)</span></td><td class="ro hi">18,0</td></tr>
+<tr><td><code>[M07]</code> Tung độ tâm cụm C2 sau hội tụ <span class="sub">(c2_y)</span></td><td class="ro hi">25,67</td></tr>
+<tr><td><code>[M08]</code> Hoành độ tâm cụm C3 sau hội tụ <span class="sub">(c3_x)</span></td><td class="ro hi">3,33</td></tr>
+<tr><td><code>[M09]</code> Tung độ tâm cụm C3 sau hội tụ <span class="sub">(c3_y)</span></td><td class="ro hi">21,0</td></tr>
+<tr><td><code>[M10]</code> Khoảng cách Euclid từ P1(1,23) đến tâm C1 <span class="sub">(d_p1_c1)</span></td><td class="ro hi">18,07</td></tr>
+<tr><td><code>[M11]</code> Khoảng cách Euclid từ P1(1,23) đến tâm C2 <span class="sub">(d_p1_c2)</span></td><td class="ro hi">17,21</td></tr>
+<tr><td><code>[M12]</code> Khoảng cách Euclid từ P1(1,23) đến tâm C3 (nhỏ nhất -> Cụm 3) <span class="sub">(d_p1_c3)</span></td><td class="ro hi">3,07</td></tr>
+<tr><td><code>[M13]</code> Tổng bình phương khoảng cách nội cụm WCSS khi K = 1 <span class="sub">(wcss_k1)</span></td><td class="ro hi">1.528,92</td></tr>
+<tr><td><code>[M14]</code> Tổng bình phương khoảng cách nội cụm WCSS khi K = 2 <span class="sub">(wcss_k2)</span></td><td class="ro hi">612,5</td></tr>
+<tr><td><code>[M15]</code> Tổng bình phương khoảng cách nội cụm WCSS khi K = 3 (Điểm khuỷu tay) <span class="sub">(wcss_k3)</span></td><td class="ro hi">186,0</td></tr>
+<tr><td><code>[M16]</code> Tổng bình phương khoảng cách nội cụm WCSS khi K = 4 <span class="sub">(wcss_k4)</span></td><td class="ro hi">120,83</td></tr>
+<tr><td><code>[M17]</code> Tổng bình phương khoảng cách nội cụm WCSS khi K = 5 <span class="sub">(wcss_k5)</span></td><td class="ro hi">68,33</td></tr>
+<tr><td><code>[M18]</code> Hệ số tách biệt Silhouette Score tại K = 3 <span class="sub">(sil_k3)</span></td><td class="ro hi">0,6412</td></tr>
+<tr><td><code>[M19]</code> Tỷ lệ phương sai giải thích bởi thành phần chính PC1 (%) <span class="sub">(pca_var1_pct)</span></td><td class="ro hi">54,96</td></tr>
+<tr><td><code>[M20]</code> Tỷ lệ phương sai giải thích bởi thành phần chính PC2 (%) <span class="sub">(pca_var2_pct)</span></td><td class="ro hi">45,04</td></tr>
+  </tbody>
+ </table>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · 3 câu hỏi kiểm tra tư duy</span>
+ <h2>Tự kiểm tra kiến thức — bấm đáp án để xem giải thích bằng số của Lab</h2>
+<div class="q" data-k="1"><b>Câu 1. Tại vòng hội tụ thứ 3, khoảng cách từ điểm P1(1, 23) đến ba tâm cụm lần lượt là d(P1,C1)=18,07; d(P1,C2)=17,21; d(P1,C3)=3,07. P1 được gán vào cụm nào?</b><div class="opts"><button class="opt" type="button" data-v="q1_1">Cụm 3 vì d(P1, C3) = 3,07 là nhỏ nhất</button><button class="opt" type="button" data-v="q1_2">Cụm 1 vì d(P1, C1) = 18,07 là lớn nhất</button><button class="opt" type="button" data-v="q1_3">Cụm 2 vì C2 có tung độ cao nhất</button></div><div class="fb"></div></div>
+<div class="q" data-k="2"><b>Câu 2. Vì sao K = 3 được chọn là điểm khuỷu tay (Elbow) trên đường cong WCSS?</b><div class="opts"><button class="opt" type="button" data-v="q2_1">Vì WCSS giảm mạnh từ 1.528,92 (K=1) -> 612,50 (K=2) -> 186,00 (K=3), sau đó tốc độ giảm chậm hẳn</button><button class="opt" type="button" data-v="q2_2">Vì K=3 có WCSS bằng 0</button><button class="opt" type="button" data-v="q2_3">Vì K=1 có WCSS nhỏ nhất</button></div><div class="fb"></div></div>
+<div class="q" data-k="3"><b>Câu 3. Cụm 1 gồm 3 điểm P3(8,7), P8(11,13) và P11(17,6). Tọa độ tâm cụm C1 mới được tính như thế nào?</b><div class="opts"><button class="opt" type="button" data-v="q3_1">Trung bình cộng tọa độ: ((8+11+17)/3, (7+13+6)/3) = (12,0; 8,67)</button><button class="opt" type="button" data-v="q3_2">Lấy điểm ở giữa P8(11, 13)</button><button class="opt" type="button" data-v="q3_3">Giữ nguyên tâm khởi tạo (0, 2)</button></div><div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>02_kmeans_clustering_va_elbow.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[33],"vars":{"points_12":[[1,23],[16,28],[8,7],[7,16],[7,23],[19,20],[2,16],[11,13],[1,28],[2,20],[17,6],[19,29]],"n_pts_km":12,"k_opt_km":3,"n_iters_km":3,"c1_x":12.0,"c1_y":8.67,"c2_x":18.0,"c2_y":25.67,"c3_x":3.33,"c3_y":21.0,"d_p1_c1":18.07,"d_p1_c2":17.21,"d_p1_c3":3.07,"wcss_k1":1528.92,"wcss_k2":612.5,"wcss_k3":186.0,"wcss_k4":120.83,"wcss_k5":68.33,"sil_k3":0.6412,"pca_var1_pct":54.96,"pca_var2_pct":45.04},"derived":{}};
+const V = LAB.vars;
+const KEYS = ["n_pts_km", "k_opt_km", "n_iters_km", "c1_x", "c1_y", "c2_x", "c2_y", "c3_x", "c3_y", "d_p1_c1", "d_p1_c2", "d_p1_c3", "wcss_k1", "wcss_k2", "wcss_k3", "wcss_k4", "wcss_k5", "sil_k3", "pca_var1_pct", "pca_var2_pct"];
+const LABELS = {"n_pts_km": "Số điểm dữ liệu trong bảng Lab (P1..P12)", "k_opt_km": "Số cụm tối ưu theo phương pháp Elbow", "n_iters_km": "Số vòng lặp để K-Means hội tụ hoàn toàn", "c1_x": "Hoành độ tâm cụm C1 sau hội tụ", "c1_y": "Tung độ tâm cụm C1 sau hội tụ", "c2_x": "Hoành độ tâm cụm C2 sau hội tụ", "c2_y": "Tung độ tâm cụm C2 sau hội tụ", "c3_x": "Hoành độ tâm cụm C3 sau hội tụ", "c3_y": "Tung độ tâm cụm C3 sau hội tụ", "d_p1_c1": "Khoảng cách Euclid từ P1(1,23) đến tâm C1", "d_p1_c2": "Khoảng cách Euclid từ P1(1,23) đến tâm C2", "d_p1_c3": "Khoảng cách Euclid từ P1(1,23) đến tâm C3 (nhỏ nhất -> Cụm 3)", "wcss_k1": "Tổng bình phương khoảng cách nội cụm WCSS khi K = 1", "wcss_k2": "Tổng bình phương khoảng cách nội cụm WCSS khi K = 2", "wcss_k3": "Tổng bình phương khoảng cách nội cụm WCSS khi K = 3 (Điểm khuỷu tay)", "wcss_k4": "Tổng bình phương khoảng cách nội cụm WCSS khi K = 4", "wcss_k5": "Tổng bình phương khoảng cách nội cụm WCSS khi K = 5", "sil_k3": "Hệ số tách biệt Silhouette Score tại K = 3", "pca_var1_pct": "Tỷ lệ phương sai giải thích bởi thành phần chính PC1 (%)", "pca_var2_pct": "Tỷ lệ phương sai giải thích bởi thành phần chính PC2 (%)"};
+const FB = {1:{"q1_1":["\u0110\u00fang! Pha g\u00e1n c\u1ee5m ch\u1ecdn argmin_k d(P_i, C_k); kho\u1ea3ng c\u00e1ch \u0111\u1ebfn C3=(3,33; 21,0) ch\u1ec9 b\u1eb1ng 3,07.",1],"q1_2":["Sai: K-Means g\u00e1n \u0111i\u1ec3m v\u00e0o t\u00e2m G\u1ea6N nh\u1ea5t, kh\u00f4ng ph\u1ea3i xa nh\u1ea5t.",0],"q1_3":["Sai: d(P1, C2) = 17,21 l\u1edbn h\u01a1n nhi\u1ec1u so v\u1edbi 3,07.",0]},2:{"q2_1":["Ch\u00ednh x\u00e1c! T\u1ea1i K=3, WCSS c\u00f2n 186,00 v\u00e0 h\u1ec7 s\u1ed1 Silhouette \u0111\u1ea1t \u0111\u1ec9nh 0,6412.",1],"q2_2":["Sai: WCSS ch\u1ec9 b\u1eb1ng 0 khi K b\u1eb1ng s\u1ed1 \u0111i\u1ec3m d\u1eef li\u1ec7u.",0],"q2_3":["Sai: K=1 c\u00f3 WCSS l\u1edbn nh\u1ea5t (1.528,92).",0]},3:{"q3_1":["\u0110\u00fang! T\u00e2m c\u1ee5m m\u1edbi lu\u00f4n l\u00e0 trung b\u00ecnh c\u1ed9ng (mean vector) c\u1ee7a c\u00e1c \u0111i\u1ec3m thu\u1ed9c c\u1ee5m \u0111\u00f3.",1],"q3_2":["Sai: \u0111\u00f3 l\u00e0 K-Medoids, c\u00f2n K-Means l\u1ea5y trung b\u00ecnh c\u1ed9ng.",0],"q3_3":["Sai: t\u00e2m c\u1ee5m ph\u1ea3i d\u1ecbch chuy\u1ec3n v\u1ec1 trung t\u00e2m \u0111\u00e1m m\u00e2y \u0111i\u1ec3m.",0]}};
+const $ = s => document.querySelector(s);
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
+
+const fvi = (x, nd = 2) => {
+  const s = x < 0 ? '-' : '';
+  const t = (Math.round(Math.abs(x) * 10 ** nd) / 10 ** nd).toFixed(nd);
+  const p = t.split('.');
+  return s + p[0].replace(/\B(?=(\d{3})+(?!\d))/g, '.') + (p[1] ? ',' + p[1] : '');
+};
+const fmtW = w => fvi(w, Math.round(w * 100) % 10 ? 2 : 1);
+
+// Chuoi Lloyd tren 12 diem voi tam khoi tao C_init cua lab (02_kmeans_clustering_va_elbow.py, muc 4.1):
+// C1=(0,2), C2=(20,20), C3=(9,22) — dung bat cac gia tri hoi tu trong LAB.vars.
+const CINIT = [[0, 2], [20, 20], [9, 22]];
+const COL = ['#E74C3C', '#2980B9', '#27AE60'];
+const lbls = cs => V.points_12.map(p => {
+  let b = 0, bd = Infinity;
+  for (let k = 0; k < 3; k++) {
+    const d = (p[0] - cs[k][0]) ** 2 + (p[1] - cs[k][1]) ** 2;
+    if (d < bd) { bd = d; b = k; }
+  }
+  return b;
+});
+const CH = [CINIT];
+for (let s = 0; s < V.n_iters_km; s++) {
+  const lb = lbls(CH[s]);
+  CH.push([0, 1, 2].map(k => {
+    const m = V.points_12.filter((_, i) => lb[i] === k);
+    return m.length
+      ? [m.reduce((a, p) => a + p[0], 0) / m.length, m.reduce((a, p) => a + p[1], 0) / m.length]
+      : CH[s][k];
+  }));
+}
+const STAGE = v => {
+  if (v === 0) return 'Khởi tạo K-Means: C1(0; 2), C2(20; 20), C3(9; 22) — chưa gán cụm';
+  if (v === 1) return `Vòng 1: gán ${V.points_12.length} điểm lần đầu theo tâm khởi tạo, rồi cập nhật tâm`;
+  const a = lbls(CH[v - 1]);
+  const chg = lbls(CH[v - 2]).filter((x, i) => x !== a[i]).length;
+  return v === V.n_iters_km && chg === 0
+    ? `Vòng ${v}: ${chg} điểm đổi cụm — tâm cụm đứng yên, hội tụ (dừng)`
+    : `Vòng ${v}: ${chg} điểm đổi cụm, cập nhật tâm mới`;
+};
+
+function renderTab1(){
+  const v1 = +$('#iterSel').value;
+  $('#val1').textContent = String(v1);
+  const cs = CH[v1];
+  const lb = v1 === 0 ? null : lbls(CH[v1 - 1]);
+  const sx = x => 30 + (x + 2) * 385 / 24;
+  const sy = y => 210 - (y + 2) * 195 / 34;
+  let svg = `<text class="ax" x="30" y="12" style="font-weight:700">${esc(STAGE(v1))}</text>`;
+  svg += '<line class="ln" x1="30" y1="210" x2="415" y2="210"/><line class="ln" x1="30" y1="210" x2="30" y2="15"/>';
+  [0, 10, 20].forEach(t => svg += `<text class="ax" x="${sx(t).toFixed(1)}" y="224" text-anchor="middle">${t}</text>`);
+  [0, 10, 20, 30].forEach(t => svg += `<text class="ax" x="26" y="${(sy(t) + 4).toFixed(1)}" text-anchor="end">${t}</text>`);
+  V.points_12.forEach((p, i) => {
+    const col = lb ? COL[lb[i]] : '#64748b';
+    svg += `<circle cx="${sx(p[0]).toFixed(1)}" cy="${sy(p[1]).toFixed(1)}" r="3.4" fill="${col}" opacity=".9"/>`;
+    svg += `<text class="ax" x="${(sx(p[0]) + 4).toFixed(1)}" y="${(sy(p[1]) - 3).toFixed(1)}" style="font-size:8px">P${i + 1}</text>`;
+  });
+  cs.forEach((c, k) => {
+    svg += `<rect x="${(sx(c[0]) - 4).toFixed(1)}" y="${(sy(c[1]) - 4).toFixed(1)}" width="8" height="8" rx="1" fill="${COL[k]}" stroke="var(--ink)" stroke-width="1.4"/>`;
+    svg += `<text class="ax" x="${(sx(c[0]) + 7).toFixed(1)}" y="${(sy(c[1]) + 4).toFixed(1)}" style="font-weight:700">C${k + 1}</text>`;
+  });
+  const cnt = lb ? [0, 1, 2].map(k => lb.filter(x => x === k).length) : [null, null, null];
+  [0, 1, 2].forEach(k => {
+    const lx = 32 + k * 130;
+    svg += `<rect x="${lx}" y="234" width="11" height="11" rx="2" fill="${COL[k]}"/>`;
+    svg += `<text class="ax" x="${lx + 16}" y="243">Cụm ${k + 1}${cnt[k] === null ? ' (chưa gán)' : ' (' + cnt[k] + ' điểm)'}</text>`;
+  });
+  $('#plot').innerHTML = svg;
+  $('#stat1').innerHTML = [
+    [fvi(V.n_pts_km, 0), 'Số điểm dữ liệu (P1..P12)'],
+    [String(v1), 'Vòng lặp K-Means đang xem'],
+    [fvi(V.k_opt_km, 0), 'K tối ưu theo Elbow'],
+    [fvi(V.sil_k3, 4), 'Silhouette Score tại K = 3']
+  ].map(([b, sp]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(sp)}</span></div>`).join('');
+  $('#liveTable tbody').innerHTML = [
+    ['K tối ưu theo Elbow (số cụm)', fvi(V.k_opt_km, 0)],
+    ['Số vòng lặp để K-Means hội tụ', fvi(V.n_iters_km, 0)],
+    ['Tổng bình phương khoảng cách nội cụm tại K = 3', fvi(V.wcss_k3, 1)],
+    ['Hoành độ tâm cụm C1', fvi(V.c1_x, 1)],
+    ['Tung độ tâm cụm C1', fvi(V.c1_y, 2)],
+    ['Khoảng cách từ P1(1,23) đến tâm C3 (gần nhất)', fvi(V.d_p1_c3, 2)]
+  ].map(([a, b]) => `<tr><td>${esc(a)}</td><td class="ro hi">${esc(b)}</td></tr>`).join('');
+  $('#insight1').innerHTML = `Vòng lặp <b>${esc(v1)}/${esc(V.n_iters_km)}</b> · tâm cụm và nhãn cụm tính trực tiếp trên 12 điểm của <code>02_kmeans_clustering_va_elbow.py</code>.`;
+}
+
+function renderTab2(){
+  const v2 = +$('#kClust').value;
+  $('#val2').textContent = String(v2);
+  const WK = [V.wcss_k1, V.wcss_k2, V.wcss_k3, V.wcss_k4, V.wcss_k5];
+  const xk = k => 60 + (k - 1) * 80;
+  const yW = w => 200 - (w / WK[0]) * 165;
+  let svg = '<line class="ln" x1="40" y1="205" x2="415" y2="205"/><line class="ln" x1="40" y1="205" x2="40" y2="28"/>';
+  svg += '<text class="ax" x="6" y="118" transform="rotate(-90 6 118)" text-anchor="middle">WCSS (Inertia)</text>';
+  [0, 500, 1000, 1500].forEach(w => svg += `<text class="ax" x="36" y="${(yW(w) + 3).toFixed(1)}" text-anchor="end">${esc(fvi(w, 0))}</text>`);
+  svg += `<line x1="${xk(v2)}" y1="28" x2="${xk(v2)}" y2="205" stroke="var(--cam)" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+  const pts = WK.map((w, i) => `${xk(i + 1)},${yW(w).toFixed(1)}`).join(' ');
+  svg += `<polyline fill="none" stroke="var(--acc)" stroke-width="3" points="${pts}"/>`;
+  WK.forEach((w, i) => {
+    const sel = (i + 1) === v2;
+    svg += `<circle cx="${xk(i + 1)}" cy="${yW(w).toFixed(1)}" r="${sel ? 7 : 4}" fill="${sel ? 'var(--cam)' : 'var(--acc)'}" stroke="var(--plot)" stroke-width="1.5"/>`;
+    svg += `<text class="ax" x="${xk(i + 1)}" y="${(yW(w) - 10).toFixed(1)}" text-anchor="middle">${esc(fmtW(w))}</text>`;
+    svg += `<text class="ax" x="${xk(i + 1)}" y="222" text-anchor="middle">K = ${i + 1}</text>`;
+  });
+  svg += `<text class="ax" x="227" y="242" text-anchor="middle">Số cụm K — đường cong Khuỷu tay (Elbow) trên ${esc(V.n_pts_km)} điểm</text>`;
+  svg += `<text class="ax" x="227" y="16" text-anchor="middle" style="font-weight:700">K = ${esc(v2)} đang chọn · WCSS ${esc(fmtW(WK[v2 - 1]))}${v2 === V.k_opt_km ? ' · điểm khuỷu tay' : ''}</text>`;
+  $('#curve').innerHTML = svg;
+  $('#stat2').innerHTML = [
+    [fmtW(WK[v2 - 1]), `WCSS tại K = ${v2}`],
+    [fvi(V.k_opt_km, 0), 'Điểm khuỷu tay (K tối ưu)'],
+    [fvi(V.sil_k3, 4), 'Silhouette Score tại K = 3'],
+    [fvi(V.pca_var1_pct, 2), 'Phương sai PC1 (%)'],
+    [fvi(V.pca_var2_pct, 2), 'Phương sai PC2 (%)']
+  ].map(([b, sp]) => `<div class="chip"><b>${esc(b)}</b><span>${esc(sp)}</span></div>`).join('');
+}
+
+function wireQuiz(){
+  document.querySelectorAll('.q').forEach(q => {
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    q.querySelectorAll('.opt').forEach(b => {
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt;
+        fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    });
+  });
+}
+
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#iterSel').oninput = renderTab1;
+$('#kClust').oninput = renderTab2;
+$('#btnDefault1').onclick = () => { $('#iterSel').value = 3; renderTab1(); };
+$('#resetHero').onclick = () => {
+  $('#iterSel').value = 3;
+  $('#kClust').value = 3;
+  renderTab1(); renderTab2();
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+renderTab1(); renderTab2(); wireQuiz();
+</script>
+</body>
+</html>

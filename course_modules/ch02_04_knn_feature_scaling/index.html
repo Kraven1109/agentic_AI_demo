@@ -1,0 +1,439 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Trực quan hoá KNN và chuẩn hoá đặc trưng: vì sao cân nặng áp đảo khoảng cách, ngưỡng lambda làm đổi kết luận, và cross-validation chọn k.">
+<title>KNN &amp; chuẩn hoá đặc trưng — vì sao khoảng cách biết nói</title>
+<style>
+:root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
+--line2:#243248;--táo:#f87171;--cam:#fbbf24;--new:#38bdf8;--acc:#22d3ee;--acc2:#0284c7;--ok:#34d399;
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8);--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--plot:#0B1220}
+body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);
+--line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
+--plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
+font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,26px) clamp(14px,3vw,26px)}
+.pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
+.pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+.pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
+.pill.mut{background:transparent;color:var(--mut)}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.6vw,2em);line-height:1.18;letter-spacing:-.01em;max-width:22em}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.lede{color:var(--mut);margin:0 0 12px;max-width:75ch}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px}
+.btn{display:inline-flex;align-items:center;gap:8px;padding:11px 15px;min-height:44px;border-radius:12px;
+border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:1em;font-weight:600;cursor:pointer;
+transition:transform .12s,box-shadow .12s}
+.btn:hover{transform:translateY(-1px)}
+.btn.cta{border:none;background:var(--grad);color:#04121f;box-shadow:0 8px 24px rgba(34,211,238,.25)}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300;box-shadow:0 8px 24px rgba(251,191,36,.22)}
+nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,26px);background:var(--panel);border-bottom:1px solid var(--line);
+flex-wrap:wrap;position:sticky;top:0;z-index:5;backdrop-filter:blur(6px)}
+nav button{flex:1 1 170px;padding:12px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
+background:var(--panel2);color:var(--ink);font-size:.98em;font-weight:600;cursor:pointer;letter-spacing:.01em}
+nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color:transparent;
+box-shadow:0 6px 20px rgba(34,211,238,.28)}
+main{padding:16px clamp(12px,3vw,26px) 34px;max-width:1180px;margin:0 auto}
+section{display:none;animation:fade .25s ease}
+section.on{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px;
+box-shadow:0 10px 30px rgba(2,8,20,.35)}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;
+color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
+h2{font-size:1.14em;margin:.2em 0 .6em;letter-spacing:-.01em}
+h3{font-size:1.02em;margin:.9em 0 .4em;color:var(--ink)}
+.sub{color:var(--mut);font-size:.95em}
+.grid{display:grid;gap:14px;grid-template-columns:minmax(0,1fr)}
+@media(min-width:900px){.grid{grid-template-columns:minmax(0,1.2fr) minmax(300px,.8fr);align-items:start}}
+svg{width:100%;height:auto;display:block;background:var(--plot);border:1px solid var(--line);border-radius:14px}
+.ax{fill:var(--mut);font-size:12px}
+.ln{stroke:var(--line2);stroke-width:1}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center;margin:8px 0 12px}
+input[type=range]{flex:1 1 220px;min-height:30px;accent-color:var(--acc);cursor:pointer}
+.chk{display:flex;gap:8px;align-items:center;font-size:.98em}
+.chk input{width:20px;height:20px;accent-color:var(--acc)}
+.ro{text-align:right;font-variant-numeric:tabular-nums}
+table{border-collapse:collapse;width:100%;font-size:.98em}
+th,td{border-bottom:1px solid var(--line);padding:9px 8px;text-align:left}
+th{color:var(--mut);font-weight:700;font-size:.86em;text-transform:uppercase;letter-spacing:.06em}
+tbody tr:hover{background:rgba(34,211,238,.06)}
+td.hi{color:var(--acc);font-weight:700}
+.stat{display:grid;gap:10px;grid-template-columns:repeat(auto-fit,minmax(120px,1fr))}
+.chip{background:var(--panel2);border:1px solid var(--line);border-radius:14px;padding:10px 13px;min-width:110px}
+.chip b{display:block;font-size:1.35em;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+.chip span{color:var(--mut);font-size:.86em}
+.note{color:var(--mut);font-size:.97em;margin:6px 0 0}
+math{font-size:1.08em}
+.formula{background:var(--panel2);border:1px solid var(--line);border-left:3px solid var(--acc);
+border-radius:12px;padding:13px 15px;margin:8px 0;overflow-x:auto}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px 13px;margin:10px 0;background:var(--panel2)}
+.q>b{display:block;margin-bottom:8px}
+.opt{display:flex;gap:8px;align-items:center;padding:12px 13px;min-height:44px;border:1px solid var(--line2);
+border-radius:12px;margin:6px 0;background:var(--panel);font-size:1em;cursor:pointer;color:var(--ink);text-align:left}
+.opt:hover{border-color:var(--acc)}
+.opt[aria-pressed=true]{border-color:var(--acc);box-shadow:inset 0 0 0 1px var(--acc)}
+.fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.97em;display:none;border:1px solid var(--line)}
+.fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
+.fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
+ul.note{padding-left:1.1em}
+ul.note li{margin:6px 0}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.95em;padding:16px clamp(12px,3vw,26px);
+background:var(--panel)}
+code{font-size:.95em}
+code.path{overflow-wrap:anywhere}
+a{color:var(--new)}
+@media(max-width:420px){h1{font-size:1.3em}.chip b{font-size:1.2em}}
+</style>
+</head>
+<body>
+<header class="hero">
+<div class="pills">
+<a class="pill" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+<span class="pill">ĐH GTVT TP.HCM (UTH)</span>
+<span class="pill g">Chương 2 · KNN &amp; Feature Scaling</span>
+<span class="pill a">chạy OFFLINE · 0 CDN</span>
+</div>
+<h1>KNN &amp; chuẩn hoá đặc trưng — <span class="gr">vì sao khoảng cách biết nói</span></h1>
+<p class="lede"><b>Bài toán thực tế:</b> Hệ thống băng chuyền phân loại nông sản tự động cần phân biệt <b>Táo (nhãn 1)</b> và <b>Cam (nhãn 0)</b> dựa trên 2 đặc trưng: <b>khối lượng (đơn vị: gam, dao động 130–170 g)</b> và <b>mã màu bề mặt (Đỏ = 1, Cam = 0)</b>. Khi đưa một quả mới nặng <b>145 g, màu Đỏ (1)</b> vào thuật toán 3-Láng giềng gần nhất (KNN), nếu không chuẩn hóa thang đo thì sự chênh lệch hàng chục gam sẽ áp đảo hoàn toàn chênh lệch 1 đơn vị màu sắc và dẫn tới kết luận sai.</p>
+<div class="heroctl">
+<a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+<button class="btn cta" id="zHero" type="button">Xem thang đo z-score của lab</button>
+<button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+</div>
+</header>
+<nav role="tablist" aria-label="Chuyển tab">
+<button role="tab" aria-selected="true" data-tab="s1">01 · Bẫy thang đo</button>
+<button role="tab" aria-selected="false" data-tab="s2">02 · Chọn k</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Thang đo mới</button>
+<button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
+</nav>
+<main>
+
+<section id="s1" class="on" role="tabpanel">
+<div class="grid">
+  <div class="card">
+   <span class="eyebrow">Thực nghiệm · kéo để đổi thang đo</span>
+   <h2>Kéo thanh "trọng số của màu sắc"</h2>
+  <div class="ctl">
+   <label for="lam" class="note">λ — sức nặng của màu trong khoảng cách</label>
+   <input id="lam" type="range" min="0" max="32" step="any" value="1">
+   <button class="btn" id="zBtn">z-score của lab <span id="zLam"></span></button>
+   <button class="btn" id="rawBtn">Về λ = 1 (dữ liệu thô)</button>
+  </div>
+  <svg id="plot" viewBox="0 0 420 300" role="img" aria-label="Sáu quả và quả mới trong mặt phẳng cân nặng - màu đã nhân lambda"></svg>
+  <div class="formula"><math display="block">
+    <mi>d</mi><mo>=</mo><msqrt><mrow><msup><mrow><mo>|</mo><mi>&#916;</mi><mi>w</mi><mo>|</mo></mrow><mn>2</mn></msup>
+    <mo>+</mo><msup><mrow><mo>(</mo><mi>&#955;</mi><mo>&#8901;</mo><mo>|</mo><mi>&#916;</mi><mtext>m&#259;u</mtext><mo>|</mo></mrow><mn>2</mn></msup></mrow></msqrt>
+  </math></div>
+  <p class="note">λ = 1 nghĩa là <b>chưa chuẩn hoá</b>: giữ nguyên gam và mã màu.
+  λ = <b id="labRatio"></b> là đúng những gì <code>StandardScaler</code> làm trong lab:
+  chia cân nặng cho σ<sub>w</sub> = <b id="sigW"></b> và màu cho σ<sub>c</sub> = <b id="sigC"></b>, nên màu mạnh hơn λ lần.</p>
+ </div>
+  <div class="card">
+   <span class="eyebrow">Kết quả đọc từ chính 6 điểm</span>
+   <h2>KNN đang "nhìn" thấy gì</h2>
+  <div class="stat" id="stat"></div>
+  <p class="note">Kết luận của lab ở <b>dữ liệu thô</b> (ô 2.1): quả mới <b>Cam</b>.
+  Sau <code>StandardScaler</code> (ô 2.2): <b>Táo</b>. Và <code>MinMaxScaler</code> (ô 2.3) cũng ra <b>Táo</b>.</p>
+  <div class="chk"><input id="ring" type="checkbox" checked><label for="ring">Vòng tròn 3 láng giềng được chọn</label></div>
+  <div class="chk"><input id="conn" type="checkbox" checked><label for="conn">Nối quả mới tới 3 láng giềng</label></div>
+  <h2 style="margin-top:12px">Khoảng cách tới từng quả (d)</h2>
+  <table id="distTable"><thead><tr><th>Quả</th><th>|Δ cân nặng|</th><th>|Δ màu|×λ</th><th class="ro">d</th></tr></thead><tbody></tbody></table>
+  <p class="note">λ = 1: vế cân nặng chiếm <b id="share"></b> tổng bình phương của cặp xa nhất —
+  cân nặng ra lệnh, màu bị điếc.</p>
+ </div>
+</div>
+<div class="card" id="insight"></div>
+</section>
+
+<section id="s2" role="tabpanel">
+<div class="grid">
+  <div class="card">
+   <span class="eyebrow">Cross-validation · 30 giá trị k, 5-fold, F1</span>
+   <h2>Đường cong tìm k bằng cross-validation (30 giá trị, 5-fold, F1)</h2>
+  <div class="ctl"><label for="kSel" class="note">Chọn k để xem F1</label>
+   <input id="kSel" type="range" min="1" max="30" step="1" value="3"></div>
+  <svg id="curve" viewBox="0 0 420 260" role="img" aria-label="Đồ thị F1 theo k, điểm k tối ưu được đánh dấu"></svg>
+  <p class="note">Đường gạch đỏ = <b>k tối ưu = <span id="kStar"></span></b> mà lab tìm được ở ô 3.
+  Di thanh trượt để đọc từng cặp (k, F1).</p>
+ </div>
+  <div class="card">
+   <span class="eyebrow">Số của lab · từng mốc k</span>
+   <h2>Đọc đường cong</h2>
+  <div class="stat" id="kstat"></div>
+  <p class="note">k = 1 đạt <b id="f1k1"></b>; cao nhất ở k = <span id="kStar2"></span> với <b id="f1best"></b>;
+  k = 30 tụt còn <b id="f1k30"></b> — dưới 88,4%. Đây chính là lời giải thích bằng số cho
+  "k quá nhỏ nhạy nhiễu, k quá lớn mượt quá mức" trong bài.</p>
+  <h2 style="margin-top:12px">Một số mốc (k, F1) từ lab</h2>
+  <table id="kTable"><thead><tr><th>k</th><th class="ro">F1</th></tr></thead><tbody></tbody></table>
+ </div>
+</div>
+</section>
+
+<section id="s3" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">MathML · đúng ký hiệu giáo trình</span>
+ <h2>Công thức hai bộ scaler lab dùng</h2>
+ <div class="formula"><math display="block"><msub><mi>z</mi><mi>j</mi></msub><mo>=</mo>
+  <mfrac><mrow><msub><mi>x</mi><mi>j</mi></msub><mo>&#8211;</mo><msub><mi>&#956;</mi><mi>j</mi></msub></mrow>
+  <msub><mi>&#963;</mi><mi>j</mi></msub></mfrac>
+  <mo>,</mo><mspace width="1em"/><msub><mi>&#956;</mi><mi>w</mi></msub><mo>=</mo><mn id="muW"></mn>
+  <mo>,</mo><mspace width=".6em"/><msub><mi>&#963;</mi><mi>w</mi></msub><mo>=</mo><mn id="sdW"></mn></math></div>
+ <div class="formula"><math display="block"><msub><mi>x</mi><mi>j</mi></msub><mo>&#8217;</mo><mo>=</mo>
+  <mfrac><mrow><msub><mi>x</mi><mi>j</mi></msub><mo>&#8211;</mo><msub><mi>m</mi><mrow><mi>i</mi><mi>n</mi></mrow></msub></mrow>
+  <mrow><msub><mi>M</mi><mrow><mi>a</mi><mi>x</mi></mrow></msub><mo>&#8211;</mo><msub><mi>m</mi><mrow><mi>i</mi><mi>n</mi></mrow></msub></mrow></mfrac>
+  <mo>,</mo><mspace width="1em"/>>trị ∈ [0, 1]</math></div>
+ <div class="stat" id="statS3"></div>
+</div>
+<div class="card">
+ <span class="eyebrow">Bảng biến đổi · 6 quả × 2 scaler</span>
+ <h2>Toàn bộ 6 quả qua hai bộ chuyển đổi</h2>
+ <table id="scaleTable"><thead><tr><th></th><th>w (g)</th><th>màu</th><th>z<sub>w</sub></th><th>z<sub>màu</sub></th>
+ <th>min–max<sub>w</sub></th><th>min–max<sub>màu</sub></th></tr></thead>
+ <tbody></tbody></table>
+ <p class="note">Quả mới [145 g, Đỏ] thành z = [<b id="znew"></b>] và min–max = [<b id="mmnew"></b>] —
+  đúng giá trị lab đưa vào <code>KNeighborsClassifier</code>.</p>
+</div>
+</section>
+
+<section id="s4" role="tabpanel">
+<div class="card">
+ <span class="eyebrow">Tự luyện · máy chấm bằng số của lab</span>
+ <h2>Tự kiểm tra — bấm đáp án, máy chấm bằng chính số của lab</h2>
+ <div class="q" data-k="1"><p><b>Câu 1.</b> Với dữ liệu thô (λ = 1), láng giềng <b>gần nhất</b> của quả mới là quả nào?</p>
+  <div class="opts"><button class="opt" data-v="Quả #1 (Táo, 150 g)">Quả #1 (150 g, đỏ)</button>
+   <button class="opt" data-v="Quả #3 (Cam, 140 g)">Quả #3 (140 g, cam)</button>
+   <button class="opt" data-v="Quả #2 (Táo, 170 g)">Quả #2 (170 g, đỏ)</button></div>
+  <div class="fb"></div></div>
+ <div class="q" data-k="2"><p><b>Câu 2.</b> λ phải vượt ngưỡng nào để kết luận đổi từ Cam sang Táo?</p>
+  <div class="opts"><button class="opt" data-v="λ ≈ 11,18">λ ≈ 11,18</button>
+   <button class="opt" data-v="λ ≈ 1,00">λ ≈ 1,00</button>
+   <button class="opt" data-v="λ ≈ 150,83">λ ≈ 150,83</button></div>
+  <div class="fb"></div></div>
+ <div class="q" data-k="3"><p><b>Câu 3.</b> Theo kết quả cross-validation của lab, phát biểu nào <b>đúng</b>?</p>
+  <div class="opts"><button class="opt" data-v="k=3 tốt nhất, F1=96,32%">k = 3 tốt nhất, F1 = 96,32%</button>
+   <button class="opt" data-v="k=30 tốt nhất vì dùng nhiều dữ liệu nhất">k = 30 tốt nhất vì dùng nhiều láng giềng nhất</button>
+   <button class="opt" data-v="k nào cũng như nhau">k nào cũng như nhau</button></div>
+  <div class="fb"></div></div>
+</div>
+</section>
+</main>
+
+<footer>
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>01_knn_va_feature_scaling.py</code>.
+</footer>
+
+<script>
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10,11,12,13,14],"vars":{"X_fruit":[[150,1],[170,1],[140,0],[130,0],[160,1],[155,0]],"y_fruit":[1,1,0,0,1,0],"new_fruit":[[145,1]],"new_fruit_scaled_std":[[-0.44721359549995865,1.0]],"new_fruit_scaled_minmax":[[0.375,1.0]],"label_unscaled":"Cam","label_scaled_std":"Táo","label_scaled_minmax":"Táo","X_scaled_std":[[-0.06388765649999471,1.0],[1.469416099499861,1.0],[-0.8305395344999226,-1.0],[-1.5971914124998505,-1.0],[0.7027642214999332,1.0],[0.31943828249996925,-1.0]],"X_scaled_minmax":[[0.5,1.0],[1.0,1.0],[0.25,0.0],[0.0,0.0],[0.75,1.0],[0.625,0.0]],"scaler_std.mean_":[150.83333333333334,0.5],"scaler_std.scale_":[13.043729868748773,0.5],"scaler_minmax.data_min_":[130.0,0.0],"scaler_minmax.data_max_":[170.0,1.0],"optimal_k":3,"cv_scores":[0.9416111673183989,0.9440635334062565,0.9632200016144672,0.95204669670639,0.9529567090542699,0.9368556795317359,0.9414929327700412,0.9293502274204029,0.9381660678541351,0.9325502579612168,0.9329944426248108,0.9294366307235504,0.9210903990333856,0.9254053230719897,0.9254053230719897,0.9201529398871171,0.9178106886424269,0.912182230916408,0.912182230916408,0.9064056324000838,0.9104102564102565,0.9067983367983368,0.9056627598062198,0.8962017434620175,0.8947090680424015,0.8937447237447238,0.891889911889912,0.8810643620152728,0.8893655286426372,0.8833953643462751]},"derived":{"d_raw":[5.0,25.0,5.099,15.0333,15.0,10.0499],"d_std":[0.3833,1.9166,2.0364,2.307,1.15,2.1419],"d_minmax":[0.125,0.625,1.0078,1.068,0.375,1.0308],"contrib_w":[5,25,5,15,15,10],"contrib_c":[0,0,1,1,0,1],"nbr_raw":[0,2,5],"nbr_std":[0,4,1],"nbr_minmax":[0,4,1],"cv_pairs":[[1,0.9416],[2,0.9441],[3,0.9632],[4,0.952],[5,0.953],[6,0.9369],[7,0.9415],[8,0.9294],[9,0.9382],[10,0.9326],[11,0.933],[12,0.9294],[13,0.9211],[14,0.9254],[15,0.9254],[16,0.9202],[17,0.9178],[18,0.9122],[19,0.9122],[20,0.9064],[21,0.9104],[22,0.9068],[23,0.9057],[24,0.8962],[25,0.8947],[26,0.8937],[27,0.8919],[28,0.8811],[29,0.8894],[30,0.8834]],"cv_best":0.9632,"cv_k1":0.9416,"cv_k30":0.8834,"sigma_ratio":26.0875,"share_w":0.9984,"lam_flip":11.1803}};
+const V = LAB.vars, D = LAB.derived, X = V.X_fruit, Y = V.y_fruit, NEW = V.new_fruit[0];
+const MU = V['scaler_std.mean_'], SC = V['scaler_std.scale_'], MM = [V['scaler_minmax.data_min_'], V['scaler_minmax.data_max_']];
+const NAMES = X.map((p,j)=>`Quả #${j+1}`);
+const CLS = y => y ? 'Táo' : 'Cam';
+const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const pad = (s,n=4) => Number(s).toFixed(n).replace('.', ',');
+const $ = s => document.querySelector(s);
+const fmt = (v,n=4) => pad(+v,n);
+const setHTML = (id,v) => { $(id).textContent = v; };
+const uniq = a => Array.from(new Set(a));
+const join = (a,sep=', ') => uniq(a).join(sep);
+
+const XW = [124,176]; let YC = [-3,33];      /* cân nặng (g) × màu·λ — YC tu dong theo lam */
+const U = 400, W = 300;
+const px = w => (w-XW[0])/(XW[1]-XW[0])*U;
+const py = c => W-(c-YC[0])/(YC[1]-YC[0])*W;
+const lamOf = () => +$('#lam').value;
+
+function distances(lam){
+  return X.map((p,j)=>({j, dw:Math.abs(p[0]-NEW[0]), dc:Math.abs(p[1]-NEW[1])*lam,
+                        d:Math.hypot(p[0]-NEW[0], (p[1]-NEW[1])*lam)}));
+}
+function decide(rows,k=3){
+  const top = rows.slice().sort((a,b)=>a.d-b.d).slice(0,k);
+  const votes = top.map(r=>CLS(Y[r.j]));
+  const count = {}; votes.forEach(v=>count[v]=(count[v]||0)+1);
+  const lab = Object.keys(count).sort((a,b)=>count[b]-count[a])[0];
+  return {top, votes, lab};
+}
+function svgPlot(lam){
+  const rows = distances(lam), {top} = decide(rows), sel = new Set(top.map(r=>r.j));
+  YC = [-1, Math.max(2.5, lam*1.12+1.2)];           /* truc mau gia theo lam: SV nhin ro o moi muc */
+  const uppX = U/(XW[1]-XW[0]), uppY = W/(YC[1]-YC[0]);
+  let s = '';
+  for (const w of [130,140,150,160,170]){
+    s += `<text class="ax" x="${px(w)+10}" y="292" text-anchor="middle">${w}</text>
+          <line class="ln" x1="${px(w)+10}" y1="0" x2="${px(w)+10}" y2="300" opacity=".14"/>`;
+  }
+  for (const c of [0,lam]){
+    s += `<text class="ax" x="4" y="${py(c)+4}">${c===0?'0':fmt(c,1)}</text>
+          <line class="ln" x1="10" y1="${py(c)+0}" x2="410" y2="${py(c)}" opacity=".35"/>`;
+  }
+  s += '<text class="ax" x="205" y="298" text-anchor="middle">Cân nặng (gam)</text>';
+  s += `<text class="ax" x="412" y="16" text-anchor="end">màu × λ = ${fmt(lam,1)}</text>`;
+  if ($('#conn').checked){
+    for (const r of top){
+      s += `<line x1="${px(NEW[0])+10}" y1="${py(NEW[1]*lam)}" x2="${px(X[r.j][0])+10}" y2="${py(X[r.j][1]*lam)}"
+             stroke="#5b6f92" stroke-dasharray="5 4" stroke-width="1.5"/>`;
+    }
+  }
+  X.forEach((p,j)=>{
+    const cx = px(p[0])+10, cy = py(p[1]*lam), c = Y[j] ? 'var(--táo)' : 'var(--cam)';
+    if ($('#ring').checked && sel.has(j)){
+      const r = Math.hypot(p[0]-NEW[0],(p[1]-NEW[1])*lam);
+      s += `<circle cx="${cx}" cy="${cy}" r="${Math.min(120,6+r*2.6)}" fill="none" stroke="${c}"
+             stroke-dasharray="4 6" opacity=".55"><title>${esc(NAMES[j])} d = ${fmt(r)} (dữ liệu thô: ${fmt(D.d_raw[j])})</title></circle>`;
+    }
+    s += `<circle cx="${cx}" cy="${cy}" r="8" fill="${c}" stroke="#0b0f18" stroke-width="1.5">
+           <title>${esc(NAMES[j])} ${cls2(Y[j])}: ${p[0]} gam, mã màu ${p[1]}</title></circle>`;
+  });
+  s += `<g id="np" transform="translate(${px(NEW[0])+10},${py(NEW[1]*lam)})">
+        <line x1="-9" y1="-9" x2="9" y2="9" stroke="var(--new)" stroke-width="4"/>
+        <line x1="-9" y1="9" x2="9" y2="-9" stroke="var(--new)" stroke-width="4"/>
+        <title>Quả mới: 145 gam, mã màu 1 (đỏ)</title></g>`;
+  s += legend();
+  $('#plot').innerHTML = s;
+}
+const cls2 = y => y ? 'Táo' : 'Cam';
+const legend = () => {
+  const items=[[CLY('var(--táo)'),'Táo'],[CLY('var(--cam)'),'Cam'],[CLY('none'),'Quả mới']];
+  return `<rect x="1" y="0.5" width="205" height="21" rx="5" fill="#0b0f18" stroke="#2a3550" opacity=".95"/>`+
+    items.map((it,i)=>`<circle cx="${14+i*68}" cy="11" r="6" fill="${it[0]}"/>
+      <text class="ax" x="${24+i*68}" y="15">${esc(it[1])}</text>`).join('');
+};
+const CLY = c => c==='none' ? '#4fb6ff' : c;
+
+function render(){
+  const lam = lamOf(), rows = distances(lam), res = decide(rows);
+  setHTML('#labRatio', fmt(D.sigma_ratio)); setHTML('#zLam', `λ = ${fmt(D.sigma_ratio,1)}`);
+  setHTML('#sigW', fmt(SC[0])); setHTML('#sigC', fmt(SC[1]));
+  setHTML('#share', pct(D.share_w));
+  $('#stat').innerHTML = [
+    ['λ', fmt(lam,1)],
+    ['3 láng giềng', res.top.map(r=>NAMES[r.j]).join(' · ')],
+    ['Kết luận KNN', res.lab],
+    ['δ gần nhất', fmt(res.top[0].d)]
+  ].map(([l,v])=>`<div class="chip"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  $('#distTable tbody').innerHTML = rows.map(r=>`<tr data-i="${r.j}">
+     <td>${esc(NAMES[r.j])} <span class="sub">(${cls2(Y[r.j])})</span></td>
+     <td>${esc(r.dw.toFixed(0))}</td><td>${fmt(r.dc)}</td>
+     <td class="ro hi">${fmt(r.d)}</td></tr>`).join('');
+  renderInsight(lam,res);
+}
+const pct = x => `${(100*x).toFixed(2).replace('.', ',')}%`;
+
+function renderInsight(lam,res){
+  const rows = distances(lam).sort((a,b)=>b.d*b.d-a.d*a.d);
+  const worst = rows[0], w2 = worst.dw*worst.dw, c2 = worst.dc*worst.dc, tot = w2+c2 || 1;
+  const items = [];
+  items.push(`λ &lt; <b>${fmt(D.lam_flip)}</b>: kết luận là <b>Cam</b> — trái với nhãn thật của quả đỏ 145 g.
+      Ngưỡng này giải ra từ chính 6 điểm: ${esc('100+λ² = 225 ⇔ λ = √125 ≈ '+fmt(D.lam_flip))}.`);
+  items.push(`Bộ scaler của lab tương đương λ = <b>${fmt(D.sigma_ratio)}</b> (σ<sub>w</sub>/σ<sub>c</sub> =
+      ${fmt(SC[0])}/${fmt(SC[1])}) — vượt ngưỡng, nên lab ra <b>Táo</b> ở cả hai ô 2.2 và 2.3.`);
+  items.push(`Ở dữ liệu thô, quả xa nhất ${esc(NAMES[worst.j])} có phần cân nặng chiếm
+      <b>${pct(w2/tot)}</b> tổng bình phương (${fmt(w2,1)} so với ${fmt(c2,1)}).`);
+  $('#insight').innerHTML = '<h2>Ba điều số liệu nói</h2><ul>'+
+    items.map(t=>`<li class="note">${t}</li>`).join('')+'</ul>';
+}
+
+function renderCurve(){
+  const pts = D.cv_pairs.map(([k,s])=>({k,s})), K0 = 1, K1 = 30, S0 = 0.86, S1 = 0.985;
+  const px2 = k => 30 + (k-K0)/(K1-K0)*360, py2 = s => 210 - (s-S0)/(S1-S0)*180;
+  let g = '';
+  for (const s of [0.88,0.90,0.92,0.94,0.96]){
+    g += `<line class="ln" x1="30" y1="${py2(s)}" x2="395" y2="${py2(s)}" opacity=".16"/>
+          <text class="ax" x="26" y="${py2(s)+4}" text-anchor="end">${(s*100).toFixed(0)}%</text>`;
+  }
+  for (const k of [1,5,10,15,20,25,30]) g += `<text class="ax" x="${px2(k)}" y="232" text-anchor="middle">k ${k}</text>`;
+  g += `<polyline fill="none" stroke="#5fd0a8" stroke-width="2.5" points="${
+        pts.map(p=>`${px2(p.k)},${py2(p.s)}`).join(' ')}"/>`;
+  const star = pts.find(p=>p.k === +V.optimal_k);
+  g += `<line x1="${px2(star.k)}" y1="18" x2="${px2(star.k)}" y2="215" stroke="var(--táo)" stroke-dasharray="6 5" stroke-width="2"/>
+        <text class="ax" x="${px2(star.k)+6}" y="26" fill="var(--táo)">k* = ${esc(V.optimal_k)}</text>`;
+  const cur = pts.find(p=>p.k === +$('#kSel').value);
+  g += `<circle cx="${px2(cur.k)}" cy="${py2(cur.s)}" r="8" fill="none" stroke="var(--new)" stroke-width="3"/>
+        <text class="ax" x="${Math.min(390,px2(cur.k)+12)}" y="${py2(cur.s)-10}">k=${esc(cur.k)} → ${(100*cur.s).toFixed(2).replace('.', ',')}%</text>
+        <text class="ax" x="205" y="254" text-anchor="middle">Số láng giềng k (1 → 30)</text>`;
+  for (const p of pts) g += `<circle cx="${px2(p.k)}" cy="${py2(p.s)}" r="4.5" fill="#5fd0a8">
+        <title>k = ${p.k}: F1 = ${fmt(p.s)} — ${(100*p.s).toFixed(2).replace('.', ',')}%</title></circle>`;
+  $('#curve').innerHTML = g;
+  $('#kstat').innerHTML = [['k đang xem', String(cur.k)], ['F1', pct(cur.s)],
+    ['k tốt nhất', String(V.optimal_k)], ['F1 cao nhất', pct(D.cv_best)]]
+    .map(([l,v])=>`<div class="chip"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  const picks = [1,2,3,5,10,15,20,30];
+  $('#kTable tbody').innerHTML = picks.map(k=>{
+    const p = pts.find(q=>q.k===k);
+    return `<tr><td>${'k = '+k}</td><td class="ro hi">${fmt(p.s)}</td></tr>`;
+  }).join('');
+  setHTML('#f1k1', pct(D.cv_k1)); setHTML('#f1k30', pct(D.cv_k30)); setHTML('#f1best', pct(D.cv_best));
+  setHTML('#kStar', String(V.optimal_k)); setHTML('#kStar2', String(V.optimal_k));
+}
+
+function renderS3(){
+  $('#statS3').innerHTML = [['μ cân nặng', fmt(V['scaler_std.mean_'][0])],
+    ['μ màu', fmt(V['scaler_std.mean_'][1])], ['σ cân nặng', fmt(SC[0])], ['σ màu', fmt(SC[1])],
+    ['min–max w', `${fmt(MM[0][0],0)} → ${fmt(MM[1][0],0)}`]]
+    .map(([l,v])=>`<div class="chip"><b>${esc(v)}</b><span>${esc(l)}</span></div>`).join('');
+  setHTML('#muW', fmt(V['scaler_std.mean_'][0])); setHTML('#sdW', fmt(SC[0]));
+  setHTML('#znew', V.new_fruit_scaled_std[0].map(v=>fmt(v)).join(', '));
+  setHTML('#mmnew', V.new_fruit_scaled_minmax[0].map(v=>fmt(v)).join(', '));
+  const Z = V.X_scaled_std, MMx = V.X_scaled_minmax;
+  $('#scaleTable tbody').innerHTML = X.map((p,j)=>`<tr><td>${esc(NAMES[j])}</td><td>${esc(p[0])}</td><td>${esc(p[1])}</td>`+
+    `<td class="hi">${fmt(Z[j][0])}</td><td>${fmt(Z[j][1])}</td>`+
+    `<td class="hi">${fmt(MMx[j][0])}</td><td>${fmt(MMx[j][1])}</td></tr>`).join('');
+}
+
+const FB = {
+  1:{'Quả #1 (Táo, 150 g)':['Đúng — d = '+fmt(D.d_raw[0])+' là nhỏ nhất (Δ cân nặng 5 g, Δ màu 0).',1],
+     'Quả #3 (Cam, 140 g)':['Gần đúng: d = '+fmt(D.d_raw[2])+', lớn hơn '+fmt(D.d_raw[0])+' một chút.',0],
+     'Quả #2 (Táo, 170 g)':['Sai — Δ cân nặng 25 gam nên d = '+fmt(D.d_raw[1])+', xa nhất trong 6 quả.',0]},
+  2:{'λ ≈ 11,18':['Đúng — λ = √125 ≈ '+fmt(D.lam_flip)+': khi λ vượt mức đó, màu đủ mạnh để đưa #1 và #2 vào top 3, đa số thành Táo.',1],
+     'λ ≈ 1,00':['Sai — đó là dữ liệu thô, kết luận vẫn là Cam; '+fmt(D.share_w)+' sức nặng thuộc về cân nặng ở cặp xa nhất.',0],
+     'λ ≈ 150,83':['Sai — ' + fmt(V['scaler_std.mean_'][0]) +' là trung bình cân nặng (μ), không phải ngưỡng λ.',0]},
+  3:{'k=3 tốt nhất, F1=96,32%':['Đúng — cross-validation của lab: k* = '+V.optimal_k+', F1 = '+pct(D.cv_best)+'.',1],
+     'k=30 tốt nhất vì dùng nhiều dữ liệu nhất':['Sai — F1 ở k = 30 chỉ '+pct(D.cv_k30)+', thấp nhất trong 30 giá trị.',0],
+     'k nào cũng như nhau':['Sai — F1 dao động '+pct(D.cv_k30)+' → '+pct(D.cv_best)+'; k nhỏ nhạy nhiễu, k quá lớn mờ ranh giới.',0]}
+};
+function wireQuiz(){
+  for (const q of document.querySelectorAll('.q')){
+    const k = q.dataset.k, fb = q.querySelector('.fb');
+    for (const b of q.querySelectorAll('.opt')){
+      b.onclick = () => {
+        const [txt, ok] = FB[k][b.dataset.v];
+        fb.textContent = txt; fb.className = 'fb ' + (ok ? 'ok' : 'no');
+        q.querySelectorAll('.opt').forEach(o => o.setAttribute('aria-pressed', o === b ? 'true' : 'false'));
+      };
+    }
+  }
+}
+document.querySelectorAll('nav [role=tab]').forEach(b => b.onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x === b)));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === b.dataset.tab));
+});
+$('#lam').oninput = render;
+$('#ring').onchange = () => svgPlot(lamOf());
+$('#conn').onchange = () => svgPlot(lamOf());
+$('#zBtn').onclick = () => { $('#lam').value = D.sigma_ratio; render(); svgPlot(lamOf()); };
+$('#zHero').onclick = () => {
+  document.querySelectorAll('nav [role=tab]').forEach(x => x.setAttribute('aria-selected', String(x.dataset.tab === 's1')));
+  document.querySelectorAll('main section').forEach(s => s.classList.toggle('on', s.id === 's1'));
+  $('#zBtn').click();
+  $('#plot').scrollIntoView({behavior:'smooth', block:'center'});
+};
+$('#themeBtn').onclick = e => {
+  const on = document.body.classList.toggle('light');
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  e.currentTarget.textContent = on ? 'Theme tối (mặc định)' : 'Theme sáng (máy chiếu)';
+};
+$('#rawBtn').onclick = () => { $('#lam').value = 1; render(); svgPlot(lamOf()); };
+$('#kSel').oninput = renderCurve;
+render(); svgPlot(lamOf()); renderCurve(); renderS3(); wireQuiz();
+</script>
+</body>
+</html>

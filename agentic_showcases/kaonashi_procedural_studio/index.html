@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Argon Procedural Anime Studio — No-Face (Kaonashi) Multi-Style</title>
+  <meta name="description" content="Studio hoạt hình thuật toán: vẽ nhân vật Kaonashi bằng Canvas 2D theo nhiều phong cách nét và tự sinh âm thanh bằng Web Audio API. Chạy offline hoàn toàn.">
+  <style>
+    :root {
+      --bg: #07090e;
+      --panel-bg: rgba(13, 17, 28, 0.82);
+      --panel-border: rgba(255, 255, 255, 0.12);
+      --accent-purple: #c084fc;
+      --accent-gold: #fbbf24;
+      --accent-cyan: #38bdf8;
+      --accent-red: #f43f5e;
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg);
+      color: var(--text-main);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    }
+
+    canvas#mainCanvas {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      display: block;
+      cursor: crosshair;
+    }
+
+    /* Glassmorphism Floating UI */
+    .glass-box {
+      background: var(--panel-bg);
+      backdrop-filter: blur(18px) saturate(180%);
+      -webkit-backdrop-filter: blur(18px) saturate(180%);
+      border: 1px solid var(--panel-border);
+      border-radius: 14px;
+      box-shadow: 0 20px 45px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.08);
+    }
+
+    /* Top-Left Telemetry & HUD */
+    .hud-telemetry {
+      position: fixed;
+      top: 18px;
+      left: 18px;
+      z-index: 20;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      pointer-events: none;
+    }
+
+    .hud-badge-row {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      pointer-events: auto;
+      padding: 9px 15px;
+    }
+
+    .pulse-dot {
+      width: 9px;
+      height: 9px;
+      border-radius: 50%;
+      background: var(--accent-cyan);
+      box-shadow: 0 0 12px var(--accent-cyan);
+      animation: pulseGlow 1.8s infinite ease-in-out;
+    }
+
+    @keyframes pulseGlow {
+      0%, 100% { opacity: 0.55; transform: scale(0.92); }
+      50% { opacity: 1; transform: scale(1.18); box-shadow: 0 0 16px var(--accent-cyan); }
+    }
+
+    .studio-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 0.8px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .tag-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 7px;
+      border-radius: 999px;
+      background: linear-gradient(135deg, #ec4899, #8b5cf6);
+      color: #fff;
+      letter-spacing: 0.5px;
+    }
+
+    .hud-metrics {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 11px;
+      padding: 6px 14px;
+      pointer-events: auto;
+    }
+
+    .metric-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
+    .metric-label {
+      color: var(--text-muted);
+    }
+
+    .metric-val {
+      font-weight: 600;
+      color: var(--accent-gold);
+    }
+
+    /* Bottom-Left Hints */
+    .hud-hints {
+      position: fixed;
+      bottom: 18px;
+      left: 18px;
+      z-index: 20;
+      padding: 10px 16px;
+      font-size: 12px;
+      color: var(--text-muted);
+      line-height: 1.5;
+      pointer-events: none;
+      max-width: 480px;
+    }
+
+    .hud-hints strong {
+      color: var(--text-main);
+    }
+
+    .hud-hints .key-chip {
+      background: rgba(255, 255, 255, 0.12);
+      color: #fff;
+      padding: 1px 6px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-family: monospace;
+    }
+
+    /* Control Panel Right */
+    .control-panel {
+      position: fixed;
+      top: 18px;
+      right: 18px;
+      width: 360px;
+      max-height: calc(100vh - 36px);
+      max-height: calc(100dvh - 36px);
+      z-index: 30;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1), opacity 0.25s ease;
+    }
+
+    .control-panel.collapsed {
+      transform: translateX(330px);
+    }
+
+    .panel-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--panel-border);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      background: rgba(255, 255, 255, 0.02);
+    }
+
+    .panel-title {
+      font-size: 14px;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .panel-collapse-btn {
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid var(--panel-border);
+      color: var(--text-main);
+      width: 28px;
+      height: 28px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+
+    .panel-collapse-btn:hover {
+      background: rgba(255, 255, 255, 0.18);
+      border-color: var(--accent-purple);
+    }
+
+    .panel-content {
+      padding: 16px 18px;
+      overflow-y: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+      max-height: calc(100vh - 120px);
+      max-height: calc(100dvh - 120px);
+    }
+
+    /* Custom Scrollbar */
+    .panel-content::-webkit-scrollbar {
+      width: 5px;
+    }
+    .panel-content::-webkit-scrollbar-thumb {
+      background: rgba(255, 255, 255, 0.18);
+      border-radius: 10px;
+    }
+
+    .section-title {
+      font-size: 11px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.9px;
+      color: var(--text-muted);
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .active-badge {
+      font-size: 10px;
+      font-family: monospace;
+      padding: 1px 6px;
+      border-radius: 4px;
+      background: rgba(192, 132, 252, 0.2);
+      color: var(--accent-purple);
+      border: 1px solid rgba(192, 132, 252, 0.35);
+    }
+
+    /* Style Grid */
+    .style-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .style-btn {
+      padding: 10px 11px;
+      border-radius: 10px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.04);
+      color: #e2e8f0;
+      font-size: 12px;
+      font-weight: 600;
+      text-align: left;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.2s ease;
+    }
+
+    .style-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .style-btn.active {
+      background: linear-gradient(135deg, rgba(192, 132, 252, 0.25), rgba(56, 189, 248, 0.2));
+      border-color: var(--accent-purple);
+      box-shadow: 0 0 16px rgba(192, 132, 252, 0.35);
+      color: #fff;
+    }
+
+    .style-btn.full-span {
+      grid-column: span 2;
+    }
+
+    /* Sliders */
+    .slider-group {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .control-item {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .control-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+    }
+
+    .control-val {
+      font-family: monospace;
+      color: var(--accent-gold);
+      font-weight: 600;
+    }
+
+    input[type="range"] {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 100%;
+      height: 5px;
+      border-radius: 999px;
+      background: rgba(255, 255, 255, 0.15);
+      outline: none;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+
+    input[type="range"]:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    input[type="range"]::-webkit-slider-thumb {
+      -webkit-appearance: none;
+      appearance: none;
+      width: 15px;
+      height: 15px;
+      border-radius: 50%;
+      background: var(--accent-purple);
+      border: 2px solid #fff;
+      box-shadow: 0 0 10px rgba(192, 132, 252, 0.6);
+      transition: transform 0.15s ease, background 0.15s ease;
+    }
+
+    input[type="range"]::-webkit-slider-thumb:hover {
+      transform: scale(1.25);
+      background: #d8b4fe;
+    }
+
+    /* Buttons Row */
+    .btn-row {
+      display: flex;
+      gap: 8px;
+    }
+
+    .action-btn {
+      flex: 1;
+      padding: 10px;
+      border-radius: 10px;
+      border: 1px solid var(--panel-border);
+      background: rgba(255, 255, 255, 0.05);
+      color: var(--text-main);
+      font-size: 12px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 7px;
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:hover {
+      background: rgba(255, 255, 255, 0.14);
+      border-color: rgba(255, 255, 255, 0.25);
+    }
+
+    .action-btn.active-synth {
+      background: linear-gradient(135deg, #10b981, #0284c7);
+      border-color: transparent;
+      box-shadow: 0 0 16px rgba(16, 185, 129, 0.35);
+      color: #fff;
+    }
+
+    /* Toast Notification */
+    .toast-popup {
+      position: fixed;
+      bottom: 24px;
+      left: 50%;
+      transform: translateX(-50%) translateY(30px);
+      z-index: 100;
+      padding: 9px 18px;
+      border-radius: 999px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #fff;
+      pointer-events: none;
+      opacity: 0;
+      transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .toast-popup.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Fullscreen Main 2D Canvas -->
+  <canvas id="mainCanvas"></canvas>
+
+  <!-- Top-Left Telemetry & HUD -->
+  <div class="hud-telemetry">
+    <div class="glass-box hud-badge-row">
+      <div class="pulse-dot"></div>
+      <div class="studio-title">
+        <span>KAONASHI PROCEDURAL STUDIO</span>
+        <span class="tag-badge">VANILLA 2D</span>
+      </div>
+    </div>
+    <div class="glass-box hud-metrics">
+      <div class="metric-item">
+        <span class="metric-label">FPS:</span>
+        <span id="metricFps" class="metric-val" style="color:#4ade80;">60</span>
+      </div>
+      <span style="opacity:0.25;">|</span>
+      <div class="metric-item">
+        <span class="metric-label">STYLE:</span>
+        <span id="metricStyle" class="metric-val" style="color:var(--accent-purple);">ANIME</span>
+      </div>
+      <span style="opacity:0.25;">|</span>
+      <div class="metric-item">
+        <span class="metric-label">NOTE:</span>
+        <span id="metricNote" class="metric-val" style="color:var(--accent-cyan);">--</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- Bottom-Left Hints & Guide -->
+  <div class="glass-box hud-hints">
+    <div><strong>Kaonashi (Vô Diện)</strong> — 100% Thuật toán & Toán học (Zero Assets)</div>
+    <div style="margin-top:3px;">
+      • Di chuột: Lái góc nhìn & đu đưa đèn lồng • Click: Thả vàng & hợp âm Koto<br />
+      • Phím tắt: <span class="key-chip">1-5</span> Đổi phong cách • <span class="key-chip">M</span> Bật/tắt âm thanh • <span class="key-chip">Space</span> Tạm dừng
+    </div>
+  </div>
+
+  <!-- Right Floating Collapsible GUI Dashboard -->
+  <aside class="glass-box control-panel" id="controlPanel">
+    <div class="panel-header">
+      <div class="panel-title">
+        <span>🎭 Visual & Audio Rig</span>
+      </div>
+      <button class="panel-collapse-btn" id="collapseBtn" title="Thu gọn / Mở rộng">⇄</button>
+    </div>
+
+    <div class="panel-content">
+      <!-- 1. Art Style Switcher -->
+      <div>
+        <div class="section-title">
+          <span>1. 5 Switchable Art Styles</span>
+          <span class="active-badge" id="activeStyleBadge">ANIME CEL</span>
+        </div>
+        <div class="style-grid" id="styleGrid">
+          <button class="style-btn active" data-style="anime">✨ Anime Cel-Shaded</button>
+          <button class="style-btn" data-style="sketch">✏️ Ink & Parchment</button>
+          <button class="style-btn" data-style="impressionist">🎨 Sơn dầu Flow</button>
+          <button class="style-btn" data-style="stained">💠 Kính màu Mosaic</button>
+          <button class="style-btn full-span" data-style="ascii">💻 Ma trận ASCII Real-Time</button>
+        </div>
+      </div>
+
+      <!-- 2. Character Physics & Expression -->
+      <div>
+        <div class="section-title">
+          <span>2. Character Rigging & Math</span>
+        </div>
+        <div class="slider-group">
+          <div class="control-item">
+            <div class="control-header">
+              <span>Tốc độ lơ lửng (Wave Speed)</span>
+              <span class="control-val" id="valSpeed">1.0x</span>
+            </div>
+            <input type="range" id="slSpeed" min="0.2" max="2.8" step="0.05" value="1.0">
+          </div>
+          <div class="control-item">
+            <div class="control-header">
+              <span>Độ bồng bềnh Áo choàng (Billow)</span>
+              <span class="control-val" id="valCloak">1.20</span>
+            </div>
+            <input type="range" id="slCloak" min="0.2" max="2.5" step="0.05" value="1.2">
+          </div>
+          <div class="control-item">
+            <div class="control-header">
+              <span>Mở miệng / Biến hình (Expression)</span>
+              <span class="control-val" id="valMouth">0.30</span>
+            </div>
+            <input type="range" id="slMouth" min="0.0" max="1.0" step="0.02" value="0.30">
+          </div>
+        </div>
+      </div>
+
+      <!-- 3. Visual Density & Atmosphere -->
+      <div>
+        <div class="section-title">
+          <span>3. Visual Details & Spreading</span>
+        </div>
+        <div class="slider-group">
+          <div class="control-item">
+            <div class="control-header">
+              <span>Mật độ Linh hồn & Nét (Density)</span>
+              <span class="control-val" id="valDensity">70</span>
+            </div>
+            <input type="range" id="slDensity" min="25" max="140" step="5" value="70">
+          </div>
+          <div class="control-item">
+            <div class="control-header">
+              <span>Độ rung nét vẽ (Sketch Jitter)</span>
+              <span class="control-val" id="valJitter">1.4</span>
+            </div>
+            <input type="range" id="slJitter" min="0.0" max="4.5" step="0.1" value="1.4">
+          </div>
+          <div class="control-item">
+            <div class="control-header">
+              <span>Cường độ Ánh sáng (Lantern Glow)</span>
+              <span class="control-val" id="valGlow">1.10</span>
+            </div>
+            <input type="range" id="slGlow" min="0.2" max="2.4" step="0.05" value="1.1">
+          </div>
+        </div>
+      </div>
+
+      <!-- 4. Procedural Hirajoshi Synth -->
+      <div>
+        <div class="section-title">
+          <span>4. Procedural Ghibli Synth (WebAudio)</span>
+        </div>
+        <div class="btn-row">
+          <button class="action-btn" id="audioToggleBtn">
+            <span id="audioIcon">🔇</span>
+            <span id="audioText">Bật Nhạc Nền (Synth)</span>
+          </button>
+          <button class="action-btn" id="mutateBtn" title="Ngẫu nhiên các tham số">
+            <span>🎲</span>
+            <span>Ngẫu nhiên</span>
+          </button>
+        </div>
+        <div class="control-item" style="margin-top:10px;">
+          <div class="control-header">
+            <span>Tempo Giai điệu (BPM)</span>
+            <span class="control-val" id="valTempo">96</span>
+          </div>
+          <input type="range" id="slTempo" min="50" max="160" step="2" value="96">
+        </div>
+      </div>
+
+      <!-- Action Footer -->
+      <div class="btn-row" style="margin-top:4px;">
+        <button class="action-btn" id="pauseBtn">
+          <span>⏸️</span>
+          <span id="pauseText">Tạm dừng</span>
+        </button>
+        <button class="action-btn" id="snapshotBtn">
+          <span>📸</span>
+          <span>Lưu ảnh PNG</span>
+        </button>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Floating Toast -->
+  <div class="glass-box toast-popup" id="toastMsg"></div>
+
+  <script>
+  (() => {
+    'use strict';
+
+    // ========================================================================
+    // FAST MATHEMATICAL 2D NOISE & MATH HELPERS
+    // ========================================================================
+    function hash(n) {
+      return ((Math.sin(n) * 43758.5453123) % 1 + 1) % 1;
+    }
+
+    function noise2D(x, y) {
+      const xi = Math.floor(x), yi = Math.floor(y);
+      const xf = x - xi, yf = y - yi;
+      const u = xf * xf * (3 - 2 * xf);
+      const v = yf * yf * (3 - 2 * yf);
+      const a = hash(xi + yi * 57);
+      const b = hash(xi + 1 + yi * 57);
+      const c = hash(xi + (yi + 1) * 57);
+      const d = hash(xi + 1 + (yi + 1) * 57);
+      return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
+    }
+
+    // ========================================================================
+    // CANVAS & OFFSCREEN SETUP (RETINA READY)
+    // ========================================================================
+    const canvas = document.getElementById('mainCanvas');
+    const ctx = canvas.getContext('2d', { willReadFrequently: true, alpha: false });
+
+    // Offscreen buffer for pixel-sampling styles (Impressionist, Stained Glass, ASCII)
+    const offCanvas = document.createElement('canvas');
+    const offCtx = offCanvas.getContext('2d', { willReadFrequently: true, alpha: false });
+
+    let W = window.innerWidth;
+    let H = window.innerHeight;
+    let dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    function resize() {
+      W = window.innerWidth;
+      H = window.innerHeight;
+      dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+      canvas.width = Math.floor(W * dpr);
+      canvas.height = Math.floor(H * dpr);
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      // Low-res offscreen buffer for fast real-time CPU shader sampling
+      offCanvas.width = Math.floor(Math.min(W, 960) / 2);
+      offCanvas.height = Math.floor(Math.min(H, 540) / 2);
+
+      initVoronoiGrid();
+    }
+    window.addEventListener('resize', resize);
+
+    // ========================================================================
+    // APPLICATION STATE
+    // ========================================================================
+    const state = {
+      style: 'anime', // 'anime' | 'sketch' | 'impressionist' | 'stained' | 'ascii'
+      speed: 1.0,
+      cloakBillow: 1.2,
+      mouthOpen: 0.3,
+      density: 70,
+      jitter: 1.4,
+      glow: 1.1,
+      tempo: 96,
+      paused: false,
+      audioEnabled: false
+    };
+
+    // Mouse & Lantern Physics
+    const mouse = {
+      x: W * 0.62,
+      y: H * 0.42,
+      tx: W * 0.62,
+      ty: H * 0.42,
+      vx: 0,
+      vy: 0,
+      swing: 0,
+      down: false
+    };
+
+    window.addEventListener('mousemove', e => {
+      mouse.tx = e.clientX;
+      mouse.ty = e.clientY;
+    });
+
+    window.addEventListener('touchmove', e => {
+      if (e.touches.length > 0) {
+        mouse.tx = e.touches[0].clientX;
+        mouse.ty = e.touches[0].clientY;
+      }
+    }, { passive: true });
+
+    // ========================================================================
+    // PROCEDURAL PARTICLES: SOOT SPRITES, SPIRIT ORBS, AND GOLD OFFERINGS
+    // ========================================================================
+    const particles = [];
+    const MAX_PARTICLES = 160;
+
+    // Entity types: 'soot' (Susuwatari), 'spirit' (Hitodama), 'gold' (Ingot)
+    function createSootSprite(x, y) {
+      return {
+        type: 'soot',
+        x: x || Math.random() * W,
+        y: y || Math.random() * H,
+        r: 6 + Math.random() * 5,
+        vx: (Math.random() - 0.5) * 0.9,
+        vy: -0.4 - Math.random() * 0.8,
+        blinkTimer: Math.random() * 180,
+        candyColor: Math.random() > 0.5 ? ['#f472b6', '#38bdf8', '#facc15', '#4ade80'][Math.floor(Math.random() * 4)] : null,
+        bristles: Array.from({ length: 14 }, () => ({
+          ang: Math.random() * Math.PI * 2,
+          len: 3 + Math.random() * 4
+        }))
+      };
+    }
+
+    function createSpiritOrb(x, y) {
+      return {
+        type: 'spirit',
+        x: x || Math.random() * W,
+        y: y || Math.random() * H,
+        r: 3 + Math.random() * 5,
+        vx: (Math.random() - 0.5) * 0.6,
+        vy: -0.7 - Math.random() * 1.0,
+        phase: Math.random() * Math.PI * 2
+      };
+    }
+
+    function createGoldNugget(x, y) {
+      return {
+        type: 'gold',
+        x: x,
+        y: y,
+        r: 5 + Math.random() * 5,
+        vx: (Math.random() - 0.5) * 3.5,
+        vy: -2.0 - Math.random() * 2.8,
+        rot: Math.random() * Math.PI * 2,
+        vRot: (Math.random() - 0.5) * 0.12,
+        life: 1.0
+      };
+    }
+
+    // Populate initial background soot sprites & spirits
+    for (let i = 0; i < 40; i++) particles.push(createSootSprite());
+    for (let i = 0; i < 35; i++) particles.push(createSpiritOrb());
+
+    window.addEventListener('mousedown', e => {
+      if (e.target.closest('#controlPanel')) return;
+      mouse.down = true;
+
+      // Spawn burst of gold offerings & spirits at lantern
+      for (let i = 0; i < 10; i++) {
+        particles.push(createGoldNugget(mouse.x + (Math.random() - 0.5) * 24, mouse.y + (Math.random() - 0.5) * 24));
+      }
+      for (let i = 0; i < 4; i++) {
+        particles.push(createSootSprite(mouse.x + (Math.random() - 0.5) * 40, mouse.y + (Math.random() - 0.5) * 40));
+      }
+      while (particles.length > MAX_PARTICLES) particles.shift();
+
+      if (state.audioEnabled) triggerChimeArpeggio();
+    });
+
+    window.addEventListener('mouseup', () => { mouse.down = false; });
+
+    // ========================================================================
+    // PROCEDURAL VORONOI CELL TESSELLATION (For Stained Glass)
+    // ========================================================================
+    let voronoiCells = [];
+    function initVoronoiGrid() {
+      voronoiCells = [];
+      const cols = 28;
+      const rows = 18;
+      const dx = W / cols;
+      const dy = H / rows;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          voronoiCells.push({
+            bx: (c + 0.5) * dx + (Math.random() - 0.5) * dx * 0.7,
+            by: (r + 0.5) * dy + (Math.random() - 0.5) * dy * 0.7,
+            phase: Math.random() * Math.PI * 2,
+            pts: []
+          });
+        }
+      }
+    }
+    resize();
+
+    // ========================================================================
+    // BASE SCENE RENDERING PIPELINE (KAONASHI, BATHHOUSE BRIDGE, FULL MOON)
+    // ========================================================================
+    function renderBaseScene(targetCtx, width, height, t, isSketch) {
+      const scale = width / W;
+      targetCtx.save();
+      targetCtx.scale(scale, scale);
+
+      // 1. NIGHT SKY & HORIZON GRADIENT
+      if (isSketch) {
+        // Warm aged parchment paper background
+        targetCtx.fillStyle = '#f3ede2';
+        targetCtx.fillRect(0, 0, W, H);
+
+        // Procedural parchment grain lines
+        targetCtx.strokeStyle = 'rgba(65, 45, 25, 0.05)';
+        targetCtx.lineWidth = 1;
+        const pStep = 22;
+        for (let y = 0; y < H; y += pStep) {
+          targetCtx.beginPath();
+          targetCtx.moveTo(0, y + (Math.random() - 0.5) * 2);
+          targetCtx.lineTo(W, y + (Math.random() - 0.5) * 2);
+          targetCtx.stroke();
+        }
+      } else {
+        // Deep Spirited Away Night Indigo to Horizon Glow
+        const skyGrad = targetCtx.createLinearGradient(0, 0, 0, H);
+        skyGrad.addColorStop(0, '#04060d');
+        skyGrad.addColorStop(0.55, '#121026');
+        skyGrad.addColorStop(0.82, '#281534');
+        skyGrad.addColorStop(1, '#0e101a');
+        targetCtx.fillStyle = skyGrad;
+        targetCtx.fillRect(0, 0, W, H);
+
+        // Distant Bathhouse Silhouette with subtle lanterns
+        targetCtx.fillStyle = 'rgba(10, 11, 20, 0.88)';
+        targetCtx.beginPath();
+        const bhY = H * 0.68;
+        targetCtx.moveTo(0, bhY);
+        targetCtx.lineTo(W * 0.14, bhY);
+        targetCtx.lineTo(W * 0.14, bhY - 35);
+        targetCtx.lineTo(W * 0.17, bhY - 45); // Pagoda roof
+        targetCtx.lineTo(W * 0.20, bhY - 35);
+        targetCtx.lineTo(W * 0.20, bhY);
+        targetCtx.lineTo(W * 0.32, bhY);
+        targetCtx.lineTo(W * 0.32, H);
+        targetCtx.lineTo(0, H);
+        targetCtx.closePath();
+        targetCtx.fill();
+
+        // Small distant bathhouse lanterns
+        targetCtx.fillStyle = 'rgba(255, 177, 66, 0.7)';
+        targetCtx.fillRect(W * 0.155, bhY - 26, 4, 6);
+        targetCtx.fillRect(W * 0.18, bhY - 26, 4, 6);
+
+        // Giant Luminous Full Moon
+        const moonX = W * 0.25;
+        const moonY = H * 0.26;
+        const moonR = Math.min(W, H) * 0.14;
+
+        // Outer Moon Corona Glow
+        const corona = targetCtx.createRadialGradient(moonX, moonY, moonR * 0.4, moonX, moonY, moonR * 2.6 * state.glow);
+        corona.addColorStop(0, 'rgba(255, 246, 219, 0.95)');
+        corona.addColorStop(0.28, 'rgba(254, 215, 120, 0.35)');
+        corona.addColorStop(0.7, 'rgba(192, 132, 252, 0.12)');
+        corona.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        targetCtx.fillStyle = corona;
+        targetCtx.beginPath();
+        targetCtx.arc(moonX, moonY, moonR * 2.6 * state.glow, 0, Math.PI * 2);
+        targetCtx.fill();
+
+        // Moon Disk Surface
+        const moonDisk = targetCtx.createRadialGradient(moonX - moonR * 0.2, moonY - moonR * 0.2, moonR * 0.1, moonX, moonY, moonR);
+        moonDisk.addColorStop(0, '#fffdf5');
+        moonDisk.addColorStop(0.85, '#fdedc5');
+        moonDisk.addColorStop(1, '#e3cb98');
+        targetCtx.fillStyle = moonDisk;
+        targetCtx.beginPath();
+        targetCtx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+        targetCtx.fill();
+
+        // Soft Drifting Clouds across Moon
+        targetCtx.fillStyle = 'rgba(20, 16, 38, 0.35)';
+        for (let c = 0; c < 3; c++) {
+          const cy = moonY - 15 + c * 22;
+          const cx = moonX - 50 + Math.sin(t * 0.4 + c * 2) * 30;
+          targetCtx.beginPath();
+          targetCtx.ellipse(cx, cy, moonR * 1.1, 10 + c * 3, 0, 0, Math.PI * 2);
+          targetCtx.fill();
+        }
+      }
+
+      // 2. TRADITIONAL VERMILION BATHHOUSE BRIDGE & BALUSTRADES
+      const bridgeY = H * 0.77;
+      if (isSketch) {
+        targetCtx.strokeStyle = '#221915';
+        targetCtx.lineWidth = 2.2;
+        sketchLine(targetCtx, 0, bridgeY, W, bridgeY, 2);
+        sketchLine(targetCtx, 0, bridgeY + 68, W, bridgeY + 68, 2);
+      } else {
+        // Water river reflection below bridge
+        const waterGrad = targetCtx.createLinearGradient(0, bridgeY + 60, 0, H);
+        waterGrad.addColorStop(0, '#100e1c');
+        waterGrad.addColorStop(1, '#06070d');
+        targetCtx.fillStyle = waterGrad;
+        targetCtx.fillRect(0, bridgeY + 60, W, H - bridgeY);
+
+        // Water shimmers
+        targetCtx.strokeStyle = 'rgba(254, 215, 120, 0.12)';
+        targetCtx.lineWidth = 1.4;
+        for (let wy = bridgeY + 80; wy < H; wy += 22) {
+          const shift = Math.sin(t * 1.5 + wy) * 30;
+          targetCtx.beginPath();
+          targetCtx.moveTo(W * 0.2 + shift, wy);
+          targetCtx.lineTo(W * 0.35 + shift, wy);
+          targetCtx.moveTo(W * 0.55 - shift, wy + 8);
+          targetCtx.lineTo(W * 0.72 - shift, wy + 8);
+          targetCtx.stroke();
+        }
+
+        // Bridge upper vermilion railing
+        const railGrad = targetCtx.createLinearGradient(0, bridgeY, 0, bridgeY + 16);
+        railGrad.addColorStop(0, '#852129');
+        railGrad.addColorStop(0.5, '#c53030');
+        railGrad.addColorStop(1, '#5c161d');
+        targetCtx.fillStyle = railGrad;
+        targetCtx.fillRect(0, bridgeY, W, 16);
+
+        // Lower railing bar
+        targetCtx.fillStyle = '#4c1218';
+        targetCtx.fillRect(0, bridgeY + 62, W, 18);
+      }
+
+      // Balusters & Stately Posts with Lotus-Bud Giboshi Finials
+      const postSpacing = 135;
+      for (let px = 30; px < W + 40; px += postSpacing) {
+        if (isSketch) {
+          sketchLine(targetCtx, px, bridgeY - 32, px, H, 2);
+          sketchLine(targetCtx, px + 14, bridgeY - 32, px + 14, H, 2);
+          // Giboshi finial sketch
+          sketchEllipse(targetCtx, px + 7, bridgeY - 38, 9, 11, 2);
+        } else {
+          // Wooden vertical post
+          const postGrad = targetCtx.createLinearGradient(px, 0, px + 16, 0);
+          postGrad.addColorStop(0, '#9b2c2c');
+          postGrad.addColorStop(0.6, '#e53e3e');
+          postGrad.addColorStop(1, '#63171b');
+          targetCtx.fillStyle = postGrad;
+          targetCtx.fillRect(px, bridgeY - 30, 16, H - bridgeY + 30);
+
+          // Golden Bronze Lotus-Bud Finial (Giboshi)
+          const gx = px + 8;
+          const gy = bridgeY - 36;
+          const giboshiGrad = targetCtx.createRadialGradient(gx - 2, gy - 2, 2, gx, gy, 12);
+          giboshiGrad.addColorStop(0, '#fef08a');
+          giboshiGrad.addColorStop(0.5, '#eab308');
+          giboshiGrad.addColorStop(1, '#713f12');
+          targetCtx.fillStyle = giboshiGrad;
+          targetCtx.beginPath();
+          targetCtx.moveTo(gx, gy - 13);
+          targetCtx.quadraticCurveTo(gx + 10, gy - 4, gx + 9, gy + 7);
+          targetCtx.lineTo(gx - 9, gy + 7);
+          targetCtx.quadraticCurveTo(gx - 10, gy - 4, gx, gy - 13);
+          targetCtx.fill();
+        }
+      }
+
+      // 3. KAONASHI RIGGING (NO-FACE FLOATING DYNAMICS & MATH)
+      const cx = W * 0.48 + Math.sin(t * 0.85) * 16;
+      const cy = H * 0.44 + Math.sin(t * 1.7) * 14;
+      const bodyW = Math.min(W, H) * 0.15;
+      const bodyH = Math.min(W, H) * 0.44;
+
+      // Look angle tracking cursor smoothly
+      const lookX = Math.max(-24, Math.min(24, (mouse.x - cx) * 0.055));
+      const lookY = Math.max(-18, Math.min(18, (mouse.y - (cy - bodyH * 0.35)) * 0.055));
+
+      // 4. KAONASHI ETHEREAL SHADOW AURA
+      if (!isSketch) {
+        const aura = targetCtx.createRadialGradient(cx, cy, bodyW * 0.25, cx, cy, bodyW * 2.3);
+        aura.addColorStop(0, 'rgba(124, 58, 237, 0.28)');
+        aura.addColorStop(0.5, 'rgba(30, 15, 60, 0.16)');
+        aura.addColorStop(1, 'rgba(0, 0, 0, 0)');
+        targetCtx.fillStyle = aura;
+        targetCtx.beginPath();
+        targetCtx.arc(cx, cy, bodyW * 2.3, 0, Math.PI * 2);
+        targetCtx.fill();
+      }
+
+      // 5. BILLOWING SEMI-TRANSPARENT DARK CLOAK (DYNAMIC BÉZIER PROFILE)
+      targetCtx.save();
+      const headTopY = cy - bodyH * 0.62;
+      const bottomY = cy + bodyH * 0.68;
+      const steps = 28;
+      const leftPts = [];
+      const rightPts = [];
+
+      for (let i = 0; i <= steps; i++) {
+        const p = i / steps;
+        const py = headTopY + p * (bottomY - headTopY);
+
+        // Width profile: curved dome head, expanding torso, undulating ghostly hem
+        let w = bodyW * Math.sin(Math.pow(p, 0.68) * Math.PI * 0.86);
+        if (p > 0.45) {
+          w += Math.pow(p - 0.45, 1.5) * bodyW * 0.85 * state.cloakBillow;
+        }
+
+        // Trigonometric wind & billow waves
+        const waveL = Math.sin(t * 2.2 - p * 5.0) * 15 * p * state.cloakBillow;
+        const waveR = Math.cos(t * 2.0 - p * 4.6) * 15 * p * state.cloakBillow;
+
+        leftPts.push({ x: cx - w + waveL + lookX * (1 - p * 0.6), y: py });
+        rightPts.push({ x: cx + w + waveR + lookX * (1 - p * 0.6), y: py });
+      }
+
+      targetCtx.beginPath();
+      targetCtx.moveTo(cx, headTopY);
+      leftPts.forEach(pt => targetCtx.lineTo(pt.x, pt.y));
+
+      // Ghostly bottom tendril waves
+      const tendrils = 9;
+      for (let k = 0; k <= tendrils; k++) {
+        const frac = k / tendrils;
+        const tx = leftPts[steps].x + frac * (rightPts[steps].x - leftPts[steps].x);
+        const ty = bottomY + Math.sin(t * 3.2 + k * 1.3) * 16 * state.cloakBillow;
+        targetCtx.lineTo(tx, ty);
+      }
+
+      for (let i = steps; i >= 0; i--) targetCtx.lineTo(rightPts[i].x, rightPts[i].y);
+      targetCtx.closePath();
+
+      if (isSketch) {
+        // Parchment ink wash fill
+        targetCtx.fillStyle = 'rgba(28, 24, 22, 0.15)';
+        targetCtx.fill();
+
+        targetCtx.save();
+        targetCtx.clip();
+        targetCtx.strokeStyle = '#1a1614';
+        const hatchSpacing = Math.max(5, Math.floor(15 - state.density * 0.08));
+
+        // Diagonal hatch 1
+        for (let y = headTopY; y < bottomY + 30; y += hatchSpacing) {
+          const j = (Math.random() - 0.5) * state.jitter * 3;
+          targetCtx.lineWidth = 0.8 + Math.random() * 0.9;
+          targetCtx.beginPath();
+          targetCtx.moveTo(cx - bodyW * 1.5, y + j);
+          targetCtx.lineTo(cx + bodyW * 1.5, y - 26 - j);
+          targetCtx.stroke();
+        }
+        // Diagonal cross-hatch 2
+        for (let y = headTopY + 30; y < bottomY + 30; y += hatchSpacing * 1.3) {
+          targetCtx.lineWidth = 0.7 + Math.random() * 0.7;
+          targetCtx.beginPath();
+          targetCtx.moveTo(cx - bodyW * 1.5, y - 20);
+          targetCtx.lineTo(cx + bodyW * 1.5, y + 25);
+          targetCtx.stroke();
+        }
+        targetCtx.restore();
+
+        // Jittery outline passes
+        for (let pass = 0; pass < 3; pass++) {
+          targetCtx.strokeStyle = pass === 0 ? '#11100e' : 'rgba(25, 20, 18, 0.45)';
+          targetCtx.lineWidth = pass === 0 ? 2.5 : 1.2;
+          targetCtx.beginPath();
+          leftPts.forEach((pt, idx) => {
+            const jx = (Math.random() - 0.5) * state.jitter * 2.5;
+            const jy = (Math.random() - 0.5) * state.jitter * 2.5;
+            if (idx === 0) targetCtx.moveTo(pt.x + jx, pt.y + jy);
+            else targetCtx.lineTo(pt.x + jx, pt.y + jy);
+          });
+          for (let i = steps; i >= 0; i--) {
+            const pt = rightPts[i];
+            const jx = (Math.random() - 0.5) * state.jitter * 2.5;
+            const jy = (Math.random() - 0.5) * state.jitter * 2.5;
+            targetCtx.lineTo(pt.x + jx, pt.y + jy);
+          }
+          targetCtx.stroke();
+        }
+      } else {
+        // Deep Cel-Shaded Dark Semi-Transparent Cloak
+        const bodyGrad = targetCtx.createLinearGradient(cx - bodyW, headTopY, cx + bodyW, bottomY);
+        bodyGrad.addColorStop(0, '#151522');
+        bodyGrad.addColorStop(0.55, '#0c0c14');
+        bodyGrad.addColorStop(1, 'rgba(12, 12, 20, 0.35)');
+        targetCtx.fillStyle = bodyGrad;
+        targetCtx.fill();
+
+        // Volumetric Cel Rim Highlights
+        targetCtx.strokeStyle = 'rgba(167, 139, 250, 0.65)';
+        targetCtx.lineWidth = 2.4;
+        targetCtx.stroke();
+      }
+      targetCtx.restore();
+
+      // 6. HIDDEN BELLY / TORSO MOUTH (MouthOpen Slider Activation)
+      if (state.mouthOpen > 0.15) {
+        const jawOpen = (state.mouthOpen - 0.15) * 1.25;
+        targetCtx.save();
+        targetCtx.translate(cx + lookX * 0.4, cy + bodyH * 0.1);
+
+        // Deep monstrous crimson mouth cavity
+        targetCtx.fillStyle = isSketch ? '#1e1414' : '#450a16';
+        targetCtx.beginPath();
+        const mw = bodyW * 0.55 * jawOpen;
+        const mh = bodyW * 0.32 * jawOpen;
+        targetCtx.ellipse(0, 0, mw, mh, 0, 0, Math.PI * 2);
+        targetCtx.fill();
+
+        // Sharp jagged procedural teeth
+        if (!isSketch) {
+          targetCtx.fillStyle = '#f8fafc';
+          const teethCount = 7;
+          for (let tIdx = -teethCount; tIdx <= teethCount; tIdx++) {
+            const tx = (tIdx / teethCount) * mw * 0.85;
+            // Top teeth
+            targetCtx.beginPath();
+            targetCtx.moveTo(tx - 3, -mh * 0.7);
+            targetCtx.lineTo(tx + 3, -mh * 0.7);
+            targetCtx.lineTo(tx, -mh * 0.2);
+            targetCtx.closePath();
+            targetCtx.fill();
+            // Bottom teeth
+            targetCtx.beginPath();
+            targetCtx.moveTo(tx - 3, mh * 0.7);
+            targetCtx.lineTo(tx + 3, mh * 0.7);
+            targetCtx.lineTo(tx, mh * 0.2);
+            targetCtx.closePath();
+            targetCtx.fill();
+          }
+        }
+        targetCtx.restore();
+      }
+
+      // 7. ICONIC PORCELAIN WHITE MASK
+      const maskX = cx + lookX;
+      const maskY = cy - bodyH * 0.33 + lookY;
+      const maskW = bodyW * 0.54;
+      const maskH = bodyW * 0.74;
+
+      targetCtx.save();
+      targetCtx.translate(maskX, maskY);
+      targetCtx.rotate(Math.sin(t * 1.1) * 0.035 + lookX * 0.003);
+
+      // Mask Oval
+      targetCtx.beginPath();
+      targetCtx.ellipse(0, 0, maskW, maskH, 0, 0, Math.PI * 2);
+
+      if (isSketch) {
+        targetCtx.fillStyle = '#faf7f2';
+        targetCtx.fill();
+        sketchEllipse(targetCtx, 0, 0, maskW, maskH, 2);
+      } else {
+        // Porcelain Mask Shading
+        const maskGrad = targetCtx.createRadialGradient(-maskW * 0.25, -maskH * 0.25, maskW * 0.1, 0, 0, maskH);
+        maskGrad.addColorStop(0, '#ffffff');
+        maskGrad.addColorStop(0.72, '#eee9e0');
+        maskGrad.addColorStop(1, '#b8b2a5');
+        targetCtx.fillStyle = maskGrad;
+        targetCtx.fill();
+        targetCtx.strokeStyle = '#181622';
+        targetCtx.lineWidth = 2.6;
+        targetCtx.stroke();
+      }
+
+      // Mask Markings (Iconic Purple/Crimson Forehead & Cheek Teardrop Stripes)
+      const markColor = isSketch ? '#2e1c20' : '#832860';
+      targetCtx.fillStyle = markColor;
+
+      [-1, 1].forEach(dir => {
+        const ex = dir * maskW * 0.42;
+        const ey = -maskH * 0.08;
+
+        // Forehead curved triangle marking
+        targetCtx.beginPath();
+        targetCtx.moveTo(ex - dir * 5, ey - maskH * 0.2);
+        targetCtx.quadraticCurveTo(ex, ey - maskH * 0.54, ex + dir * 2, ey - maskH * 0.64);
+        targetCtx.quadraticCurveTo(ex + dir * 8, ey - maskH * 0.44, ex + dir * 5, ey - maskH * 0.2);
+        targetCtx.closePath();
+        targetCtx.fill();
+
+        // Cheek vertical tear stripe
+        targetCtx.beginPath();
+        targetCtx.moveTo(ex - 6, ey + maskH * 0.16);
+        targetCtx.quadraticCurveTo(ex - dir * 2, ey + maskH * 0.52, ex + dir * 3, ey + maskH * 0.72);
+        targetCtx.quadraticCurveTo(ex + 6, ey + maskH * 0.5, ex + 5, ey + maskH * 0.16);
+        targetCtx.closePath();
+        targetCtx.fill();
+
+        // Hollow Almond Eyes with Inner Depth
+        targetCtx.fillStyle = '#0a0a0f';
+        targetCtx.beginPath();
+        targetCtx.ellipse(ex, ey, maskW * 0.15, maskH * 0.08, 0, 0, Math.PI * 2);
+        targetCtx.fill();
+
+        // Under-eye hollow shadow line
+        targetCtx.strokeStyle = 'rgba(25, 25, 30, 0.4)';
+        targetCtx.lineWidth = 1.4;
+        targetCtx.beginPath();
+        targetCtx.arc(ex, ey + 3, maskW * 0.14, 0.15 * Math.PI, 0.85 * Math.PI);
+        targetCtx.stroke();
+
+        targetCtx.fillStyle = markColor;
+      });
+
+      // Mask Small Mouth
+      targetCtx.fillStyle = '#111018';
+      targetCtx.beginPath();
+      targetCtx.ellipse(0, maskH * 0.52, maskW * 0.18, maskH * 0.05 + state.mouthOpen * 6, 0, 0, Math.PI * 2);
+      targetCtx.fill();
+
+      targetCtx.restore();
+
+      // 8. INTERACTIVE SPIRIT PAPER LANTERN (FOLLOWS CURSOR WITH PENDULUM SWING)
+      const lx = mouse.x;
+      const ly = mouse.y;
+
+      targetCtx.save();
+      targetCtx.translate(lx, ly);
+      targetCtx.rotate(mouse.swing);
+
+      // Bamboo hanging pole & suspension cord
+      targetCtx.strokeStyle = isSketch ? '#222' : '#c8955d';
+      targetCtx.lineWidth = 2.2;
+      targetCtx.beginPath();
+      targetCtx.moveTo(0, -48);
+      targetCtx.lineTo(0, -20);
+      targetCtx.stroke();
+
+      // Lantern Radial Warm Bloom
+      if (!isSketch) {
+        const lGlow = targetCtx.createRadialGradient(0, 0, 4, 0, 0, 140 * state.glow);
+        lGlow.addColorStop(0, 'rgba(255, 235, 140, 0.96)');
+        lGlow.addColorStop(0.35, 'rgba(255, 159, 67, 0.45)');
+        lGlow.addColorStop(1, 'rgba(244, 63, 94, 0)');
+        targetCtx.fillStyle = lGlow;
+        targetCtx.beginPath();
+        targetCtx.arc(0, 0, 140 * state.glow, 0, Math.PI * 2);
+        targetCtx.fill();
+      }
+
+      // Paper Lantern Ribbed Body
+      targetCtx.fillStyle = isSketch ? '#fff9ed' : '#fb923c';
+      targetCtx.strokeStyle = '#1e1b18';
+      targetCtx.lineWidth = 2.2;
+      targetCtx.beginPath();
+      targetCtx.ellipse(0, 0, 20, 26, 0, 0, Math.PI * 2);
+      targetCtx.fill();
+      targetCtx.stroke();
+
+      // Bamboo ribs
+      for (let r = -14; r <= 14; r += 7) {
+        targetCtx.beginPath();
+        targetCtx.ellipse(0, r, 18, 4, 0, 0, Math.PI * 2);
+        targetCtx.stroke();
+      }
+      targetCtx.restore();
+
+      // 9. ANIMATE & RENDER PARTICLES (SOOT SPRITES, SPIRIT ORBS, GOLD)
+      const activeCount = Math.min(particles.length, state.density);
+      for (let i = 0; i < activeCount; i++) {
+        const p = particles[i];
+
+        if (p.type === 'soot') {
+          // Susuwatari Soot Sprite
+          p.x += p.vx * state.speed + Math.sin(t * 2.5 + i) * 0.4;
+          p.y += p.vy * state.speed;
+          if (p.y < -30) { p.y = H + 20; p.x = Math.random() * W; }
+          if (p.x < -30) p.x = W + 20;
+          if (p.x > W + 20) p.x = -30;
+
+          if (isSketch) {
+            targetCtx.strokeStyle = '#222';
+            targetCtx.lineWidth = 1.4;
+            sketchEllipse(targetCtx, p.x, p.y, p.r, p.r, 2);
+          } else {
+            // Fuzzy black bristle body
+            targetCtx.fillStyle = '#0c0c14';
+            targetCtx.beginPath();
+            targetCtx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+            targetCtx.fill();
+
+            // Radiating fuzzy bristles
+            targetCtx.strokeStyle = '#0c0c14';
+            targetCtx.lineWidth = 1.2;
+            p.bristles.forEach(b => {
+              const wig = Math.sin(t * 8 + b.ang) * 1.5;
+              const bx = p.x + Math.cos(b.ang) * (p.r + b.len + wig);
+              const by = p.y + Math.sin(b.ang) * (p.r + b.len + wig);
+              targetCtx.beginPath();
+              targetCtx.moveTo(p.x, p.y);
+              targetCtx.lineTo(bx, by);
+              targetCtx.stroke();
+            });
+
+            // Big expressive eyes looking toward mouse
+            const edx = Math.max(-2, Math.min(2, (mouse.x - p.x) * 0.02));
+            const edy = Math.max(-2, Math.min(2, (mouse.y - p.y) * 0.02));
+
+            // Eye whites
+            targetCtx.fillStyle = '#ffffff';
+            targetCtx.beginPath();
+            targetCtx.arc(p.x - p.r * 0.35, p.y - p.r * 0.1, p.r * 0.35, 0, Math.PI * 2);
+            targetCtx.arc(p.x + p.r * 0.35, p.y - p.r * 0.1, p.r * 0.35, 0, Math.PI * 2);
+            targetCtx.fill();
+
+            // Black pupils
+            targetCtx.fillStyle = '#0a0a0e';
+            targetCtx.beginPath();
+            targetCtx.arc(p.x - p.r * 0.35 + edx, p.y - p.r * 0.1 + edy, p.r * 0.18, 0, Math.PI * 2);
+            targetCtx.arc(p.x + p.r * 0.35 + edx, p.y - p.r * 0.1 + edy, p.r * 0.18, 0, Math.PI * 2);
+            targetCtx.fill();
+
+            // Little Konpeito sugar star candy
+            if (p.candyColor) {
+              targetCtx.fillStyle = p.candyColor;
+              targetCtx.beginPath();
+              targetCtx.arc(p.x, p.y + p.r + 4, 3, 0, Math.PI * 2);
+              targetCtx.fill();
+            }
+          }
+        } else if (p.type === 'spirit') {
+          // Floating Hitodama spirit orb
+          p.x += p.vx * state.speed + Math.cos(t * 1.8 + p.phase) * 0.6;
+          p.y += p.vy * state.speed;
+          if (p.y < -20) { p.y = H + 20; p.x = Math.random() * W; }
+          if (p.x < -20) p.x = W + 20;
+          if (p.x > W + 20) p.x = -20;
+
+          if (isSketch) {
+            targetCtx.strokeStyle = '#444';
+            targetCtx.lineWidth = 1.1;
+            sketchEllipse(targetCtx, p.x, p.y, p.r, p.r, 1);
+          } else {
+            const spGlow = targetCtx.createRadialGradient(p.x, p.y, 1, p.x, p.y, p.r * 2.2);
+            spGlow.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+            spGlow.addColorStop(0.4, 'rgba(56, 189, 248, 0.65)');
+            spGlow.addColorStop(1, 'rgba(56, 189, 248, 0)');
+            targetCtx.fillStyle = spGlow;
+            targetCtx.beginPath();
+            targetCtx.arc(p.x, p.y, p.r * 2.2, 0, Math.PI * 2);
+            targetCtx.fill();
+          }
+        } else if (p.type === 'gold') {
+          // Faceted sparkling gold nugget
+          p.x += p.vx;
+          p.y += p.vy;
+          p.vy += 0.08; // slight gravity
+          p.rot += p.vRot;
+          p.life -= 0.012;
+
+          if (p.life > 0) {
+            targetCtx.save();
+            targetCtx.translate(p.x, p.y);
+            targetCtx.rotate(p.rot);
+            targetCtx.globalAlpha = Math.max(0, p.life);
+
+            if (isSketch) {
+              targetCtx.strokeStyle = '#222';
+              targetCtx.lineWidth = 1.5;
+              targetCtx.strokeRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2);
+            } else {
+              targetCtx.fillStyle = '#facc15';
+              targetCtx.shadowColor = '#facc15';
+              targetCtx.shadowBlur = 12 * state.glow;
+              targetCtx.fillRect(-p.r, -p.r * 0.6, p.r * 2, p.r * 1.2);
+              targetCtx.fillStyle = '#fef08a';
+              targetCtx.fillRect(-p.r * 0.7, -p.r * 0.4, p.r * 1.4, p.r * 0.4);
+              targetCtx.shadowBlur = 0;
+            }
+            targetCtx.restore();
+          }
+        }
+      }
+
+      targetCtx.restore();
+    }
+
+    // Helper functions for ink & pencil sketch
+    function sketchLine(c, x1, y1, x2, y2, passes = 2) {
+      for (let p = 0; p < passes; p++) {
+        c.beginPath();
+        c.moveTo(x1 + (Math.random() - 0.5) * state.jitter * 3, y1 + (Math.random() - 0.5) * state.jitter * 3);
+        c.lineTo(x2 + (Math.random() - 0.5) * state.jitter * 3, y2 + (Math.random() - 0.5) * state.jitter * 3);
+        c.stroke();
+      }
+    }
+
+    function sketchEllipse(c, x, y, rx, ry, passes = 2) {
+      for (let p = 0; p < passes; p++) {
+        c.beginPath();
+        const jx = (Math.random() - 0.5) * state.jitter * 2.4;
+        const jy = (Math.random() - 0.5) * state.jitter * 2.4;
+        c.ellipse(x + jx, y + jy, rx, ry, (Math.random() - 0.5) * 0.08, 0, Math.PI * 2);
+        c.stroke();
+      }
+    }
+
+    // ========================================================================
+    // POST-PROCESSING SHADERS: IMPRESSIONIST, STAINED GLASS, AND ASCII
+    // ========================================================================
+
+    // 1. Impressionist Oil Painting with Directional Flow Field
+    function renderImpressionist(t) {
+      renderBaseScene(offCtx, offCanvas.width, offCanvas.height, t, false);
+      const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height).data;
+      const ow = offCanvas.width;
+      const oh = offCanvas.height;
+
+      // Soft canvas texture background persistence
+      ctx.fillStyle = 'rgba(7, 9, 14, 0.22)';
+      ctx.fillRect(0, 0, W, H);
+
+      const step = Math.max(7, Math.floor(22 - state.density * 0.11));
+      for (let y = 0; y < oh; y += step) {
+        for (let x = 0; x < ow; x += step) {
+          const idx = (y * ow + x) * 4;
+          const r = imgData[idx], g = imgData[idx + 1], b = imgData[idx + 2];
+          const lum = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+
+          if (lum < 0.04) continue;
+
+          const sx = (x / ow) * W + (Math.random() - 0.5) * 8;
+          const sy = (y / oh) * H + (Math.random() - 0.5) * 8;
+
+          // Flow angle from 2D curl noise + scene brightness
+          const angle = noise2D(x * 0.035 + t * 0.35, y * 0.035) * Math.PI * 2 + lum * 1.8;
+
+          ctx.save();
+          ctx.translate(sx, sy);
+          ctx.rotate(angle);
+
+          // Rich impasto paint stroke
+          ctx.fillStyle = `rgb(${r},${g},${b})`;
+          ctx.beginPath();
+          const len = step * (1.7 + state.jitter * 0.35);
+          const thick = step * 0.72;
+          ctx.ellipse(0, 0, len, thick, 0, 0, Math.PI * 2);
+          ctx.fill();
+
+          // Stroke highlight ridge
+          if (lum > 0.4) {
+            ctx.fillStyle = `rgba(${Math.min(255, r + 40)},${Math.min(255, g + 40)},${Math.min(255, b + 40)},0.4)`;
+            ctx.beginPath();
+            ctx.ellipse(-1, -1, len * 0.7, thick * 0.4, 0, 0, Math.PI * 2);
+            ctx.fill();
+          }
+          ctx.restore();
+        }
+      }
+    }
+
+    // 2. Stained Glass Mosaic with Leaded Borders
+    function renderStainedGlass(t) {
+      renderBaseScene(offCtx, offCanvas.width, offCanvas.height, t, false);
+      const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height).data;
+      const ow = offCanvas.width;
+      const oh = offCanvas.height;
+
+      // Dark lead came canvas
+      ctx.fillStyle = '#06070a';
+      ctx.fillRect(0, 0, W, H);
+
+      const cellSize = Math.max(16, Math.floor(40 - state.density * 0.18));
+      for (let y = 0; y < H; y += cellSize) {
+        for (let x = 0; x < W; x += cellSize) {
+          const ox = Math.min(ow - 1, Math.floor((x / W) * ow));
+          const oy = Math.min(oh - 1, Math.floor((y / H) * oh));
+          const idx = (oy * ow + ox) * 4;
+          let r = imgData[idx], g = imgData[idx + 1], b = imgData[idx + 2];
+
+          // Boost glass vibrancy
+          r = Math.min(255, Math.floor(r * 1.35));
+          g = Math.min(255, Math.floor(g * 1.35));
+          b = Math.min(255, Math.floor(b * 1.35));
+
+          const j1 = Math.sin(x * 0.05 + y * 0.04 + t) * 4.5 * state.jitter;
+          const j2 = Math.cos(x * 0.04 - y * 0.05 + t) * 4.5 * state.jitter;
+
+          // Draw leaded polygon cell
+          ctx.fillStyle = `rgb(${r},${g},${b})`;
+          ctx.strokeStyle = '#050608';
+          ctx.lineWidth = 2.6;
+
+          ctx.beginPath();
+          ctx.moveTo(x + j1, y - j2);
+          ctx.lineTo(x + cellSize + j2, y + j1);
+          ctx.lineTo(x + cellSize - j1, y + cellSize + j2);
+          ctx.lineTo(x - j2, y + cellSize - j1);
+          ctx.closePath();
+          ctx.fill();
+          ctx.stroke();
+
+          // Subtle inner bevel glass sheen
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.18)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+        }
+      }
+    }
+
+    // 3. Real-Time ASCII Art Matrix
+    const asciiChars = ' .:-=+*#%@MW&8B$';
+    function renderASCII(t) {
+      renderBaseScene(offCtx, offCanvas.width, offCanvas.height, t, false);
+      const imgData = offCtx.getImageData(0, 0, offCanvas.width, offCanvas.height).data;
+      const ow = offCanvas.width;
+      const oh = offCanvas.height;
+
+      ctx.fillStyle = '#05070c';
+      ctx.fillRect(0, 0, W, H);
+
+      const fontSize = Math.max(9, Math.floor(20 - state.density * 0.085));
+      ctx.font = `700 ${fontSize}px ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace`;
+      ctx.textBaseline = 'top';
+
+      const colW = fontSize * 0.62;
+      const cols = Math.floor(W / colW);
+      const rows = Math.floor(H / fontSize);
+
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          const px = c * colW;
+          const py = r * fontSize;
+          const ox = Math.min(ow - 1, Math.floor((px / W) * ow));
+          const oy = Math.min(oh - 1, Math.floor((py / H) * oh));
+          const idx = (oy * ow + ox) * 4;
+          const R = imgData[idx], G = imgData[idx + 1], B = imgData[idx + 2];
+          const lum = (0.299 * R + 0.587 * G + 0.114 * B) / 255;
+
+          if (lum < 0.06) continue;
+
+          const charIdx = Math.min(asciiChars.length - 1, Math.floor(lum * asciiChars.length));
+          const glyph = asciiChars[charIdx];
+
+          // Phosphor matrix tinting
+          ctx.fillStyle = `rgb(${Math.min(255, R + 45)}, ${Math.min(255, G + 45)}, ${Math.min(255, B + 60)})`;
+          ctx.fillText(glyph, px, py);
+        }
+      }
+    }
+
+    // ========================================================================
+    // PROCEDURAL GHIBLI WEB AUDIO SYNTHESIZER (HIRAJOSHI SCALE & SOFT DRONE)
+    // ========================================================================
+    let audioCtx = null;
+    let droneGain = null;
+    let nextNoteTime = 0;
+
+    // Authentic Japanese Hirajoshi Scale Pentatonic (D - Eb - G - Ab - C) across 3 octaves
+    const hirajoshiScale = [
+      { name: 'D3', freq: 146.83 },
+      { name: 'Eb3', freq: 155.56 },
+      { name: 'G3', freq: 196.00 },
+      { name: 'Ab3', freq: 207.65 },
+      { name: 'C4', freq: 261.63 },
+      { name: 'D4', freq: 293.66 },
+      { name: 'Eb4', freq: 311.13 },
+      { name: 'G4', freq: 392.00 },
+      { name: 'Ab4', freq: 415.30 },
+      { name: 'C5', freq: 523.25 },
+      { name: 'D5', freq: 587.33 },
+      { name: 'Eb5', freq: 622.25 },
+      { name: 'G5', freq: 783.99 },
+      { name: 'Ab5', freq: 830.61 },
+      { name: 'C6', freq: 1046.50 }
+    ];
+
+    function initAudio() {
+      if (audioCtx) return;
+      const AudioClass = window.AudioContext || window.webkitAudioContext;
+      audioCtx = new AudioClass();
+
+      // Continuous Ambient Drone (D2 & G2 Hirajoshi Root/Fifth Pad)
+      const droneOsc1 = audioCtx.createOscillator();
+      const droneOsc2 = audioCtx.createOscillator();
+      const droneFilter = audioCtx.createBiquadFilter();
+      droneGain = audioCtx.createGain();
+
+      droneOsc1.type = 'sawtooth';
+      droneOsc2.type = 'sine';
+      droneOsc1.frequency.setValueAtTime(73.42, audioCtx.currentTime); // D2
+      droneOsc2.frequency.setValueAtTime(110.00, audioCtx.currentTime); // A2
+
+      droneFilter.type = 'lowpass';
+      droneFilter.frequency.setValueAtTime(320, audioCtx.currentTime);
+      droneFilter.Q.setValueAtTime(3.0, audioCtx.currentTime);
+
+      droneGain.gain.setValueAtTime(0.001, audioCtx.currentTime);
+
+      droneOsc1.connect(droneFilter);
+      droneOsc2.connect(droneFilter);
+      droneFilter.connect(droneGain);
+      droneGain.connect(audioCtx.destination);
+
+      droneOsc1.start();
+      droneOsc2.start();
+    }
+
+    function toggleAudio() {
+      initAudio();
+      if (audioCtx.state === 'suspended') audioCtx.resume();
+
+      state.audioEnabled = !state.audioEnabled;
+      const btn = document.getElementById('audioToggleBtn');
+      const icon = document.getElementById('audioIcon');
+      const text = document.getElementById('audioText');
+
+      if (state.audioEnabled) {
+        droneGain.gain.setTargetAtTime(0.07, audioCtx.currentTime, 0.5);
+        btn.classList.add('active-synth');
+        icon.textContent = '🔊';
+        text.textContent = 'Đang phát Nhạc Nền';
+        showToast('Bật Nhạc Nền Hirajoshi Pentatonic Synth');
+      } else {
+        droneGain.gain.setTargetAtTime(0.0001, audioCtx.currentTime, 0.2);
+        btn.classList.remove('active-synth');
+        icon.textContent = '🔇';
+        text.textContent = 'Bật Nhạc Nền (Synth)';
+        document.getElementById('metricNote').textContent = '--';
+        showToast('Đã tắt Nhạc Nền');
+      }
+    }
+
+    function getTimbre() {
+      if (state.style === 'ascii') return 'square';
+      if (state.style === 'sketch') return 'triangle';
+      if (state.style === 'stained') return 'sine';
+      if (state.style === 'impressionist') return 'sawtooth';
+      return 'sine'; // anime
+    }
+
+    function triggerChime(scaleItem, isBright = false) {
+      if (!audioCtx || !state.audioEnabled) return;
+      const now = audioCtx.currentTime;
+
+      const osc = audioCtx.createOscillator();
+      const gain = audioCtx.createGain();
+      const filter = audioCtx.createBiquadFilter();
+
+      osc.type = getTimbre();
+      osc.frequency.setValueAtTime(scaleItem.freq * (isBright ? 2 : 1), now);
+
+      filter.type = 'lowpass';
+      filter.frequency.setValueAtTime(isBright ? 5500 : 2800, now);
+
+      gain.gain.setValueAtTime(0.0001, now);
+      gain.gain.linearRampToValueAtTime(isBright ? 0.16 : 0.09, now + 0.015);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + (isBright ? 1.6 : 1.2));
+
+      osc.connect(filter);
+      filter.connect(gain);
+      gain.connect(audioCtx.destination);
+
+      osc.start(now);
+      osc.stop(now + 1.65);
+
+      document.getElementById('metricNote').textContent = scaleItem.name;
+    }
+
+    // Bright 4-Note Arpeggio on Click
+    function triggerChimeArpeggio() {
+      if (!audioCtx || !state.audioEnabled) return;
+      const baseIdx = Math.min(hirajoshiScale.length - 4, Math.floor(Math.random() * 5) + 3);
+      [0, 1, 2, 3].forEach(offset => {
+        setTimeout(() => {
+          triggerChime(hirajoshiScale[baseIdx + offset], true);
+        }, offset * 70);
+      });
+    }
+
+    // ========================================================================
+    // MAIN RAF ANIMATION LOOP
+    // ========================================================================
+    let t = 0;
+    let lastTime = performance.now();
+    let frameCount = 0;
+    let fpsTimer = performance.now();
+    const fpsMetric = document.getElementById('metricFps');
+
+    function animate(now) {
+      const dt = Math.min(0.05, (now - lastTime) / 1000);
+      lastTime = now;
+
+      if (!state.paused) {
+        t += dt * state.speed;
+
+        // Smooth lantern tracking with swing inertia
+        mouse.vx = (mouse.tx - mouse.x) * 0.15;
+        mouse.vy = (mouse.ty - mouse.y) * 0.15;
+        mouse.x += mouse.vx;
+        mouse.y += mouse.vy;
+        mouse.swing += (mouse.vx * 0.035 - mouse.swing) * 0.12;
+
+        // Procedural Audio Sequencer
+        if (state.audioEnabled && audioCtx) {
+          const interval = (60 / state.tempo) * 0.55;
+          if (audioCtx.currentTime > nextNoteTime) {
+            // Modulate pitch index based on cursor Y height
+            const normY = 1 - Math.max(0, Math.min(1, mouse.y / H));
+            const baseIdx = Math.floor(normY * (hirajoshiScale.length - 3));
+            const pick = hirajoshiScale[Math.min(hirajoshiScale.length - 1, baseIdx + Math.floor(Math.random() * 3))];
+            triggerChime(pick, false);
+            nextNoteTime = audioCtx.currentTime + interval * (0.8 + Math.random() * 0.5);
+          }
+        }
+
+        // Dispatch Selected Art Style
+        if (state.style === 'anime') {
+          renderBaseScene(ctx, W, H, t, false);
+        } else if (state.style === 'sketch') {
+          renderBaseScene(ctx, W, H, t, true);
+        } else if (state.style === 'impressionist') {
+          renderImpressionist(t);
+        } else if (state.style === 'stained') {
+          renderStainedGlass(t);
+        } else if (state.style === 'ascii') {
+          renderASCII(t);
+        }
+      }
+
+      // FPS Counter
+      frameCount++;
+      if (now - fpsTimer >= 500) {
+        const fps = Math.round((frameCount * 1000) / (now - fpsTimer));
+        fpsMetric.textContent = fps;
+        frameCount = 0;
+        fpsTimer = now;
+      }
+
+      requestAnimationFrame(animate);
+    }
+    requestAnimationFrame(animate);
+
+    // ========================================================================
+    // GUI EVENT BINDINGS & TOAST NOTIFICATION
+    // ========================================================================
+    function showToast(msg) {
+      const toast = document.getElementById('toastMsg');
+      toast.textContent = msg;
+      toast.classList.add('visible');
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => {
+        toast.classList.remove('visible');
+      }, 2200);
+    }
+
+    // Style Switcher
+    const styleBadge = document.getElementById('activeStyleBadge');
+    const metricStyle = document.getElementById('metricStyle');
+
+    function setStyle(newStyle) {
+      state.style = newStyle;
+      document.querySelectorAll('.style-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.style === newStyle);
+      });
+      const names = {
+        anime: 'ANIME CEL',
+        sketch: 'INK SKETCH',
+        impressionist: 'IMPRESSIONIST',
+        stained: 'STAINED GLASS',
+        ascii: 'ASCII MATRIX'
+      };
+      styleBadge.textContent = names[newStyle] || newStyle.toUpperCase();
+      metricStyle.textContent = (names[newStyle] || newStyle).toUpperCase();
+      if (state.audioEnabled) triggerChimeArpeggio();
+      showToast(`Đã chuyển phong cách: ${names[newStyle]}`);
+    }
+
+    document.querySelectorAll('.style-btn').forEach(btn => {
+      btn.addEventListener('click', () => setStyle(btn.dataset.style));
+    });
+
+    // Sliders
+    function bindSlider(id, valId, prop, suffix = '') {
+      const el = document.getElementById(id);
+      const valEl = document.getElementById(valId);
+      el.addEventListener('input', () => {
+        state[prop] = parseFloat(el.value);
+        valEl.textContent = el.value + suffix;
+      });
+    }
+
+    bindSlider('slSpeed', 'valSpeed', 'speed', 'x');
+    bindSlider('slCloak', 'valCloak', 'cloakBillow');
+    bindSlider('slMouth', 'valMouth', 'mouthOpen');
+    bindSlider('slDensity', 'valDensity', 'density');
+    bindSlider('slJitter', 'valJitter', 'jitter');
+    bindSlider('slGlow', 'valGlow', 'glow');
+    bindSlider('slTempo', 'valTempo', 'tempo');
+
+    // Audio & Actions
+    document.getElementById('audioToggleBtn').addEventListener('click', toggleAudio);
+
+    // Randomize / Mutate Preset
+    document.getElementById('mutateBtn').addEventListener('click', () => {
+      const styles = ['anime', 'sketch', 'impressionist', 'stained', 'ascii'];
+      const pickStyle = styles[Math.floor(Math.random() * styles.length)];
+      setStyle(pickStyle);
+
+      const randSet = (id, min, max, step) => {
+        const el = document.getElementById(id);
+        const val = (min + Math.random() * (max - min)).toFixed(step < 1 ? 2 : 0);
+        el.value = val;
+        el.dispatchEvent(new Event('input'));
+      };
+
+      randSet('slSpeed', 0.5, 2.2, 0.05);
+      randSet('slCloak', 0.6, 2.2, 0.05);
+      randSet('slMouth', 0.1, 0.85, 0.02);
+      randSet('slJitter', 0.5, 3.5, 0.1);
+      randSet('slGlow', 0.6, 2.0, 0.05);
+      showToast('Đã ngẫu nhiên hóa các tham số!');
+    });
+
+    // Pause / Resume
+    const pauseBtn = document.getElementById('pauseBtn');
+    const pauseText = document.getElementById('pauseText');
+    pauseBtn.addEventListener('click', () => {
+      state.paused = !state.paused;
+      pauseText.textContent = state.paused ? 'Tiếp tục' : 'Tạm dừng';
+      showToast(state.paused ? 'Đã tạm dừng hoạt ảnh' : 'Đã tiếp tục hoạt ảnh');
+    });
+
+    // Save PNG Snapshot
+    document.getElementById('snapshotBtn').addEventListener('click', () => {
+      const link = document.createElement('a');
+      link.download = `kaonashi-procedural-${state.style}-${Date.now()}.png`;
+      link.href = canvas.toDataURL('image/png');
+      link.click();
+      showToast('Đã lưu ảnh PNG độ phân giải cao!');
+    });
+
+    // Collapse Control Panel
+    const controlPanel = document.getElementById('controlPanel');
+    document.getElementById('collapseBtn').addEventListener('click', () => {
+      controlPanel.classList.toggle('collapsed');
+    });
+
+    // Keyboard Shortcuts (1-5 for styles, M for audio, Space for pause)
+    window.addEventListener('keydown', e => {
+      if (e.key === '1') setStyle('anime');
+      else if (e.key === '2') setStyle('sketch');
+      else if (e.key === '3') setStyle('impressionist');
+      else if (e.key === '4') setStyle('stained');
+      else if (e.key === '5') setStyle('ascii');
+      else if (e.key === 'm' || e.key === 'M') toggleAudio();
+      else if (e.key === ' ') {
+        e.preventDefault();
+        pauseBtn.click();
+      }
+    });
+
+  })();
+  </script>
+  <a href="../../index.html" style="position:fixed;bottom:12px;left:12px;z-index:9999;padding:6px 12px;border-radius:999px;background:rgba(15,23,42,.88);border:1px solid rgba(56,189,248,.45);color:#38bdf8;font:600 12px/1.2 system-ui,sans-serif;text-decoration:none;backdrop-filter:blur(6px)">← All Demos</a>
+</body>
+</html>

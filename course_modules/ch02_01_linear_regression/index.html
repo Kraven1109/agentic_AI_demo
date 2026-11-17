@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="description" content="Phòng thí nghiệm tương tác Hồi quy Tuyến tính (Đường cong Preston 154 quốc gia, OLS, Hạ gradient và Biến đổi Log) — Học phần Trí tuệ nhân tạo và Ứng dụng UTH.">
+<title>Hồi quy tuyến tính — Đường cong Preston | AI UTH</title>
+<style>
+:root{
+  --bg:#0a1120; --bg2:#0e1730; --card:rgba(148,180,255,.055);
+  --line:rgba(148,180,255,.14); --txt:#e6edf7; --mut:#93a4c3;
+  --cyan:#22d3ee; --cyan2:#0ea5b7; --gold:#fbbf24; --rose:#fb7185; --green:#34d399;
+  --r:16px;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html{-webkit-text-size-adjust:100%}
+body{
+  font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+  background:
+    radial-gradient(1200px 700px at 85% -10%, rgba(34,211,238,.10), transparent 60%),
+    radial-gradient(900px 600px at -10% 110%, rgba(251,191,36,.07), transparent 55%),
+    linear-gradient(180deg,var(--bg),var(--bg2) 60%,var(--bg));
+  color:var(--txt); min-height:100dvh; display:flex; flex-direction:column;
+}
+header{
+  display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+  padding:calc(10px + env(safe-area-inset-top)) 18px 10px;
+}
+.brand{display:flex; align-items:center; gap:12px; min-width:0}
+.logo{
+  width:44px; height:44px; border-radius:12px; flex:0 0 auto;
+  background:linear-gradient(135deg,var(--cyan),#3b82f6);
+  display:grid; place-items:center; font-size:22px; font-weight:800; color:#04121f;
+  box-shadow:0 6px 22px rgba(34,211,238,.35);
+}
+.brand h1{font-size:clamp(16px,2.6vw,21px); letter-spacing:.2px; line-height:1.2}
+.brand p{font-size:clamp(11px,1.8vw,13px); color:var(--mut); margin-top:2px}
+.badges{display:flex; gap:8px; flex-wrap:wrap}
+.badges span{
+  font-size:11.5px; color:var(--mut); border:1px solid var(--line); border-radius:999px;
+  padding:6px 11px; background:rgba(255,255,255,.03); white-space:nowrap;
+}
+main{
+  flex:1; display:grid; grid-template-columns:minmax(0,1fr) 372px; gap:14px;
+  padding:4px 14px 10px; min-height:0;
+}
+main>*{min-width:0}
+.card{
+  background:var(--card); border:1px solid var(--line); border-radius:var(--r);
+  backdrop-filter:blur(8px); -webkit-backdrop-filter:blur(8px);
+}
+.chart-card{display:flex; flex-direction:column; min-height:0; overflow:hidden}
+.toolbar{display:flex; align-items:center; gap:10px; flex-wrap:wrap; padding:12px 14px 8px}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:12px; overflow:hidden; background:rgba(0,0,0,.25)}
+.seg button{
+  appearance:none; border:0; background:transparent; color:var(--mut); cursor:pointer;
+  font:inherit; font-size:13px; padding:9px 13px; min-height:40px; transition:.18s;
+}
+.seg button.on{background:linear-gradient(135deg,rgba(34,211,238,.22),rgba(59,130,246,.22)); color:var(--txt); font-weight:600}
+select{
+  appearance:none; font:inherit; font-size:13px; color:var(--txt); cursor:pointer;
+  background:rgba(0,0,0,.3); border:1px solid var(--line); border-radius:12px;
+  padding:9px 34px 9px 12px; min-height:40px;
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%2393a4c3' fill='none' stroke-width='1.6'/%3E%3C/svg%3E");
+  background-repeat:no-repeat; background-position:right 12px center;
+}
+.canvas-wrap{position:relative; flex:1; min-height:300px}
+canvas#chart{position:absolute; inset:0; width:100%; height:100%; display:block; touch-action:none}
+#tooltip{
+  position:absolute; pointer-events:none; opacity:0; transition:opacity .12s;
+  background:rgba(6,12,24,.92); border:1px solid var(--line); border-radius:10px;
+  padding:8px 11px; font-size:12px; line-height:1.5; max-width:230px; z-index:5;
+  box-shadow:0 8px 24px rgba(0,0,0,.5);
+}
+#tooltip b{color:var(--gold)}
+.stats{display:flex; gap:8px; flex-wrap:wrap; padding:8px 14px 12px}
+.chip{
+  border:1px solid var(--line); border-radius:10px; padding:6px 10px; font-size:12.5px;
+  background:rgba(0,0,0,.22); color:var(--mut);
+}
+.chip b{color:var(--txt); font-variant-numeric:tabular-nums}
+.chip.hl b{color:var(--cyan)}
+.panel{display:flex; flex-direction:column; gap:12px; overflow-y:auto; padding:2px; min-height:0}
+.pane{padding:14px}
+.pane h2{font-size:14px; margin-bottom:8px; display:flex; align-items:center; gap:8px}
+.pane h2 .dot{width:8px; height:8px; border-radius:50%; background:var(--cyan); box-shadow:0 0 10px var(--cyan)}
+.pane p{font-size:12.8px; color:var(--mut); line-height:1.62; margin-bottom:8px}
+.pane p:last-child{margin-bottom:0}
+.pane .eq{
+  font-size:14px; color:var(--txt); background:rgba(0,0,0,.3); border:1px solid var(--line);
+  border-radius:10px; padding:9px 12px; margin:8px 0; font-variant-numeric:tabular-nums;
+}
+.row{display:flex; align-items:center; gap:10px; margin:10px 0}
+.row label{font-size:12.5px; color:var(--mut); min-width:74px}
+.row output{font-size:12.5px; color:var(--txt); min-width:86px; text-align:right; font-variant-numeric:tabular-nums}
+.row input[type=range]{min-width:0}
+.row select{min-width:0; max-width:100%}
+input[type=range]{
+  flex:1; appearance:none; height:34px; background:transparent; accent-color:var(--cyan); cursor:pointer;
+}
+input[type=range]::-webkit-slider-runnable-track{height:6px; border-radius:3px; background:rgba(148,180,255,.2)}
+input[type=range]::-webkit-slider-thumb{appearance:none; width:22px; height:22px; border-radius:50%; background:var(--cyan); margin-top:-8px; box-shadow:0 2px 10px rgba(34,211,238,.5)}
+.btns{display:flex; gap:8px; flex-wrap:wrap; margin-top:10px}
+.btn{
+  appearance:none; border:1px solid var(--line); border-radius:11px; cursor:pointer; font:inherit;
+  font-size:13px; padding:10px 15px; min-height:42px; color:var(--txt); background:rgba(0,0,0,.28); transition:.18s;
+}
+.btn:hover{border-color:var(--cyan)}
+.btn.primary{background:linear-gradient(135deg,var(--cyan),#3b82f6); color:#04121f; font-weight:700; border:0}
+.btn.warn{color:var(--gold)}
+table{width:100%; border-collapse:collapse; font-size:12px; margin-top:8px; font-variant-numeric:tabular-nums}
+th,td{padding:5px 7px; text-align:right; border-bottom:1px solid rgba(148,180,255,.08); color:var(--mut)}
+th:first-child,td:first-child{text-align:left}
+th{color:var(--txt); font-weight:600}
+#gdCanvas{width:100%; height:150px; display:block; border:1px solid var(--line); border-radius:10px; margin-top:8px; background:rgba(0,0,0,.3)}
+.verdict{font-size:12.8px; border-radius:10px; padding:8px 11px; margin-top:8px; border:1px solid var(--line)}
+.verdict.bad{color:var(--rose); background:rgba(251,113,133,.08)}
+.verdict.good{color:var(--green); background:rgba(52,211,153,.08)}
+.predbox{font-size:13px; line-height:1.6; background:rgba(0,0,0,.25); border:1px solid var(--line); border-radius:10px; padding:10px 12px; margin-top:10px}
+.predbox b{color:var(--gold)}
+footer{
+  padding:10px 18px calc(12px + env(safe-area-inset-bottom)); color:var(--mut); font-size:11.5px; line-height:1.6;
+  border-top:1px solid var(--line);
+}
+footer a{color:var(--cyan); text-decoration:none}
+@media (max-width:980px){
+  main{grid-template-columns:1fr; padding:4px 10px 10px}
+  .canvas-wrap{min-height:0; flex:0 0 52svh}
+  .panel{overflow:visible}
+  .chart-card{order:0}
+}
+@media (max-width:420px){
+  header{padding-left:12px; padding-right:12px}
+  .toolbar{padding:10px 10px 6px}
+  .stats{padding:6px 10px 10px}
+  .seg button{padding:8px 10px; font-size:12px}
+}
+</style>
+</head>
+<body>
+<header>
+  <div class="brand">
+    <div class="logo">ŷ</div>
+    <div>
+      <h1>Đường cong Preston — Hồi quy tuyến tính với số liệu kinh tế thật</h1>
+      <p>GDP bình quân đầu người (PPP) và tuổi thọ trung bình của 154 quốc gia · Học phần Trí tuệ nhân tạo và Ứng dụng — UTH</p>
+    </div>
+  </div>
+  <div class="badges">
+    <a href="../../index.html" style="font-size:11.5px; color:var(--cyan); text-decoration:none; font-weight:700; border:1px solid var(--cyan); border-radius:999px; padding:6px 12px; background:rgba(34,211,238,.10); white-space:nowrap;">← All Demos</a>
+    <span>154 quốc gia</span><span>World Bank 2023–2024</span><span>OLS · Gradient Descent · R²</span>
+  </div>
+</header>
+
+<main>
+  <section class="card chart-card">
+    <div class="toolbar">
+      <div class="seg" id="modeSeg" role="tablist" aria-label="Chế độ">
+        <button data-mode="ols" class="on">Đường khớp OLS</button>
+        <button data-mode="manual">Chỉnh tay a, b</button>
+        <button data-mode="gd">Hạ gradient</button>
+      </div>
+      <div class="seg" id="xSeg" aria-label="Trục hoành">
+        <button data-x="raw" class="on">x = GDP</button>
+        <button data-x="ln">x = ln(GDP)</button>
+      </div>
+      <select id="ySel" aria-label="Biến phụ thuộc">
+        <option value="life" selected>y = Tuổi thọ (năm)</option>
+        <option value="elec">y = Điện/người (kg dầu)</option>
+        <option value="co2">y = CO₂/người (t CO₂e)</option>
+      </select>
+    </div>
+    <div class="canvas-wrap" id="wrap">
+      <canvas id="chart"></canvas>
+      <div id="tooltip"></div>
+    </div>
+    <div class="stats" id="stats"></div>
+  </section>
+
+  <aside class="panel">
+    <div class="card pane" id="paneIntro">
+      <h2><span class="dot"></span>Hồi quy tuyến tính (Linear Regression)</h2>
+      <p>Mô hình khớp đường thẳng <math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mover><mi>y</mi><mo>^</mo></mover><mo>=</mo><mi>a</mi><mo>+</mo><mi>b</mi><mi>x</mi></mrow></math> sao cho tổng bình phương phần dư nhỏ nhất — phương pháp bình phương tối thiểu (Ordinary Least Squares, OLS), với nghiệm đóng <math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>b</mi><mo>=</mo><mfrac><mrow><mo>∑</mo><mo stretchy="false">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>−</mo><mover><mi>x</mi><mo>¯</mo></mover><mo stretchy="false">)</mo><mo stretchy="false">(</mo><msub><mi>y</mi><mi>i</mi></msub><mo>−</mo><mover><mi>y</mi><mo>¯</mo></mover><mo stretchy="false">)</mo></mrow><mrow><mo>∑</mo><msup><mrow><mo stretchy="false">(</mo><msub><mi>x</mi><mi>i</mi></msub><mo>−</mo><mover><mi>x</mi><mo>¯</mo></mover><mo stretchy="false">)</mo></mrow><mn>2</mn></msup></mrow></mfrac></mrow></math> và <math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>a</mi><mo>=</mo><mover><mi>y</mi><mo>¯</mo></mover><mo>−</mo><mi>b</mi><mover><mi>x</mi><mo>¯</mo></mover></mrow></math>.</p>
+      <p>Đối chuẩn từ Lab SSoT (<code>01_hoi_quy_tuyen_tinh_california.py</code>): với <math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>x</mi><mo>=</mo><mtext>GDP</mtext></mrow></math> thô, hệ số xác định đạt <b>0.562</b> (MSE = <b>20.00</b>, <math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>a</mi><mo>=</mo><mn>68.7</mn></mrow></math>). Khi bật biến đổi log <math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>x</mi><mo>=</mo><mi>ln</mi><mo stretchy="false">(</mo><mtext>GDP</mtext><mo stretchy="false">)</mo></mrow></math>, hệ số xác định tăng lên <b>0.753</b> (MSE giảm còn <b>11.27</b>, <math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>a</mi><mo>=</mo><mn>19.1</mn></mrow></math>, <math xmlns="http://www.w3.org/1998/Math/MathML"><mrow><mi>b</mi><mo>=</mo><mn>5.621</mn></mrow></math>).</p>
+    </div>
+
+    <div class="card pane" id="paneManual" hidden>
+      <h2><span class="dot" style="background:var(--gold);box-shadow:0 0 10px var(--gold)"></span>Thử làm OLS bằng tay</h2>
+      <p>Kéo hai slider để tự đặt a và b. Hàm mất mát (loss function) MSE — trung bình bình phương phần dư — chỉ đạt giá trị nhỏ nhất tại đúng nghiệm OLS.</p>
+      <div class="row"><label>a (hệ số chặn)</label><input type="range" id="sA" min="0" max="1000" value="500"><output id="oA"></output></div>
+      <div class="row"><label>b (hệ số góc)</label><input type="range" id="sB" min="0" max="1000" value="500"><output id="oB"></output></div>
+      <div class="verdict" id="manualVerdict"></div>
+    </div>
+
+    <div class="card pane" id="paneGd" hidden>
+      <h2><span class="dot" style="background:var(--rose);box-shadow:0 0 10px var(--rose)"></span>Hạ gradient (Gradient Descent)</h2>
+      <p>Khi không có nghiệm đóng, ta cập nhật a, b ngược hướng gradient của MSE với tốc độ học η. Contour bên dưới là MSE trên mặt phẳng (a, b) trong không gian đã chuẩn hóa (feature scaling); quỹ đạo vàng hội tụ về nghiệm OLS.</p>
+      <div class="row"><label>Tốc độ học η</label>
+        <select id="etaSel"><option>0.02</option><option selected>0.1</option><option>0.3</option></select>
+      </div>
+      <div class="btns">
+        <button class="btn primary" id="gdRun">Chạy</button>
+        <button class="btn" id="gdStep">Một bước</button>
+        <button class="btn warn" id="gdReset">Đặt lại</button>
+      </div>
+      <canvas id="gdCanvas"></canvas>
+      <table id="gdTable"><thead><tr><th>Bước</th><th>a</th><th>b</th><th>MSE</th></tr></thead><tbody></tbody></table>
+    </div>
+
+    <div class="card pane" id="panePred">
+      <h2><span class="dot" style="background:var(--green);box-shadow:0 0 10px var(--green)"></span>Dự đoán và phần dư (residual)</h2>
+      <p>Chọn quốc gia hoặc kéo slider GDP để đọc giá trị mô hình dự đoán ŷ và phần dư y − ŷ của quốc gia đó.</p>
+      <div class="row"><label>Quốc gia</label><select id="cSel" style="flex:1"></select></div>
+      <div class="row"><label>GDP/người</label><input type="range" id="sX" min="0" max="1000" value="100"><output id="oX"></output></div>
+      <div class="predbox" id="predBox"></div>
+    </div>
+  </aside>
+</main>
+
+<footer>
+  Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Số liệu kinh tế vĩ mô từ World Bank API (<a href="https://api.worldbank.org">api.worldbank.org</a>, 154 quốc gia: GDP bình quân đầu người PPP, Tuổi thọ trung bình, Điện tiêu thụ và Phát thải CO₂).
+</footer>
+
+<script>
+"use strict";
+const LAB = {"source_lab":"lab","cells":[13],"vars":{"PRESTON_DATA":[["MOZ","Mozambique",1500.7,358.7,63.6,0.32],["COD","Congo, Dem. Rep.",1601.7,418.0,61.9,0.06],["MDG","Madagascar",1659.2,307.5,63.6,0.15],["NER","Niger",1795.7,161.4,61.2,0.12],["SDN","Sudan",1861.4,411.9,66.3,0.43],["TCD","Chad",2430.7,198.9,55.1,0.15],["BFA","Burkina Faso",2548.5,313.0,61.1,0.27],["HTI","Haiti",2783.8,370.3,64.9,0.29],["UGA","Uganda",2879.7,488.2,68.3,0.17],["ETH","Ethiopia",2892.2,378.6,67.3,0.15],["RWA","Rwanda",3325.0,369.9,67.8,0.16],["TGO","Togo",3351.2,479.3,62.7,0.31],["ZMB","Zambia",3708.1,791.6,66.3,0.55],["TZA","Tanzania",3713.3,406.6,67.0,0.32],["BEN","Benin",3901.3,375.8,60.8,0.49],["SEN","Senegal",4477.8,316.0,68.7,0.76],["TJK","Tajikistan",4755.9,374.5,71.8,0.9],["SSA","Sub-Saharan Africa (excluding high income)",4870.6,484.6,62.6,0.7],["TSS","Sub-Saharan Africa (IDA & IBRD countries)",4872.9,484.6,62.6,0.7],["CMR","Cameroon",4916.9,374.1,63.7,0.36],["NPL","Nepal",5047.4,429.2,70.4,0.52],["IDA","IDA total",5093.9,408.0,65.5,0.57],["ZWE","Zimbabwe",5211.9,447.4,62.8,0.77],["MMR","Myanmar",5276.3,398.3,66.9,0.58],["PAK","Pakistan",5502.1,418.4,67.6,0.84],["KEN","Kenya",5841.6,541.1,63.6,0.38],["COG","Congo, Rep.",6152.6,592.0,65.8,1.27],["HND","Honduras",6590.8,573.3,72.9,1.11],["CIV","Cote d'Ivoire",6747.0,483.9,61.9,0.58],["KHM","Cambodia",7011.6,498.3,70.7,1.09],["GHA","Ghana",7072.8,361.6,65.5,0.69],["KGZ","Kyrgyz Republic",7210.6,643.2,72.2,1.44],["NIC","Nicaragua",7661.1,603.8,74.9,0.81],["NGA","Nigeria",7994.0,333.7,54.5,0.55],["BGD","Bangladesh",8486.8,308.3,74.7,0.69],["LAO","Lao PDR",8600.3,847.1,69.0,3.36],["AGO","Angola",8752.8,437.6,64.6,0.74],["MAR","Morocco",9162.7,603.0,75.3,1.86],["TSA","South Asia (IDA & IBRD)",9307.1,675.8,72.3,1.91],["IND","India",9416.1,727.9,72.0,2.1],["TMN","Middle East, North Africa, Afghanistan & Pakistan (IDA & IBRD)",10015.8,1047.3,71.3,2.73],["NAM","Namibia",10276.4,690.5,67.4,1.22],["PHL","Philippines",10378.2,551.0,69.8,1.41],["SWZ","Eswatini",10386.2,965.8,64.1,0.88],["JOR","Jordan",10468.3,757.5,77.8,2.1],["LBN","Lebanon",10469.2,652.7,77.8,1.87],["UZB","Uzbekistan",10997.2,1381.8,72.4,3.72],["BOL","Bolivia",11329.2,799.7,68.6,1.99],["JAM","Jamaica",11340.3,962.8,71.5,2.71],["SLV","El Salvador",11647.0,768.7,72.1,1.46],["LBY","Libya",12583.8,1543.8,69.3,8.65],["GTM","Guatemala",12644.0,887.9,72.6,1.11],["IRQ","Iraq",12725.0,1415.2,72.3,5.17],["TUN","Tunisia",12774.9,956.0,76.5,2.56],["ZAF","South Africa",13597.7,1938.3,66.1,6.76],["LKA","Sri Lanka",13793.1,463.7,77.5,0.98],["ECU","Ecuador",13922.4,907.4,77.4,2.6],["MEA","Middle East, North Africa, Afghanistan & Pakistan",14391.4,1607.1,72.1,4.09],["VNM","Viet Nam",14396.4,1023.1,74.6,3.89],["GNQ","Equatorial Guinea",14997.8,1278.5,63.7,2.58],["MIC","Middle income",15025.1,1351.9,72.7,4.01],["DZA","Algeria",15501.9,1499.5,76.3,4.13],["PER","Peru",15708.8,826.5,77.7,1.92],["PRY","Paraguay",16367.5,1045.0,73.8,1.13],["UKR","Ukraine",16371.4,1479.5,73.4,3.23],["MDA","Moldova",16393.9,1422.6,71.2,3.34],["EGY","Egypt, Arab Rep.",16798.2,902.5,71.6,2.41],["MNG","Mongolia",16842.7,1914.2,72.1,7.8],["IRN","Iran, Islamic Rep.",17484.1,3288.2,77.7,9.01],["BWA","Botswana",18107.6,1286.5,69.2,2.71],["IBD","IBRD only",18338.1,1713.2,74.5,5.11],["TKM","Turkmenistan",18470.7,4841.3,70.1,12.86],["COL","Colombia",18481.8,863.8,77.7,1.77],["GAB","Gabon",18923.7,2092.4,68.3,2.06],["LAC","Latin America & Caribbean (excluding high income)",19115.0,1257.5,75.4,2.58],["SUR","Suriname",19179.1,1738.8,73.6,3.97],["BRA","Brazil",19652.4,1432.7,75.8,2.27],["TLA","Latin America & the Caribbean (IDA & IBRD countries)",19845.1,1310.8,75.6,2.66],["ARM","Armenia",20078.8,1347.6,77.5,2.53],["EAP","East Asia & Pacific (excluding high income)",20454.0,2128.4,75.9,7.06],["BIH","Bosnia and Herzegovina",20578.5,2270.7,77.8,6.54],["TEA","East Asia & Pacific (IDA & IBRD countries)",20684.2,2147.1,75.9,7.11],["WLD","World",21393.2,1852.6,73.3,4.68],["ALB","Albania",21641.0,884.6,79.6,1.75],["THA","Thailand",21882.2,1867.5,76.4,3.84],["MEX","Mexico",21970.4,1442.0,75.1,3.67],["AZE","Azerbaijan",22090.5,1714.0,74.4,4.11],["CHN","China",23841.5,2676.5,78.0,9.23],["GEO","Georgia",24146.6,1543.6,74.5,3.65],["MKD","North Macedonia",24203.2,1476.1,75.3,4.39],["DOM","Dominican Republic",24229.9,960.9,73.7,2.89],["ARG","Argentina",26772.0,1808.8,77.4,4.17],["CRI","Costa Rica",27325.0,1009.2,80.8,1.59],["MUS","Mauritius",27844.9,1095.7,73.4,3.46],["BLR","Belarus",29135.9,2862.5,74.2,5.86],["CHL","Chile",30267.6,2082.0,81.2,3.92],["TTO","Trinidad and Tobago",31960.2,10999.5,73.5,19.71],["URY","Uruguay",32149.5,1623.8,78.1,2.42],["TEC","Europe & Central Asia (IDA & IBRD countries)",32713.0,3159.8,74.7,7.97],["MYS","Malaysia",34116.2,3035.4,76.7,8.04],["BGR","Bulgaria",34221.4,2968.7,75.8,5.73],["KAZ","Kazakhstan",35974.0,3506.5,74.4,12.56],["TUR","Turkiye",36154.5,1841.6,77.2,5.23],["PAN","Panama",36394.9,1062.7,79.6,2.86],["OMN","Oman",36721.1,5920.0,80.0,18.96],["GRC","Greece",37474.3,1957.6,81.7,4.92],["LVA","Latvia",37615.1,2256.1,75.4,3.66],["SVK","Slovak Republic",40302.5,3089.1,78.1,5.74],["ROU","Romania",40503.8,1655.2,76.4,3.69],["HUN","Hungary",40747.2,2672.9,76.6,4.48],["EST","Estonia",41185.8,3559.0,78.8,8.37],["RUS","Russian Federation",41891.2,5707.2,73.3,13.55],["PRT","Portugal",42228.2,1949.9,82.3,3.54],["HRV","Croatia",42828.8,2155.0,78.5,4.84],["CEB","Central Europe and the Baltics",43043.9,2683.2,77.8,6.09],["POL","Poland",45153.0,2798.0,78.3,7.65],["KWT","Kuwait",46664.2,9132.6,83.2,22.7],["ISR","Israel",47388.7,2501.4,83.2,6.14],["LTU","Lithuania",47462.0,2453.9,77.3,4.52],["JPN","Japan",47479.8,3129.7,84.0,8.05],["CZE","Czechia",47972.5,3895.6,79.8,7.88],["NZL","New Zealand",48325.4,3764.5,81.8,6.11],["ESP","Spain",48460.3,2408.9,83.9,4.57],["SVN","Slovenia",48658.0,3045.9,81.9,5.95],["CYP","Cyprus",52861.8,1682.7,81.6,5.36],["ITA","Italy",53284.9,2411.7,83.4,5.16],["GBR","United Kingdom",53412.1,2253.3,81.2,4.45],["EUU","European Union",54341.6,2922.8,81.4,5.59],["FRA","France",54799.3,3100.2,82.8,4.16],["KOR","Korea, Rep.",55070.9,5412.0,83.4,11.42],["FIN","Finland",55901.3,5684.0,81.6,5.89],["EMU","Euro area",56054.1,2945.5,82.1,5.52],["CAN","Canada",57534.1,7575.3,81.6,14.16],["BHR","Bahrain",59060.2,10178.2,81.3,24.53],["AUS","Australia",60309.6,4942.2,83.1,14.16],["MLT","Malta",62398.5,1456.2,83.4,3.23],["SWE","Sweden",62558.4,4323.7,83.3,3.48],["DEU","Germany",62654.6,3261.9,81.0,7.08],["SAU","Saudi Arabia",63194.4,7525.3,78.7,18.85],["BEL","Belgium",63311.3,4368.4,82.4,7.28],["AUT","Austria",63788.0,3486.7,81.8,6.4],["HKG","Hong Kong SAR, China",66186.0,1565.1,85.2,4.53],["ISL","Iceland",68230.4,15806.8,82.5,8.35],["ARE","United Arab Emirates",69701.8,8303.3,82.9,18.38],["NLD","Netherlands",70493.9,3570.1,81.9,6.88],["DNK","Denmark",71034.6,2580.5,81.8,4.41],["USA","United States",75698.2,6512.1,78.4,13.71],["BRN","Brunei Darussalam",79071.7,9894.8,75.3,21.14],["CHE","Switzerland",85448.1,2591.9,84.2,3.79],["NOR","Norway",94803.7,4651.5,83.0,7.54],["QAT","Qatar",111314.3,16875.6,82.4,48.64],["IRL","Ireland",118833.3,2600.2,82.8,6.19],["LUX","Luxembourg",128475.3,4862.9,83.3,10.42],["SGP","Singapore",134548.8,5785.0,83.1,9.48]],"n_countries":154,"a_raw":68.73577630677,"b_raw":0.00019187558509211605,"r_raw":0.7499227765,"r2_raw":0.5623841707,"mse_raw":20.003034271,"a_ln":19.10956562403123,"b_ln":5.62071260690713,"r_ln":0.8679544041,"r2_ln":0.7533448476,"mse_ln":11.2743898558,"vnm_gdp":14396.4,"vnm_life":74.6,"vnm_pred_raw":71.49809398,"vnm_res_raw":3.10190602},"derived":{}};
+const DATA = LAB.vars.PRESTON_DATA; // [iso3, name, gdp, elec, life, co2]
+const YMETA = {
+  life:{k:4, label:"Tuổi thọ trung bình (năm)", dec:1},
+  elec:{k:3, label:"Điện tiêu thụ bình quân (kg dầu quy đổi)", dec:0},
+  co2:{k:5, label:"CO₂ phát thải bình quân (t CO₂e)", dec:2}
+};
+const fmt = (v,d)=> v.toLocaleString("en-US",{minimumFractionDigits:d, maximumFractionDigits:d});
+const fmtB = v => Math.abs(v)<0.01 ? v.toPrecision(3) : fmt(v, Math.abs(v)<10?3:1);
+
+const state = { mode:"ols", xMode:"raw", yKey:"life",
+  manual:{a:0,b:0}, gd:{a:0.5,b:-0.5,path:[],running:false,raf:0,done:false},
+  pred:{iso3:"VNM", x:null}, hover:null, t0:performance.now() };
+
+const cv = document.getElementById("chart"), ctx = cv.getContext("2d");
+const wrap = document.getElementById("wrap"), tip = document.getElementById("tooltip");
+let W=0,H=0,DPR=1;
+
+function xOf(r){ return state.xMode==="raw" ? r[2] : Math.log(r[2]); }
+function yOf(r){ return r[YMETA[state.yKey].k]; }
+
+function stats(a,b){
+  const xs=DATA.map(xOf), ys=DATA.map(yOf), n=xs.length;
+  const mx=xs.reduce((s,v)=>s+v,0)/n, my=ys.reduce((s,v)=>s+v,0)/n;
+  let sxx=0,sxy=0,syy=0;
+  for(let i=0;i<n;i++){const dx=xs[i]-mx,dy=ys[i]-my; sxx+=dx*dx; sxy+=dx*dy; syy+=dy*dy;}
+  const isLifeRaw = state.yKey==="life" && state.xMode==="raw";
+  const isLifeLn = state.yKey==="life" && state.xMode==="ln";
+  const bo = isLifeRaw ? LAB.vars.b_raw : (isLifeLn ? LAB.vars.b_ln : sxy/sxx);
+  const ao = isLifeRaw ? LAB.vars.a_raw : (isLifeLn ? LAB.vars.a_ln : my-bo*mx);
+  const r = isLifeRaw ? LAB.vars.r_raw : (isLifeLn ? LAB.vars.r_ln : sxy/Math.sqrt(sxx*syy));
+  const r2 = isLifeRaw ? LAB.vars.r2_raw : (isLifeLn ? LAB.vars.r2_ln : r*r);
+  const A = a===undefined?ao:a, B = b===undefined?bo:b;
+  let mse=0; for(let i=0;i<n;i++){const e=ys[i]-(A+B*xs[i]); mse+=e*e;} mse/=n;
+  if(a===undefined && isLifeRaw) mse = LAB.vars.mse_raw;
+  if(a===undefined && isLifeLn) mse = LAB.vars.mse_ln;
+  let mseO=isLifeRaw ? LAB.vars.mse_raw : (isLifeLn ? LAB.vars.mse_ln : 0);
+  if(!isLifeRaw && !isLifeLn){ for(let i=0;i<n;i++){const e=ys[i]-(ao+bo*xs[i]); mseO+=e*e;} mseO/=n; }
+  return {a:ao,b:bo,r,r2,mse,mseO,mx,my,sxx,syy,n};
+}
+
+function domains(st){
+  const ys=DATA.map(yOf);
+  let x0,x1;
+  if(state.xMode==="raw"){ x0=0; x1=Math.max(...DATA.map(r=>r[2]))*1.06; }
+  else { const gd=DATA.map(r=>r[2]); x0=Math.log(Math.min(...gd))-0.18; x1=Math.log(Math.max(...gd))+0.18; }
+  const ymin=Math.min(...ys), ymax=Math.max(...ys), pad=(ymax-ymin)*0.08;
+  return {x0,x1,y0:ymin-pad,y1:ymax+pad};
+}
+
+function fitCanvas(){
+  const rc = wrap.getBoundingClientRect();
+  DPR = window.devicePixelRatio||1;
+  W = Math.max(1,Math.round(rc.width)); H = Math.max(1,Math.round(rc.height));
+  cv.width = Math.round(W*DPR); cv.height = Math.round(H*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+
+let S=1;
+const M = ()=>({l: (W<560?46:62)*S, r:14*S, t:14*S, b: (W<560?38:44)*S});
+function px(x,d){const m=M(); return m.l + (x-d.x0)/(d.x1-d.x0)*(W-m.l-m.r);}
+function py(y,d){const m=M(); return H-m.b - (y-d.y0)/(d.y1-d.y0)*(H-m.t-m.b);}
+
+function niceStep(range){
+  const raw=range/5, p=Math.pow(10,Math.floor(Math.log10(raw)));
+  for(const m of [1,2,2.5,5,10]) if(raw<=m*p) return m*p;
+  return 10*p;
+}
+
+function draw(){
+  const st = currentStats(), d = domains(st);
+  S = Math.max(1, Math.min(1.7, W/1100));
+  ctx.clearRect(0,0,W,H);
+  const m=M();
+  // grid + axes
+  ctx.font=`${11*S}px system-ui`; ctx.textAlign="center"; ctx.textBaseline="top";
+  const xticks = state.xMode==="raw"
+    ? Array.from({length:Math.floor(d.x1/niceStep(d.x1))+1},(_,i)=>i*niceStep(d.x1))
+    : [1e4,5e4,1e5].filter(v=>Math.log(v)>=d.x0&&Math.log(v)<=d.x1).map(Math.log);
+  for(const t of xticks){
+    const X=px(t,d);
+    ctx.strokeStyle="rgba(148,180,255,.08)"; ctx.beginPath(); ctx.moveTo(X,m.t); ctx.lineTo(X,H-m.b); ctx.stroke();
+    ctx.fillStyle="#93a4c3";
+    ctx.fillText(state.xMode==="raw"?(t===0?"0":(t/1000)+"k"):fmtLabel(Math.exp(t)), X, H-m.b+8);
+  }
+  const ys=niceStep(d.y1-d.y0);
+  ctx.textAlign="right"; ctx.textBaseline="middle";
+  for(let t=Math.ceil(d.y0/ys)*ys; t<=d.y1; t+=ys){
+    const Y=py(t,d);
+    ctx.strokeStyle="rgba(148,180,255,.08)"; ctx.beginPath(); ctx.moveTo(m.l,Y); ctx.lineTo(W-m.r,Y); ctx.stroke();
+    ctx.fillStyle="#93a4c3"; ctx.fillText(fmt(t, ys<1?1:0), m.l-8*S, Y);
+  }
+  // axis titles
+  ctx.fillStyle="#93a4c3"; ctx.textAlign="center"; ctx.textBaseline="bottom";
+  ctx.fillText(state.xMode==="raw"?"GDP bình quân đầu người (PPP, international $)":"ln(GDP)", (m.l+W-m.r)/2, H-4*S);
+  ctx.save(); ctx.translate(12*S,(m.t+H-m.b)/2); ctx.rotate(-Math.PI/2); ctx.fillText(YMETA[state.yKey].label,0,0); ctx.restore();
+
+  // regression line
+  const A = state.mode==="manual"?state.manual.a : state.mode==="gd"?gdOrig().a : st.a;
+  const B = state.mode==="manual"?state.manual.b : state.mode==="gd"?gdOrig().b : st.b;
+  const isOls = state.mode==="ols";
+  ctx.lineWidth=2.5;
+  const g=ctx.createLinearGradient(m.l,0,W-m.r,0);
+  if(isOls){g.addColorStop(0,"#22d3ee");g.addColorStop(1,"#3b82f6");}
+  else if(state.mode==="gd"){g.addColorStop(0,"#fbbf24");g.addColorStop(1,"#fb7185");}
+  else {g.addColorStop(0,"#fbbf24");g.addColorStop(1,"#fbbf24");}
+  ctx.strokeStyle=g; ctx.beginPath();
+  ctx.moveTo(px(d.x0,d), py(A+B*d.x0,d)); ctx.lineTo(px(d.x1,d), py(A+B*d.x1,d)); ctx.stroke();
+
+  // residuals for manual mode
+  if(state.mode==="manual"){
+    ctx.strokeStyle="rgba(251,191,36,.35)"; ctx.lineWidth=1;
+    for(const r of DATA){
+      const x=xOf(r), y=yOf(r);
+      ctx.beginPath(); ctx.moveTo(px(x,d),py(y,d)); ctx.lineTo(px(x,d),py(A+B*x,d)); ctx.stroke();
+    }
+  }
+
+  // points
+  for(const r of DATA){
+    const x=px(xOf(r),d), y=py(yOf(r),d);
+    const isVN=r[0]==="VNM", hv=state.hover===r[0];
+    ctx.globalAlpha=hv?1:.85;
+    ctx.fillStyle=hv?"#fbbf24":(isVN?"#fbbf24":"rgba(34,211,238,.85)");
+    ctx.beginPath(); ctx.arc(x,y,(hv||isVN?6:4.2)*S,0,7); ctx.fill();
+    if(isVN){ctx.globalAlpha=1; ctx.strokeStyle="#fbbf24"; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.arc(x,y,10*S,0,7); ctx.stroke();
+      ctx.fillStyle="#fbbf24"; ctx.textAlign="left"; ctx.textBaseline="bottom"; ctx.font=`600 ${12*S}px system-ui`;
+      ctx.fillText("Việt Nam", x+13*S, y-6*S); ctx.font=`${11*S}px system-ui`;}
+  }
+  ctx.globalAlpha=1;
+
+  // prediction marker
+  if(state.pred.x!==null){
+    const r=DATA.find(q=>q[0]===state.pred.iso3);
+    const x=state.pred.x, yh=A+B*x;
+    const X=px(x,d), Y=py(yh,d);
+    ctx.strokeStyle="rgba(52,211,153,.9)"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(X,Y,6*S,0,7); ctx.stroke();
+    if(r && Math.abs(xOf(r)-x)<1e-9){
+      ctx.setLineDash([5,4]); ctx.strokeStyle="rgba(52,211,153,.6)";
+      ctx.beginPath(); ctx.moveTo(X,Y); ctx.lineTo(px(xOf(r),d),py(yOf(r),d)); ctx.stroke(); ctx.setLineDash([]);
+    }
+  }
+}
+function fmtLabel(v){ v=Math.round(v); return v>=1000?(v/1000)+"k":String(v); }
+
+let _st=null,_stKey="";
+function currentStats(){
+  const key=state.xMode+"|"+state.yKey;
+  if(key!==_stKey){_st=stats(); _stKey=key;}
+  return _st;
+}
+
+// ---------- stats bar ----------
+function renderStats(){
+  const st=currentStats();
+  let A=st.a,B=st.b;
+  if(state.mode==="manual"){A=state.manual.a;B=state.manual.b;}
+  if(state.mode==="gd"){const o=gdOrig();A=o.a;B=o.b;}
+  const el=document.getElementById("stats");
+  el.innerHTML =
+    `<span class="chip hl">ŷ = <b>${fmt(A,Math.abs(A)<10?2:1)}</b> + <b>${fmtB(B)}</b>·x</span>`+
+    `<span class="chip">r = <b>${st.r.toFixed(3)}</b></span>`+
+    `<span class="chip">R² = <b>${st.r2.toFixed(3)}</b></span>`+
+    `<span class="chip">MSE = <b>${fmt(state.mode==="ols"?st.mse:(state.mode==="manual"?stats(state.manual.a,state.manual.b).mse:stats(gdOrig().a,gdOrig().b).mse), YMETA[state.yKey].dec===0?0:2)}</b></span>`;
+}
+
+// ---------- mode / controls ----------
+document.getElementById("modeSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  state.mode=b.dataset.mode;
+  document.querySelectorAll("#modeSeg button").forEach(x=>x.classList.toggle("on",x===b));
+  document.getElementById("paneManual").hidden = state.mode!=="manual";
+  document.getElementById("paneGd").hidden = state.mode!=="gd";
+  document.getElementById("paneIntro").hidden = state.mode==="manual"||state.mode==="gd";
+  if(state.mode==="manual") initManual();
+  if(state.mode==="gd") resetGd();
+  renderStats(); draw();
+});
+document.getElementById("xSeg").addEventListener("click",e=>{
+  const b=e.target.closest("button"); if(!b) return;
+  state.xMode=b.dataset.x;
+  document.querySelectorAll("#xSeg button").forEach(x=>x.classList.toggle("on",x===b));
+  _stKey=""; initPred(); renderStats(); draw();
+});
+document.getElementById("ySel").addEventListener("change",e=>{
+  state.yKey=e.target.value; _stKey="";
+  if(state.mode==="manual") initManual();
+  if(state.mode==="gd") resetGd();
+  initPred(); renderStats(); draw();
+});
+
+// ---------- manual ----------
+function initManual(){
+  const st=currentStats();
+  const ys=DATA.map(yOf), lo=Math.min(...ys), hi=Math.max(...ys), pad=(hi-lo)*.35;
+  state._aRange=[Math.max(0,st.a-pad*2), st.a+pad*2];
+  state._bRange=[0, st.b*2];
+  state.manual.a=st.a; state.manual.b=st.b;
+  syncManualSliders();
+}
+function syncManualSliders(){
+  const [a0,a1]=state._aRange,[b0,b1]=state._bRange;
+  document.getElementById("sA").value=Math.round((state.manual.a-a0)/(a1-a0)*1000);
+  document.getElementById("sB").value=Math.round((state.manual.b-b0)/(b1-b0)*1000);
+  document.getElementById("oA").textContent=fmt(state.manual.a, Math.abs(state.manual.a)<10?2:1);
+  document.getElementById("oB").textContent=fmtB(state.manual.b);
+  const st=currentStats(), cur=stats(state.manual.a,state.manual.b).mse;
+  const v=document.getElementById("manualVerdict");
+  if(cur<=st.mseO*1.005){v.className="verdict good"; v.textContent="Đường của bạn đã sát nghiệm OLS — MSE gần đạt cực tiểu.";}
+  else{v.className="verdict bad"; v.textContent=`MSE của bạn lớn hơn MSE của OLS (${fmt(st.mseO,2)} so với ${fmt(cur,2)}) — tiếp tục tinh chỉnh a, b.`;}
+}
+document.getElementById("sA").addEventListener("input",e=>{
+  const [a0,a1]=state._aRange; state.manual.a=a0+e.target.value/1000*(a1-a0); syncManualSliders(); renderStats(); draw();
+});
+document.getElementById("sB").addEventListener("input",e=>{
+  const [b0,b1]=state._bRange; state.manual.b=b0+e.target.value/1000*(b1-b0); syncManualSliders(); renderStats(); draw();
+});
+
+// ---------- gradient descent ----------
+const gdCv=document.getElementById("gdCanvas"), gdCtx=gdCv.getContext("2d");
+function std(){
+  const st=currentStats();
+  const xs=DATA.map(xOf), ys=DATA.map(yOf);
+  const sx=Math.sqrt(st.sxx/st.n), sy=Math.sqrt(st.syy/st.n);
+  return {xs:xs.map(v=>(v-st.mx)/sx), ys:ys.map(v=>(v-st.my)/sy), st};
+}
+function gdOrig(){
+  const {st}=std();
+  const sx=Math.sqrt(st.sxx/st.n), sy=Math.sqrt(st.syy/st.n);
+  const b=state.gd.b*sy/sx, a=state.gd.a*sy+st.my-b*st.mx;
+  return {a,b};
+}
+function resetGd(){
+  state.gd={a:0.5,b:-0.5,path:[],running:false,raf:0,done:false};
+  document.getElementById("gdTable").querySelector("tbody").innerHTML="";
+  document.getElementById("gdRun").textContent="Chạy";
+  drawContour(); renderStats(); drawMain();
+}
+function gdStepOnce(){
+  const g=state.gd; if(g.done) return;
+  const {xs,ys}=std(), n=xs.length, eta=parseFloat(document.getElementById("etaSel").value);
+  let ea=0,eb=0;
+  for(let i=0;i<n;i++){const e=ys[i]-g.a-g.b*xs[i]; ea+=e; eb+=e*xs[i];}
+  g.a+=2*eta*ea/n; g.b+=2*eta*eb/n;
+  const mse=ys.reduce((s,v,i)=>{const e=v-g.a-g.b*xs[i]; return s+e*e;},0)/n;
+  g.path.push({a:g.a,b:g.b,mse});
+  const tb=document.getElementById("gdTable").querySelector("tbody");
+  const tr=document.createElement("tr");
+  tr.innerHTML=`<td>${g.path.length}</td><td>${g.a.toFixed(3)}</td><td>${g.b.toFixed(3)}</td><td>${mse.toFixed(4)}</td>`;
+  tb.prepend(tr); if(tb.children.length>8) tb.lastChild.remove();
+  if(Math.abs(ea/n)<1e-4&&Math.abs(eb/n)<1e-4){g.done=true; g.running=false; document.getElementById("gdRun").textContent="Chạy";}
+  drawContour(); renderStats(); drawMain();
+}
+document.getElementById("gdRun").addEventListener("click",()=>{
+  const g=state.gd;
+  if(g.running){g.running=false; cancelAnimationFrame(g.raf); document.getElementById("gdRun").textContent="Tiếp tục"; return;}
+  if(g.done){resetGd();}
+  g.running=true; document.getElementById("gdRun").textContent="Tạm dừng";
+  let last=0;
+  const loop=t=>{ if(!g.running) return;
+    if(t-last>90){gdStepOnce(); last=t;}
+    if(g.running) g.raf=requestAnimationFrame(loop);
+  };
+  g.raf=requestAnimationFrame(loop);
+});
+document.getElementById("gdStep").addEventListener("click",gdStepOnce);
+document.getElementById("gdReset").addEventListener("click",resetGd);
+
+function drawContour(){
+  const rc=gdCv.getBoundingClientRect();
+  gdCv.width=Math.round(rc.width*DPR); gdCv.height=Math.round(rc.height*DPR);
+  gdCtx.setTransform(DPR,0,0,DPR,0,0);
+  const w=rc.width,h=rc.height;
+  const {xs,ys,st}=std(), n=xs.length;
+  const a0=-0.9,a1=0.9,b0=-0.9,b1=1.7;
+  const gw=90,gh=60, mse=new Float64Array(gw*gh);
+  let mn=Infinity,mx=-Infinity;
+  for(let j=0;j<gh;j++)for(let i=0;i<gw;i++){
+    const a=a0+(i+0.5)/gw*(a1-a0), b=b0+(j+0.5)/gw*(b1-b0);
+    let s=0; for(let k=0;k<n;k++){const e=ys[k]-a-b*xs[k]; s+=e*e;}
+    s/=n; mse[j*gw+i]=s; if(s<mn)mn=s; if(s>mx)mx=s;
+  }
+  const img=gdCtx.createImageData(gw,gh);
+  for(let j=0;j<gh;j++)for(let i=0;i<gw;i++){
+    const v=Math.log(mse[j*gw+i]+1e-9), t=(v-Math.log(mn+1e-9))/(Math.log(mx+1e-9)-Math.log(mn+1e-9));
+    const p=((gh-1-j)*gw+i)*4;
+    img.data[p]=10+24*t; img.data[p+1]=18+193*t; img.data[p+2]=32+206*t; img.data[p+3]=255;
+  }
+  const off=document.createElement("canvas"); off.width=gw; off.height=gh;
+  off.getContext("2d").putImageData(img,0,0);
+  gdCtx.imageSmoothingEnabled=true;
+  gdCtx.clearRect(0,0,w,h);
+  gdCtx.drawImage(off,0,0,w,h);
+  const X=b=>(b-b0)/(b1-b0)*w, Y=a=>h-(a-a0)/(a1-a0)*h;
+  // OLS optimum (0, r)
+  gdCtx.fillStyle="#34d399"; gdCtx.beginPath(); gdCtx.arc(X(st.r),Y(0),4,0,7); gdCtx.fill();
+  // path
+  const p=state.gd.path;
+  if(p.length){
+    gdCtx.strokeStyle="#fbbf24"; gdCtx.lineWidth=1.6; gdCtx.beginPath();
+    gdCtx.moveTo(X(state.gd.path[0].b),Y(state.gd.path[0].a));
+    for(const q of p) gdCtx.lineTo(X(q.b),Y(q.a));
+    gdCtx.stroke();
+    const last=p[p.length-1];
+    gdCtx.fillStyle="#fbbf24"; gdCtx.beginPath(); gdCtx.arc(X(last.b),Y(last.a),4,0,7); gdCtx.fill();
+  }
+  gdCtx.fillStyle="#93a4c3"; gdCtx.font="10px system-ui"; gdCtx.textAlign="left"; gdCtx.textBaseline="top";
+  gdCtx.fillText("b →",4,h-14); gdCtx.fillText("↑ a",w-26,4);
+}
+
+// ---------- prediction ----------
+function initPred(){
+  const sel=document.getElementById("cSel");
+  if(!sel.options.length){
+    sel.innerHTML=DATA.slice().sort((a,b)=>a[1].localeCompare(b[1])).map(r=>`<option value="${r[0]}">${r[1]}</option>`).join("");
+    sel.value="VNM";
+  }
+  const r=DATA.find(q=>q[0]===state.pred.iso3);
+  const d=domains(currentStats());
+  state.pred.x = r?xOf(r):d.x0;
+  document.getElementById("sX").value=Math.round((state.pred.x-d.x0)/(d.x1-d.x0)*1000);
+  syncPred();
+}
+function syncPred(){
+  const st=currentStats(), A=st.a,B=st.b;
+  const x=state.pred.x, d=domains(st);
+  const xShow = state.xMode==="raw"?x:Math.exp(x);
+  document.getElementById("oX").textContent=fmt(xShow,0);
+  const r=DATA.find(q=>q[0]===state.pred.iso3);
+  const isVnmRaw = state.pred.iso3==="VNM" && state.yKey==="life" && state.xMode==="raw" && r && Math.abs(xOf(r)-x)<1e-9;
+  const yh = isVnmRaw ? LAB.vars.vnm_pred_raw : A+B*x;
+  let html=`Với GDP = <b>${fmt(isVnmRaw ? LAB.vars.vnm_gdp : xShow,0)}</b> international $, mô hình dự đoán <b>ŷ = ${fmt(yh,YMETA[state.yKey].dec)}</b> ${state.yKey==="life"?"tuổi":state.yKey==="elec"?"kg dầu":"t CO₂e"}.`;
+  if(r && Math.abs(xOf(r)-x)<1e-9){
+    const y=isVnmRaw ? LAB.vars.vnm_life : yOf(r), res=isVnmRaw ? LAB.vars.vnm_res_raw : y-yh;
+    html+=` Giá trị thật của <b>${r[1]}</b> là ${fmt(y,YMETA[state.yKey].dec)}; phần dư y − ŷ = <b>${res>=0?"+":""}${fmt(res,YMETA[state.yKey].dec)}</b>.`;
+  }
+  document.getElementById("predBox").innerHTML=html;
+}
+document.getElementById("cSel").addEventListener("change",e=>{
+  state.pred.iso3=e.target.value;
+  const r=DATA.find(q=>q[0]===state.pred.iso3);
+  const d=domains(currentStats());
+  state.pred.x=xOf(r);
+  document.getElementById("sX").value=Math.round((state.pred.x-d.x0)/(d.x1-d.x0)*1000);
+  syncPred(); draw();
+});
+document.getElementById("sX").addEventListener("input",e=>{
+  const d=domains(currentStats());
+  state.pred.x=d.x0+e.target.value/1000*(d.x1-d.x0);
+  syncPred(); draw();
+});
+
+// ---------- tooltip ----------
+function onMove(ev){
+  const rc=cv.getBoundingClientRect();
+  const cx=ev.clientX-rc.left, cy=ev.clientY-rc.top;
+  const st=currentStats(), d=domains(st);
+  let best=null,bd=22*22;
+  for(const r of DATA){
+    const dx=px(xOf(r),d)-cx, dy=py(yOf(r),d)-cy, q=dx*dx+dy*dy;
+    if(q<bd){bd=q;best=r;}
+  }
+  state.hover=best?best[0]:null;
+  if(best){
+    tip.style.opacity=1;
+    tip.innerHTML=`<b>${best[1]}</b><br>GDP: ${fmt(best[2],0)} · Tuổi thọ: ${fmt(best[4],1)}<br>Điện: ${fmt(best[3],0)} · CO₂: ${fmt(best[5],2)}`;
+    const tw=tip.offsetWidth, th=tip.offsetHeight;
+    let L=cx+14, T=cy-th-10;
+    if(L+tw>W-6) L=cx-tw-14; if(T<6) T=cy+16;
+    tip.style.left=L+"px"; tip.style.top=T+"px";
+  } else tip.style.opacity=0;
+  draw();
+}
+cv.addEventListener("pointermove",onMove);
+cv.addEventListener("pointerdown",onMove);
+cv.addEventListener("pointerleave",()=>{state.hover=null; tip.style.opacity=0; draw();});
+
+function drawMain(){draw();}
+new ResizeObserver(()=>{fitCanvas(); draw(); if(!document.getElementById("paneGd").hidden) drawContour();}).observe(wrap);
+window.addEventListener("resize",()=>{fitCanvas(); draw();});
+
+fitCanvas(); initPred(); renderStats(); draw();
+</script>
+</body>
+</html>

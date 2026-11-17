@@ -1,0 +1,523 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="description" content="Demo trực quan SVM tuyến tính: ranh giới quyết định, lề (margin), vector hỗ trợ, vai trò của C. Chạy offline, một file.">
+<title>Lề của SVM — Bài 2.1</title>
+<style>
+:root{--bg:#070E1A;--fg:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);--line2:#243248;--a:#38bdf8;--b:#f87171;
+--ok:#34d399;--card:#0F172A;--card2:#111c30;--paper:#fff;--hero:linear-gradient(135deg,#091326 0%,#0F172A 60%,#082F49 100%);
+--grad:linear-gradient(90deg,#22d3ee,#38bdf8 45%,#818cf8)}
+body.light{--bg:#F1F5F9;--fg:#0F172A;--mut:#475569;--line:rgba(2,132,199,.28);--line2:#CBD5E1;--a:#0369A1;--b:#DC2626;
+--ok:#059669;--card:#fff;--card2:#F8FAFC;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
+*{box-sizing:border-box}
+html{-webkit-text-size-adjust:100%}
+body{margin:0;background:var(--bg);color:var(--fg);line-height:1.55;overscroll-behavior:contain;
+ font-family:system-ui,-apple-system,"Segoe UI",Roboto,"Noto Sans",Arial,sans-serif;font-size:clamp(15px,1.05vw + 12px,18px)}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(16px,3vw,26px) 0 18px}
+.hero .inner{max-width:1024px;margin:0 auto;padding:0 16px}
+h1{margin:0 0 8px;font-size:clamp(22px,4.4vw,34px);letter-spacing:-.015em;line-height:1.15}
+h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
+.sub{margin:0;color:var(--mut);font-size:clamp(13.5px,1vw + 11px,16px);max-width:75ch}
+.badges{display:flex;flex-wrap:wrap;gap:7px;margin-top:12px}
+.badge{font:600 12.5px/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.03em;padding:6px 10px;
+ border:1px solid var(--line);border-radius:999px;background:rgba(34,211,238,.10);color:var(--a)}
+.badge.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
+.badge.a{background:rgba(251,191,36,.12);color:#fbbf24;border-color:rgba(251,191,36,.4)}
+body.light .badge{background:#fff}
+body.light .badge.a{color:#B45309}
+.heroctl{display:flex;flex-wrap:wrap;gap:10px;margin-top:14px}
+.btn{display:inline-flex;align-items:center;gap:8px;min-height:44px;padding:11px 15px;border-radius:12px;
+ border:1px solid var(--line2);background:var(--card2);color:var(--fg);font:inherit;font-weight:600;cursor:pointer}
+.btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300;box-shadow:0 8px 24px rgba(251,191,36,.22)}
+main{max-width:1024px;margin:0 auto;padding:0 16px 44px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:18px;padding:16px;margin:0 0 14px;
+ box-shadow:0 10px 30px rgba(2,8,20,.35)}
+.eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.14em;text-transform:uppercase;
+ color:var(--a);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:10px}
+h2{margin:0 0 8px;font-size:clamp(17px,2.4vw,21px);letter-spacing:-.01em}
+h3{margin:14px 0 6px;font-size:clamp(15.5px,1.8vw,18px)}
+p{margin:8px 0}
+.tabs{display:flex;gap:8px;padding:10px 0;position:sticky;top:0;z-index:5;background:var(--bg);
+ border-bottom:1px solid var(--line)}
+.tabs button{flex:1;min-height:46px;border:1px solid var(--line2);border-radius:12px;background:var(--card2);
+ color:var(--fg);font:inherit;font-weight:600;font-size:15px;cursor:pointer;touch-action:manipulation}
+.tabs button[aria-selected=true]{border-color:transparent;background:var(--grad);color:#04121f;
+ box-shadow:0 6px 20px rgba(34,211,238,.28)}
+.panel[hidden]{display:none}
+.panel{animation:fade .25s ease}
+@keyframes fade{from{opacity:0;transform:translateY(4px)}to{opacity:1}}
+.svgwrap{width:100%;border:1px solid var(--line);border-radius:14px;background:var(--paper);overflow:hidden;touch-action:none}
+svg{display:block;width:100%;height:auto}
+.ctl{display:flex;flex-wrap:wrap;gap:10px 16px;align-items:center;margin-top:12px}
+.ctl label{display:inline-flex;align-items:center;gap:7px;min-height:44px;font-size:15px;cursor:pointer}
+input[type=checkbox]{width:22px;height:22px;accent-color:var(--a)}
+input[type=range]{width:min(100%,340px);height:44px;accent-color:var(--a);cursor:pointer}
+.chips{display:flex;flex-wrap:wrap;gap:8px;margin-top:10px}
+.chips button{min-height:44px;padding:8px 14px;border:1px solid var(--line2);border-radius:12px;background:var(--card2);
+ color:var(--fg);font:inherit;cursor:pointer;font-variant-numeric:tabular-nums}
+.chips button.on{border-color:transparent;background:var(--grad);color:#04121f;font-weight:700}
+.read{display:grid;grid-template-columns:repeat(auto-fit,minmax(148px,1fr));gap:10px;margin-top:12px}
+.stat{border:1px solid var(--line);border-radius:14px;padding:10px 12px;background:var(--card2)}
+.stat .k{display:block;color:var(--mut);font-size:13px}
+.stat .v{display:block;font-size:clamp(18px,2.4vw,22px);font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.01em}
+table{border-collapse:collapse;width:100%;font-size:14.5px;font-variant-numeric:tabular-nums}
+th,td{border-bottom:1px solid var(--line);padding:8px;text-align:right}
+th{color:var(--mut);font-weight:700;font-size:12.5px;text-transform:uppercase;letter-spacing:.06em}
+th:first-child,td:first-child{text-align:left}
+tbody tr:hover{background:rgba(34,211,238,.07)}
+tr.on td{background:rgba(34,211,238,.12);font-weight:600}
+.note{border-left:4px solid var(--a);background:rgba(34,211,238,.09);padding:10px 12px;border-radius:0 12px 12px 0;margin:12px 0}
+.warn{border-left-color:var(--ok);background:rgba(52,211,153,.10)}
+math{font-size:1.05em}
+.formula{margin:6px 0;padding:11px 12px;background:var(--card2);border:1px solid var(--line);border-left:3px solid var(--a);
+ border-radius:12px;overflow-x:auto}
+code.path{overflow-wrap:anywhere}
+code,kbd{font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:max(12.5px,.88em);
+ background:var(--card2);border:1px solid var(--line);padding:1px 5px;border-radius:5px}
+.klist{margin:6px 0;padding-left:20px}
+.klist li{margin:5px 0}
+.q{border:1px solid var(--line);border-radius:14px;padding:12px;margin:10px 0;background:var(--card2)}
+.q .opts{display:flex;flex-direction:column;gap:8px}
+.q .opts button{min-height:44px;text-align:left;border:1px solid var(--line2);background:var(--card);border-radius:12px;
+ font:inherit;font-size:15px;padding:9px 11px;cursor:pointer;color:var(--fg)}
+.q .opts button:hover{border-color:var(--a)}
+.q .opts button.right{border-color:var(--ok);background:rgba(52,211,153,.12);color:var(--ok);font-weight:600}
+.q .opts button.wrong{border-color:var(--b);background:rgba(248,113,113,.12);color:var(--b)}
+.q .fb{min-height:22px;font-size:14.5px;margin:8px 0 0;color:var(--mut)}
+footer{max-width:1024px;margin:0 auto;padding:18px 16px;color:var(--mut);font-size:13.5px;border-top:1px solid var(--line)}
+.leg{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:14px;color:var(--mut)}
+.leg i{display:inline-block;width:13px;height:13px;border-radius:50%;margin-right:6px;vertical-align:-1px}
+a{color:var(--a)}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header class="hero"><div class="inner">
+<div class="badges">
+ <a class="badge" href="../../index.html" style="text-decoration:none;font-weight:700">← All Demos</a>
+ <span class="badge">ĐH GTVT TP.HCM (UTH)</span>
+ <span class="badge g">Chương 2 · Bài 2.1 · SVM tuyến tính</span>
+ <span class="badge a">1 file · không CDN · chạy offline trên điện thoại</span>
+ <span class="badge">Công thức: MathML thuần</span>
+</div>
+<h1>SVM tuyến tính — <span class="gr">đường nào, lề rộng bao nhiêu?</span></h1>
+<p class="sub"><b>Bài toán thực tế:</b> Phân loại hai nhóm đối tượng trong mặt phẳng đặc trưng hai chiều <math><mrow><mo stretchy="false">(</mo><msub><mi>x</mi><mn>1</mn></msub><mo>,</mo><msub><mi>x</mi><mn>2</mn></msub><mo stretchy="false">)</mo></mrow></math> sao cho biên phân cách có vùng đệm an toàn (lề — margin) rộng nhất trước nhiễu đo lường. Với 40 điểm mô phỏng (<code>np.random.seed(1)</code>) (20 điểm Lớp 0 và 20 điểm Lớp 1), Máy Vector Hỗ trợ (SVM) tìm ra siêu phẳng tối ưu chỉ dựa vào 3 điểm biên giới hạn (vector hỗ trợ) với độ rộng lề đạt <b>2,6705</b>.</p>
+<div class="heroctl">
+ <a class="btn" href="../../index.html" style="text-decoration:none">← All Demos</a>
+ <button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
+</div>
+</div></header>
+
+<main>
+<div class="tabs" role="tablist" aria-label="Chế độ xem">
+ <button role="tab" id="t1" aria-controls="p1" aria-selected="true">1. Lề</button>
+ <button role="tab" id="t2" aria-controls="p2" aria-selected="false">2. Số C</button>
+ <button role="tab" id="t3" aria-controls="p3" aria-selected="false">3. Chạm để đo</button>
+ <button role="tab" id="t4" aria-controls="p4" aria-selected="false">4. Số &amp; công thức</button>
+</div>
+
+<!-- ============================= 1. LE ============================= -->
+<section class="panel card" id="p1" role="tabpanel" aria-labelledby="t1">
+<span class="eyebrow">Hình học của SVM · ô 1 của lab</span>
+<h2>Ranh giới quyết định và lề</h2>
+<p>SVM không chọn <i>bất kỳ</i> đường nào tách hai lớp. Nó chọn đường <b>tách có lề rộng nhất</b>: khoảng cách
+vuông góc lớn nhất từ đường tới những điểm gần nhất của mỗi lớp.</p>
+<div class="svgwrap"><div id="plot1"></div></div>
+<div class="leg">
+ <span><i style="background:#1d4ed8"></i>Lớp 0 (20 điểm)</span>
+ <span><i style="background:#b91c1c"></i>Lớp 1 (20 điểm)</span>
+ <span><i style="background:#fff;border:2px solid #111827"></i>Vector hỗ trợ (<span id="nsv1">3</span> điểm)</span>
+</div>
+<div class="ctl">
+ <label><input type="checkbox" id="cMargin" checked> Hiển thị 2 đường lề</label>
+ <label><input type="checkbox" id="cW" checked> Véc-tơ <math><mrow><mover accent="true"><mi>w</mi><mo>&#x2192;</mo></mover></mrow></math></label>
+ <label><input type="checkbox" id="cShade" checked> Tô hai nửa mặt phẳng</label>
+</div>
+<div class="read">
+ <div class="stat"><span class="k">Độ dài ‖w‖</span><span class="v" id="rNorm">…</span></div>
+ <div class="stat"><span class="k">Độ rộng lề = 2 / ‖w‖</span><span class="v" id="rMargin">…</span></div>
+ <div class="stat"><span class="k">Số vector hỗ trợ</span><span class="v" id="rNsv">…</span></div>
+</div>
+<div class="note">
+<b>Điểm mấu chốt:</b> lề chỉ do <b>một số ít điểm</b> quyết định — các vector hỗ trợ. Bỏ 37 điểm còn đi, đường
+không đổi; di chuyển 3 điểm có vòng tròn đen, đường <b>dịch ngay</b>. Đây là lý do SVM chịu noise ở biên giỏi
+nhưng rất nhạy với một điểm sai ở biên.
+</div>
+</section>
+
+<!-- ============================= 2. C ============================= -->
+<section class="panel card" id="p2" role="tabpanel" aria-labelledby="t2" hidden>
+<span class="eyebrow">Quét siêu tham số · 5 giá trị C</span>
+<h2>Số C thực sự làm gì?</h2>
+<p>C kéo bài toán về cực tiểu <math><mrow><mfrac><mn>1</mn><mn>2</mn></mfrac><mspace width="0.18em"></mspace><mo stretchy="false">&#x2016;</mo><mi>w</mi><mo stretchy="false">&#x2016;</mo></mrow></math>
+cộng với tiền phạt cho điểm vi phạm. C nhỏ ⇒ phạt nhẹ ⇒ thà chấp nhận viền mềm để có <b>‖w‖ nhỏ, lề rộng</b>.</p>
+<div class="ctl"><label>C = <output id="cVal">…</output></label><input type="range" id="cSlider" min="0" max="4" step="1" value="2" aria-label="Chọn C"></div>
+<div class="svgwrap"><div id="plot2"></div></div>
+<h3>Kết quả huấn luyện (tính lại từ lab, không phải số chép)</h3>
+<table id="cTable">
+<thead><tr><th>C</th><th>w₁</th><th>w₂</th><th>b</th><th>‖w‖</th><th>Lề 2/‖w‖</th><th>SV (lớp 0 / 1)</th></tr></thead>
+<tbody></tbody>
+</table>
+<div class="note" id="cInsight"></div>
+</section>
+
+<!-- ============================= 3. CHAM ============================= -->
+<section class="panel card" id="p3" role="tabpanel" aria-labelledby="t3" hidden>
+<span class="eyebrow">Thực nghiệm · đo bằng ngón tay</span>
+<h2>Chạm vào mặt phẳng để đo</h2>
+<p>Chạm (hoặc kéo) trên đồ thị. Demo tính <b>ngay trên máy bạn</b> giá trị của hàm quyết định và khoảng cách
+vuông góc tới ranh giới — đúng công thức dưới đây, không tra bảng.</p>
+<div class="svgwrap"><div id="plot3"></div></div>
+<div class="chips" id="presets"></div>
+<div class="read">
+ <div class="stat"><span class="k">Điểm đang chọn</span><span class="v" id="mPt">(2,00 ; 1,00)</span></div>
+ <div class="stat"><span class="k">γ = w·x + b</span><span class="v" id="mGam">…</span></div>
+ <div class="stat"><span class="k">Cách ranh giới (đv toạ độ)</span><span class="v" id="mDist">…</span></div>
+ <div class="stat"><span class="k">Dự đoán</span><span class="v" id="mCls">Lớp 1</span></div>
+</div>
+<div class="formula">
+ γ(x) = <math><mrow><msub><mi>w</mi><mn>1</mn></msub><mo>&#x2062;</mo><msub><mi>x</mi><mn>1</mn></msub><mo>+</mo><msub><mi>w</mi><mn>2</mn></msub><mo>&#x2062;</mo><msub><mi>x</mi><mn>2</mn></msub><mo>+</mo><mi>b</mi></mrow></math>
+ &nbsp;=&nbsp;
+ <math><mrow><mn>0,4890</mn><mo>&#x2062;</mo><msub><mi>x</mi><mn>1</mn></msub><mo>+</mo><mn>0,5672</mn><mo>&#x2062;</mo><msub><mi>x</mi><mn>2</mn></msub><mo>&#x2212;</mo><mn>0,1200</mn></mrow></math>
+</div>
+<div class="formula">
+ d = <math><mfrac><mrow><mo form="prefix">&#x2223;</mo><mi>w</mi><mo>&#x2062;</mo><mi>x</mi><mo>+</mo><mi>b</mi><mo form="postfix">&#x2223;</mo></mrow><mrow><mo stretchy="false">&#x2016;</mo><mi>w</mi><mo stretchy="false">&#x2016;</mo></mrow></mfrac></math>
+ &nbsp;→&nbsp; với điểm mẫu <b>[2&nbsp;;&nbsp;1]</b> của lab:
+ d = <math><mfrac><mn>1,4252</mn><mn>0,7489</mn></mfrac></math> = <b id="mDist2">1,9031</b>
+</div>
+<div class="note warn">
+<b>Tự kiểm tra tại lớp:</b> đổi đơn vị bằng cách chia cho ‖w‖ thì hai đường lề nằm ở
+γ = ±1. Điểm <b>[2&nbsp;;&nbsp;1]</b> có γ = <b>1,4252</b> &gt; 1 ⇒ nằm <b>ngoài</b> dải lề, không phải
+vector hỗ trợ; khoảng cách thật ra hai đơn vị đo khác nhau: <b>1,4252</b> đơn vị γ và
+<b id="mDist3">1,9031</b> đơn vị toạ độ.
+</div>
+</section>
+
+<!-- ============================= 4. SO ============================= -->
+<section class="panel card" id="p4" role="tabpanel" aria-labelledby="t4" hidden>
+<span class="eyebrow">Đối chiếu mắt thường · mọi số đều từ lab</span>
+<h2>Số liệu chốt và công thức</h2>
+<h3>Bảng số của module (C = 1)</h3>
+<table id="kTable">
+<thead><tr><th>Đại lượng</th><th>Ký hiệu</th><th>Giá trị</th><th>Lấy từ đâu</th></tr></thead>
+<tbody>
+<tr><td>Hệ số véc-tơ pháp tuyến</td><td id="annA">w = (w₁, w₂)</td><td>(0,4890 ; 0,5672)</td><td><code>svm.coef_[0]</code></td></tr>
+<tr><td>Hằng số tự do</td><td>b</td><td>&#x2212;0,1200</td><td><code>svm.intercept_[0]</code></td></tr>
+<tr><td>Độ dài w</td><td>‖w‖</td><td>0,7489</td><td><code>np.linalg.norm(w)</code></td></tr>
+<tr><td>Độ rộng lề</td><td>2/‖w‖</td><td>2,6705</td><td>tính trong lab, ô kiểm chứng</td></tr>
+<tr><td>Số vector hỗ trợ</td><td>—</td><td>3 (1 lớp 0, 2 lớp 1)</td><td><code>svm.n_support_</code></td></tr>
+<tr><td>Khoảng cách điểm [2 ; 1]</td><td>d</td><td>1,9031</td><td><code>decision_function / ‖w‖</code></td></tr>
+<tr><td>Lề khi C = 0,1</td><td>2/‖w‖</td><td>3,4485</td><td>quét C trong lab</td></tr>
+</tbody>
+</table>
+<p class="sub">Dữ liệu: 20 điểm lấy từ <i>N</i>(μ = [−2,&nbsp;−2], σ = 1) và 20 điểm từ <i>N</i>(μ = [2,&nbsp;2], σ = 1),
+<code>np.random.seed(1)</code> — chính là bộ dữ liệu <code>make_dataset()</code> trong lab, nên mọi số ở đây
+tái hiện được bằng cách chạy lại lab.</p>
+
+<h3>Công thức dùng trong bài</h3>
+<div class="formula">Siêu phẳng quyết định: <math><mrow><mover accent="true"><mi>w</mi><mo>&#x2192;</mo></mover><mo>&#x2062;</mo><mover accent="true"><mi>x</mi><mo>&#x2192;</mo></mover><mo>+</mo><mi>b</mi><mo>=</mo><mn>0</mn></mrow></math></div>
+<div class="formula">Hai đường lề: <math><mrow><mover accent="true"><mi>w</mi><mo>&#x2192;</mo></mover><mo>&#x2062;</mo><mover accent="true"><mi>x</mi><mo>&#x2192;</mo></mover><mo>+</mo><mi>b</mi><mo>=</mo><mo>&#x00B1;</mo><mn>1</mn></mrow></math>
+&nbsp;&nbsp;với&nbsp;&nbsp;<math><mrow><mo form="prefix">&#x2016;</mo><mrow><mover accent="true"><mi>w</mi><mo>&#x2192;</mo></mover><mo>&#x2062;</mo><msub><mi>x</mi><mi>s</mi></msub></mrow><mo form="postfix">&#x2016;</mo><mo>=</mo><mn>1</mn></mrow></math> cho mọi vector hỗ trợ <math><mrow><msub><mi>x</mi><mi>s</mi></msub></mrow></math></div>
+<div class="formula">Độ rộng lề:
+ <math><mfrac><mn>2</mn><mrow><mo stretchy="false">&#x2016;</mo><mover accent="true"><mi>w</mi><mo>&#x2192;</mo></mover><mo stretchy="false">&#x2016;</mo></mrow></mfrac></math>
+ =&nbsp; <math><mfrac><mn>2</mn><mn>0,7489</mn></mfrac></math> = <b>2,6705</b>
+ &nbsp;&nbsp;⇒&nbsp;&nbsp;tối thiểu hoá
+ <math><mrow><mfrac><mn>1</mn><mn>2</mn></mfrac><msup><mrow><mo stretchy="false">&#x2016;</mo><mover accent="true"><mi>w</mi><mo>&#x2192;</mo></mover><mo stretchy="false">&#x2016;</mo></mrow><mn>2</mn></msup></mrow></math>
+ chính là <b>tối đa hoá lề</b>.</div>
+<div class="formula">Bài toán mềm (soft margin):
+ <math><mrow><munder><mo movablelimits="true">min</mo><mrow><mi>w</mi><mo>,</mo><mi>b</mi><mo>,</mo><mi>&#x1F6F;</mi></mrow></munder><mspace width="0.25em"></mspace><mfrac><mn>1</mn><mn>2</mn></mfrac><msup><mrow><mo stretchy="false">&#x2016;</mo><mi>w</mi><mo stretchy="false">&#x2016;</mo></mrow><mn>2</mn></msup><mo>+</mo><mi>C</mi><munder><mo movablelimits="true">&#x2211;</mo><mi>i</mi></munder><msub><mi>&#x1F6F;</mi><mi>i</mi></msub></mrow></math>
+</div>
+<p class="sub">Ở đó ξ<sub>i</sub> ≥ 0 là mức <i>vi phạm lề</i> của điểm thứ i. C lớn ⇒ phạt vi phạm nặng ⇒ SVM cố
+tách hết mọi điểm (dễ overfit); C nhỏ ⇒ cho phép vài điểm rơi vào trong lề (viền mềm, bền hơn với nhiễu).</p>
+
+<h3>Tự luyện (3 câu, có phản hồi ngay)</h3>
+<div class="quiz" id="quiz">
+ <div class="q" data-a="1">
+  <p><b>1.</b> Vì sao SVM chọn đường có lề rộng nhất thay vì một đường bất kỳ tách hai lớp?</p>
+  <div class="opts">
+   <button data-i="0">Vì đường có lề rộng nhất luôn đi qua nhiều điểm hơn</button>
+   <button data-i="1">Vì lề rộng nhất cho biên quyết định bền nhất: sai số nhỏ nhất khi điểm mới rơi gần biên</button>
+   <button data-i="2">Vì lề rộng nhất làm cho ‖w‖ lớn nhất, nên tính nhanh hơn</button>
+  </div>
+  <p class="fb"></p>
+ </div>
+ <div class="q" data-a="2">
+  <p><b>2.</b> Trên đồ thị có 40 điểm nhưng chỉ 3 điểm có vòng tròn đen. Nếu xoá 37 điểm còn lại thì:</p>
+  <div class="opts">
+   <button data-i="0">Đường biên quay sang hướng khác vì mất dữ liệu</button>
+   <button data-i="1">Đường biên dịch về phía lớp 0</button>
+   <button data-i="2">Đường biên không đổi — 37 điểm đó không tham gia ràng buộc</button>
+  </div>
+  <p class="fb"></p>
+ </div>
+ <div class="q" data-a="0">
+  <p><b>3.</b> Với bộ dữ liệu này, tăng C từ 1 lên 50 thì độ rộng lề:</p>
+  <div class="opts">
+   <button data-i="0">Không đổi: hai lớp đã tách bằng một đường thẳng, không điểm nào vi phạm để C phạt</button>
+   <button data-i="1">Tăng lên gần 3,4485 như ở C = 0,1</button>
+   <button data-i="2">Giảm vì C lớn làm mô hình cứng nhắc</button>
+  </div>
+  <p class="fb"></p>
+ </div>
+</div>
+
+<h3>Đọc tiếp theo</h3>
+<ul class="klist">
+<li>Vì sao SVM dùng <b>nhân kernel</b> khi một đường thẳng thất bại → module <code>bai_2_2_kernel_trick</code> (Phase 2).</li>
+<li>C liên quan gì tới overfitting? Kéo sang tình huống hai lớp <b>chồng</b> nhau (dữ liệu hình tròn) để thấy C phát huy tác dụng.</li>
+</ul>
+</section>
+</main>
+
+<footer>
+<p>Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code>02_svm_demo.py</code>.</p>
+</footer>
+
+<script>
+"use strict";
+/* ===== Du lieu do export_lab_data.py sinh truc tiep tu 02_svm_demo.py (giu nguyen do chinh xac;
+   trang chi lai so 4 chu so khi hien thi). KHONG sua tay trong file nay:
+   AI_UTH_demo/_checks/parity.py doi chieu tung tri voi parity_source.json. ===== */
+const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8],"vars":{"X_linear":[[-0.37565463633675833,-2.6117564136500753],[-2.5281717522634555,-3.0729686221561705],[-1.1345923706753216,-4.301538696880282],[-0.25518823578352,-2.761206900895103],[-1.6809609039429014,-2.24937037547741],[-0.5378920629550259,-4.060140709497654],[-2.3224172040135076,-2.3840543546684154],[-0.8662305576645626,-3.099891267314031],[-2.1724282075504355,-2.877858417921372],[-1.9577862532844073,-1.4171847862841778],[-3.1006191772129212,-0.8552762901603859],[-1.0984092794072045,-1.4975056610981317],[-1.099144050735588,-2.683727859174333],[-2.122890225518648,-2.9357694342590688],[-2.267888079626016,-1.469644533261814],[-2.6916607517253093,-2.3967535268559774],[-2.6871727001195995,-2.8452056414987195],[-2.671246130836819,-2.012664598918901],[-3.117310348635278,-1.7655843021829078],[-0.34019782289012945,-1.2579558394226644],[1.8081644476383851,1.1123710359151637],[1.2528417062491624,3.6924546010277464],[2.050807754776029,1.3630043534306466],[2.190915484667466,4.100255136478842],[2.120158952481629,2.617203109707419],[2.3001703199558277,1.6477501535064814],[0.8574818019778598,1.6506572775871224],[1.791105766625222,2.5866231911821975],[2.838983413874505,2.9311020813035573],[2.2855873252542587,2.885141164270728],[1.2456020590033472,3.252868155233288],[2.512929820418009,1.7019071648972843],[2.488518146537497,1.9244282869789442],[3.1316293874514267,3.519816816422199],[4.185575406533161,0.6035036645118623],[0.5558861945704106,1.4955341370535487],[2.1600370694478306,2.876168921116225],[2.3156349472416053,-0.02220121582400303],[1.6937959873716282,2.8279746426072463],[2.2300947353643834,2.7620111803120246]],"y_linear":[0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1,1],"w":[0.48902282483873327,0.5672054261891526],"b":-0.12001263543177727,"norm_w":0.7489094195639902,"svm_linear.support_vectors_":[[-0.34019782289012945,-1.2579558394226644],[0.5558861945704106,1.4955341370535487],[2.3156349472416053,-0.02220121582400303]],"svm_linear.n_support_":[1,2]},"derived":{"margin":2.6705499326799575,"dist_2_1":1.9030852105780773,"gamma_2_1":1.425238440434842,"svm_points":[{"xy":[-0.3756546363,-2.6117564137],"c":0},{"xy":[-2.5281717523,-3.0729686222],"c":0},{"xy":[-1.1345923707,-4.3015386969],"c":0},{"xy":[-0.2551882358,-2.7612069009],"c":0},{"xy":[-1.6809609039,-2.2493703755],"c":0},{"xy":[-0.537892063,-4.0601407095],"c":0},{"xy":[-2.322417204,-2.3840543547],"c":0},{"xy":[-0.8662305577,-3.0998912673],"c":0},{"xy":[-2.1724282076,-2.8778584179],"c":0},{"xy":[-1.9577862533,-1.4171847863],"c":0},{"xy":[-3.1006191772,-0.8552762902],"c":0},{"xy":[-1.0984092794,-1.4975056611],"c":0},{"xy":[-1.0991440507,-2.6837278592],"c":0},{"xy":[-2.1228902255,-2.9357694343],"c":0},{"xy":[-2.2678880796,-1.4696445333],"c":0},{"xy":[-2.6916607517,-2.3967535269],"c":0},{"xy":[-2.6871727001,-2.8452056415],"c":0},{"xy":[-2.6712461308,-2.0126645989],"c":0},{"xy":[-3.1173103486,-1.7655843022],"c":0},{"xy":[-0.3401978229,-1.2579558394],"c":0},{"xy":[1.8081644476,1.1123710359],"c":1},{"xy":[1.2528417062,3.692454601],"c":1},{"xy":[2.0508077548,1.3630043534],"c":1},{"xy":[2.1909154847,4.1002551365],"c":1},{"xy":[2.1201589525,2.6172031097],"c":1},{"xy":[2.30017032,1.6477501535],"c":1},{"xy":[0.857481802,1.6506572776],"c":1},{"xy":[1.7911057666,2.5866231912],"c":1},{"xy":[2.8389834139,2.9311020813],"c":1},{"xy":[2.2855873253,2.8851411643],"c":1},{"xy":[1.245602059,3.2528681552],"c":1},{"xy":[2.5129298204,1.7019071649],"c":1},{"xy":[2.4885181465,1.924428287],"c":1},{"xy":[3.1316293875,3.5198168164],"c":1},{"xy":[4.1855754065,0.6035036645],"c":1},{"xy":[0.5558861946,1.4955341371],"c":1},{"xy":[2.1600370694,2.8761689211],"c":1},{"xy":[2.3156349472,-0.0222012158],"c":1},{"xy":[1.6937959874,2.8279746426],"c":1},{"xy":[2.2300947354,2.7620111803],"c":1}],"c_sweep":[{"C":0.1,"w":[0.4074730907,0.4127072618],"b":0.0656036851,"nsv":[2,2],"margin":3.4484726705,"svs":[[-1.0984092794,-1.4975056611],[-0.3401978229,-1.2579558394],[0.5558861946,1.4955341371],[2.3156349472,-0.0222012158]]},{"C":0.5,"w":[0.4890228248,0.5672054262],"b":-0.1200126354,"nsv":[1,2],"margin":2.6705499327,"svs":[[-0.3401978229,-1.2579558394],[0.5558861946,1.4955341371],[2.3156349472,-0.0222012158]]},{"C":1.0,"w":[0.4890228248,0.5672054262],"b":-0.1200126354,"nsv":[1,2],"margin":2.6705499327,"svs":[[-0.3401978229,-1.2579558394],[0.5558861946,1.4955341371],[2.3156349472,-0.0222012158]]},{"C":5.0,"w":[0.4890228248,0.5672054262],"b":-0.1200126354,"nsv":[1,2],"margin":2.6705499327,"svs":[[-0.3401978229,-1.2579558394],[0.5558861946,1.4955341371],[2.3156349472,-0.0222012158]]},{"C":50.0,"w":[0.4890228248,0.5672054262],"b":-0.1200126354,"nsv":[1,2],"margin":2.6705499327,"svs":[[-0.3401978229,-1.2579558394],[0.5558861946,1.4955341371],[2.3156349472,-0.0222012158]]}]}};const M = LAB.vars, D = LAB.derived;
+const SVM_PTS = D.svm_points;                    // [{xy:[x,y], c:0|1}, ...] x40
+const SVM_C = D.c_sweep;                         // 5 lan luot C, kem vector ho tro cua tung C
+const SVM_MODEL = {w: M.w, b: M.b, norm_w: M.norm_w, margin: D.margin, svs: M["svm_linear.support_vectors_"]};
+const PRESET_G = D.gamma_2_1, PRESET_D = D.dist_2_1;
+
+const X0 = -4.0, X1 = 4.8, Y0 = -4.6, Y1 = 4.7, U = 100;   // vung hien thi (don vi toa do) x 100
+const S = (v) => Math.round(v * U);
+const sx = (x) => S(x - X0), sy = (y) => S(Y1 - y);
+const W = S(X1 - X0), H = S(Y1 - Y0);
+const invx = (px) => px / U + X0, invy = (py) => Y1 - py / U;
+const COL = ["#1d4ed8", "#b91c1c"];
+
+function vi(n, d) {
+  if (!isFinite(n)) return "\u2014";
+  const s = Math.abs(n).toFixed(d === undefined ? 4 : d).split(".");
+  return (n < 0 ? "\u2212" : "") + s[0].replace(/\B(?=(\d{3})+(?!\d))/g, ".") + (s[1] ? "," + s[1] : "");
+}
+
+/* Duong thang w0*x + w1*y + b = 0 -> cat vung hien thi thanh doan (clip bang clipPath) */
+function lineEnds(w0, w1, b) {
+  const pts = [];
+  const atX = (x) => { const y = -(w0 * x + b) / w1; if (y >= Y0 - 1 && y <= Y1 + 1) pts.push([x, y]); };
+  const atY = (y) => { const x = -(w1 * y + b) / w0; if (x >= X0 - 1 && x <= X1 + 1) pts.push([x, y]); };
+  atX(X0); atX(X1); atY(Y0); atY(Y1);
+  if (pts.length < 2) return null;
+  const a = pts[0], c = pts[pts.length - 1];
+  return [sx(a[0]), sy(a[1]), sx(c[0]), sy(c[1])];
+}
+function seg(e, extra) {
+  if (!e) return "";
+  const a = `<line x1="${e[0]}" y1="${e[1]}" x2="${e[2]}" y2="${e[3]}"`;
+  return a + " " + (extra || "") + "></line>";
+}
+
+/* Cat hop vuong hien thi bang mot nua mat phang (Sutherland-Hodgman, 1 luoi cat).
+   Dung de to "bau troi" cua tung lop va dai le -> khong phai toa do phong chia tay. */
+const isect = (a, c, fa, fc) => [a[0] + (c[0] - a[0]) * fa / (fa - fc), a[1] + (c[1] - a[1]) * fa / (fa - fc)];
+const BOX = [[0, 0], [W, 0], [W, H], [0, H]];
+function clipHalf(poly, f) {
+  const out = [];
+  for (let i = 0; i < poly.length; i++) {
+    const a = poly[i], c = poly[(i + 1) % poly.length];
+    const fa = f(a[0], a[1]), fc = f(c[0], c[1]);
+    if (fa >= 0) out.push(a);
+    if ((fa >= 0) !== (fc >= 0)) out.push(isect(a, c, fa, fc));
+  }
+  return out;
+}
+// Ham quyet dinh tinh theo toa do pixel (dao chieu truc y cua viewBox)
+const gOf = (m) => (px, py) => m.w[0] * invx(px) + m.w[1] * invy(py) + m.b;
+const poly = (pts, fill, op) => pts.length < 3 ? "" :
+  `<polygon points="${pts.map((p) => p.map((v) => v.toFixed(1)).join(",")).join(" ")}" fill="${fill}" fill-opacity="${op}"></polygon>`;
+
+/* ===== Ve mot lan, moi che do dung chung bo khung SVG ===== */
+function frame(uid) {
+  return `<svg viewBox="0 0 ${W} ${H}" role="img" aria-labelledby="ttl-${uid}" preserveAspectRatio="xMidYMid meet">
+   <title id="ttl-${uid}">40 điểm thuộc hai lớp, ranh giới quyết định và hai đường lề của SVM tuyến tính</title>
+   <defs>
+    <clipPath id="clip-${uid}"><rect x="0" y="0" width="${W}" height="${H}"></rect></clipPath>
+    <marker id="ar-${uid}" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z"></path></marker>
+   </defs>
+   <rect x="0" y="0" width="${W}" height="${H}" fill="#ffffff"></rect>
+   <g id="shade-${uid}" clip-path="url(#clip-${uid})"></g>
+   <g id="band-${uid}" clip-path="url(#clip-${uid})"></g>
+   <g clip-path="url(#clip-${uid})" id="grid-${uid}">` +
+    Array.from({length: Math.round(X1 - X0) + 1}, (_, k) => {
+      const gx = Math.round(X0) + k, gy = Math.round(Y0) + k;
+      return `<line x1="${sx(gx)}" y1="0" x2="${sx(gx)}" y2="${H}" stroke="#eef1f5" stroke-width="1"></line>` +
+             `<line x1="0" y1="${sy(gy)}" x2="${W}" y2="${sy(gy)}" stroke="#eef1f5" stroke-width="1"></line>`;
+    }).join("") +
+    `<line x1="${sx(0)}" y1="0" x2="${sx(0)}" y2="${H}" stroke="#cbd2da" stroke-width="1.5"></line>
+     <line x1="0" y1="${sy(0)}" x2="${W}" y2="${sy(0)}" stroke="#cbd2da" stroke-width="1.5"></line>
+    <text x="${sx(0) + 8}" y="22" font-size="22" fill="#6b7280">x&#x2082;</text>
+    <text x="${W - 34}" y="${sy(0) - 10}" font-size="22" fill="#6b7280">x&#x2081;</text>
+   </g>
+   <g id="lines-${uid}" clip-path="url(#clip-${uid})"></g>
+   <g id="vec-${uid}" clip-path="url(#clip-${uid})"></g>
+   <g id="pts-${uid}">` +
+    SVM_PTS.map((p) => `<circle cx="${sx(p.xy[0])}" cy="${sy(p.xy[1])}" r="11" fill="${COL[p.c]}" fill-opacity=".82" stroke="#fff" stroke-width="1.5"></circle>`).join("") +
+   `</g>
+   <g id="sv-${uid}"></g>
+   <g id="probe-${uid}"></g>
+  </svg>`;
+}
+
+function paint(uid, m, opt) {
+  const q = (id) => document.getElementById(id + "-" + uid);
+  const e0 = lineEnds(m.w[0], m.w[1], m.b);
+  q("lines").innerHTML =
+    (opt.margin ? seg(lineEnds(m.w[0], m.w[1], m.b - 1), 'stroke="#111827" stroke-width="2" stroke-dasharray="9 7"') : "") +
+    (opt.margin ? seg(lineEnds(m.w[0], m.w[1], m.b + 1), 'stroke="#111827" stroke-width="2" stroke-dasharray="9 7"') : "") +
+    seg(e0, 'stroke="#111827" stroke-width="4"');
+  const n = Math.hypot(m.w[0], m.w[1]);
+  const g = gOf(m);
+  // Dai le = |w.x+b| <= 1; "bau troi" = hai nua mat phang cua hai lop
+  q("band").innerHTML = opt.margin ? poly(clipHalf(clipHalf(BOX, (a, b) => g(a, b) + 1), (a, b) => 1 - g(a, b)), "#0f172a", ".07") : "";
+  q("shade").innerHTML = opt.shade ? poly(clipHalf(BOX, (a, b) => -g(a, b)), COL[0], ".06") +
+                                    poly(clipHalf(BOX, g), COL[1], ".06") : "";
+  // Mui ten w bat dau tu diem gan goc toa nhat tren ranh gioi (phong 2,5 lan cho de thay)
+  q("vec").innerHTML = opt.w ? (() => {
+    const k = -m.b / (n * n), ox = k * m.w[0], oy = k * m.w[1], L = 2.5;
+    return `<line x1="${sx(ox)}" y1="${sy(oy)}" x2="${sx(ox + L * m.w[0])}" y2="${sy(oy + L * m.w[1])}"
+       stroke="#047857" stroke-width="4" marker-end="url(#ar-${uid})"></line>
+      <text x="${sx(ox + L * m.w[0]) + 12}" y="${sy(oy + L * m.w[1]) - 12}" font-size="26" fill="#047857">w</text>`;
+  })() : "";
+  q("sv").innerHTML = m.svs.map((p) => `<circle cx="${sx(p[0])}" cy="${sy(p[1])}" r="19" fill="none" stroke="#111827" stroke-width="3.5"></circle>`).join("");
+}
+
+/* ===================== CHE DO 1: LE ===================== */
+const OPT1 = {margin: true, w: true, shade: true};
+document.getElementById("plot1").innerHTML = frame("u1");
+paint("u1", SVM_MODEL, OPT1);
+const rN = SVM_MODEL.norm_w, rM = SVM_MODEL.margin;
+document.getElementById("rNorm").textContent = vi(rN, 4);
+document.getElementById("rMargin").textContent = vi(rM, 4);
+document.getElementById("rNsv").textContent = String(SVM_MODEL.svs.length);
+document.getElementById("nsv1").textContent = String(SVM_MODEL.svs.length);
+for (const [id, k] of [["cMargin", "margin"], ["cW", "w"], ["cShade", "shade"]]) {
+  document.getElementById(id).addEventListener("change", (e) => { OPT1[k] = e.target.checked; paint("u1", SVM_MODEL, OPT1); });
+}
+
+/* ===================== CHE DO 2: C ===================== */
+document.getElementById("plot2").innerHTML = frame("u2");
+const rows = SVM_C.map((r) => {
+  const n = Math.hypot(r.w[0], r.w[1]);
+  return `<tr data-i="${SVM_C.indexOf(r)}"><td>${vi(r.C, 1)}</td><td>${vi(r.w[0], 4)}</td><td>${vi(r.w[1], 4)}</td>` +
+         `<td>${vi(r.b, 4)}</td><td>${vi(n, 4)}</td><td>${vi(2 / n, 4)}</td><td>${r.nsv[0]} / ${r.nsv[1]}</td></tr>`;
+}).join("");
+document.querySelector("#cTable tbody").innerHTML = rows;
+const INS = {
+  "0": "C = 0,1: phạt vi phạm rất nhẹ nên SVM ưu tiên ‖w‖ nhỏ → lề RỘNG HƠN (3,4485) nhưng đường " +
+       "nghiêng đi và 4 điểm cùng thành vector hỗ trợ. Đây là “viền mềm”.",
+  "1": "Từ C = 0,5 trở lên đường không đổi nữa: hai lớp đã tách hoàn toàn bằng một đường thẳng, nên " +
+       "không có điểm vi phạm để C phạt. Với dữ liệu tách được, tăng C không làm gì cả.",
+  "2": "C = 1 đúng bằng mô hình trong lab: w = (0,4890 ; 0,5672), lề 2,6705, 3 vector hỗ trợ.",
+  "3": "C = 5 bằng hệt C = 1 — bài học: quét C vô nghĩa nếu dữ liệu tách tuyến tính hoàn toàn.",
+  "4": "C = 50 “cứng” tới mức gần như hard-margin, nhưng kết quả vẫn y nguyên với bộ dữ liệu này."
+};
+function setC(i) {
+  const r = SVM_C[i], n = Math.hypot(r.w[0], r.w[1]);
+  document.getElementById("cVal").textContent = vi(r.C, 1);
+  document.getElementById("cInsight").innerHTML = INS[String(i)];
+  paint("u2", {w: r.w, b: r.b, svs: (r.svs || SVM_MODEL.svs)}, {margin: true, w: true, shade: true});
+  document.querySelectorAll("#cTable tbody tr").forEach((tr) => tr.classList.toggle("on", tr.dataset.i === String(i)));
+  void n;
+}
+document.getElementById("cSlider").addEventListener("input", (e) => setC(+e.target.value));
+setC(2);
+
+/* ===================== CHE DO 3: CHAM DE DO ===================== */
+document.getElementById("plot3").innerHTML = frame("u3");
+paint("u3", SVM_MODEL, {margin: true, w: false, shade: true});
+const PRESETS = [[2, 1], [-2.5, -2.5], [0, 0], [-0.3402, -1.258]];
+document.getElementById("presets").innerHTML =
+  `<button data-i="0" class="on">Điểm mẫu lab [2 ; 1]</button>` +
+  `<button data-i="1">Điểm sâu trong lớp 0</button><button data-i="2">Gốc toạ độ</button>` +
+  `<button data-i="3">Một vector hỗ trợ</button>`;
+function probe(x, y) {
+  const g = SVM_MODEL.w[0] * x + SVM_MODEL.w[1] * y + SVM_MODEL.b;
+  const d = Math.abs(g) / SVM_MODEL.norm_w;
+  const foot = [x - g * SVM_MODEL.w[0] / (SVM_MODEL.norm_w ** 2), y - g * SVM_MODEL.w[1] / (SVM_MODEL.norm_w ** 2)];
+  document.getElementById("probe-u3").innerHTML =
+    `<line x1="${sx(x)}" y1="${sy(y)}" x2="${sx(foot[0])}" y2="${sy(foot[1])}" stroke="#047857" stroke-width="3.5"></line>
+     <circle cx="${sx(foot[0])}" cy="${sy(foot[1])}" r="8" fill="#047857"></circle>
+     <circle cx="${sx(x)}" cy="${sy(y)}" r="14" fill="none" stroke="#0f172a" stroke-width="3.5"></circle>` +
+    (g > 1 || g < -1 ? "" : `<circle cx="${sx(x)}" cy="${sy(y)}" r="24" fill="none" stroke="#b45309" stroke-width="3" stroke-dasharray="5 5"></circle>`);
+  document.getElementById("mPt").textContent = `(${vi(x, 2)} ; ${vi(y, 2)})`;
+  document.getElementById("mGam").textContent = (g >= 0 ? "+" : "") + vi(g, 4);
+  document.getElementById("mDist").textContent = vi(d, 4);
+  document.getElementById("mCls").textContent = g >= 0 ? "Lớp 1" : "Lớp 0";
+}
+document.getElementById("presets").addEventListener("click", (e) => {
+  const b = e.target.closest("button");
+  if (!b) return;
+  document.querySelectorAll("#presets button").forEach((x) => x.classList.toggle("on", x === b));
+  const p = PRESETS[+b.dataset.i];
+  probe(p[0], p[1]);
+});
+(function bindProbe() {
+  const host = document.getElementById("plot3");
+  const move = (ev) => {
+    const svg = host.querySelector("svg"), r = svg.getBoundingClientRect();
+    const pt = ev.touches ? ev.touches[0] : ev;
+    const px = (pt.clientX - r.left) / r.width * W, py = (pt.clientY - r.top) / r.height * H;
+    if (px < 0 || py < 0 || px > W || py > H) return;
+    document.querySelectorAll("#presets button").forEach((x) => x.classList.remove("on"));
+    probe(invx(px), invy(py));
+  };
+  host.addEventListener("pointerdown", (e) => {
+    move(e);
+    // setPointerCapture co the noi trong Firefox neu con tro khong con hoat dong (chuot que/ Stylus):
+    // thu va bo qua, thao tac van chay duoc nho pointermove o day.
+    try { host.setPointerCapture(e.pointerId); } catch (err) { void err; }
+  });
+  host.addEventListener("pointermove", (e) => { if (e.buttons === 1) move(e); });
+  probe(2, 1);
+})();
+
+/* ===================== TU LUYEN (khong cham diem - D2: chi la phan hoi) ===================== */
+const FB = [
+  ["Chưa đúng. Đi qua nhiều điểm hơn không phải mục tiêu — SVM chỉ cần 3 điểm giáp lề.",
+   "Đúng. Lề rộng nhất ⇔ ‖w‖ nhỏ nhất, tức biên nằm xa nhất có thể so với các điểm gần nhất của mỗi lớp, nên bền với nhiễu nhất.",
+   "Chưa đúng. Lề = 2/‖w‖, nên lề rộng nghĩa là ‖w‖ NHỎ chứ không phải lớn."],
+  ["Chưa đúng. Chính 3 điểm có vòng đen mới tạo ràng buộc; xoá 37 điểm kia không đổi nghiệm.",
+   "Chưa đúng. Không có lực nào kéo biên: các ràng buộc đang hoạt động vẫn cho cùng w và b.",
+   "Đúng. 37 điểm còn lại nằm ngoài dải lề, nghiệm của bài toán tối ưu không đổi (chính là chữ 'vector hỗ trợ')."],
+  ["Đúng. Hai lớp tách hoàn toàn bằng một đường thẳng ⇒ không điểm vi phạm ⇒ số hạng phạt của C bằng 0 với mọi C.",
+   "Chưa đúng. 3,4485 là lề khi C = 0,1 (C NHỎ, viền mềm), không phải khi C lớn.",
+   "Chưa đúng. Với dữ liệu tách được, C lớn hay nhỏ miễn ≥ 0,5 đều cho cùng nghiệm — xem bảng ở tab 'Số C'."]
+];
+document.querySelectorAll("#quiz .q").forEach((q, k) => {
+  const ans = +q.dataset.a, fb = q.querySelector(".fb");
+  q.querySelectorAll(".opts button").forEach((b) => b.addEventListener("click", () => {
+    const i = +b.dataset.i;  // SV co the chon lai de doc giaii thich: khong co diem, khong luu gi
+    q.querySelectorAll(".opts button").forEach((x) => x.classList.remove("right", "wrong"));
+    b.classList.add(i === ans ? "right" : "wrong");
+    if (i !== ans) q.querySelector(`.opts button[data-i="${ans}"]`).classList.add("right");
+    fb.textContent = FB[k][i];
+  }));
+});
+
+/* ===================== SO TABS ===================== */
+const TABS = ["t1", "t2", "t3", "t4"];
+function show(id) {
+  TABS.forEach((t) => {
+    const on = t === id;
+    document.getElementById(t).setAttribute("aria-selected", String(on));
+    document.getElementById("p" + t.slice(1)).hidden = !on;
+  });
+}
+TABS.forEach((t) => document.getElementById(t).addEventListener("click", () => show(t)));
+document.getElementById("themeBtn").addEventListener("click", (e) => {
+  const on = document.body.classList.toggle("light");
+  e.currentTarget.setAttribute("aria-pressed", String(on));
+  e.currentTarget.textContent = on ? "Theme tối (mặc định)" : "Theme sáng (máy chiếu)";
+});
+</script>
+</body>
+</html>

@@ -1,0 +1,383 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AI & Applications — Cổng học liệu số: Hệ sinh thái Bài giảng Trình chiếu, Mô phỏng Học phần & Sản phẩm Mẫu Agentic AI (Trí tuệ nhân tạo và Ứng dụng — UTH)">
+  <title>Agentic AI &amp; Interactive ML Demos</title>
+  <style>
+    :root {
+      --bg: #f6f7fb;
+      --paper: #ffffff;
+      --ink1: #0f2537;
+      --ink2: #4a5d70;
+      --a: #0f4c75;
+      --teal: #0d6e72;
+      --accent: #148f77;
+      --border: #dce3ec;
+      --badge-ready: #d1fae5;
+      --badge-ready-ink: #065f46;
+      --badge-plan: #fef3c7;
+      --badge-plan-ink: #92400e;
+    }
+    [data-theme="dark"] {
+      --bg: #0b131e;
+      --paper: #132030;
+      --ink1: #e6eef8;
+      --ink2: #9fb2c8;
+      --a: #38bdf8;
+      --teal: #2dd4bf;
+      --accent: #34d399;
+      --border: #233549;
+      --badge-ready: #064e3b;
+      --badge-ready-ink: #a7f3d0;
+      --badge-plan: #78350f;
+      --badge-plan-ink: #fde68a;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    html { -webkit-text-size-adjust: 100%; }
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+      background: var(--bg);
+      color: var(--ink1);
+      min-height: 100dvh;
+      line-height: 1.55;
+      overscroll-behavior: contain;
+    }
+    .hub {
+      max-width: 1240px;
+      margin: 0 auto;
+      padding: clamp(1rem, 2.5vw, 2.2rem);
+    }
+    header {
+      background: linear-gradient(135deg, #0f4c75 0%, #0d6e72 60%, #148f77 100%);
+      color: #ffffff;
+      padding: clamp(1.25rem, 3vw, 2rem);
+      border-radius: 16px;
+      margin-bottom: 1.5rem;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 1rem;
+      box-shadow: 0 8px 24px rgba(15, 76, 117, 0.16);
+    }
+    header h1 {
+      font-size: clamp(1.35rem, 2.6vw, 1.95rem);
+      font-weight: 800;
+      letter-spacing: -0.02em;
+    }
+    header p {
+      opacity: 0.92;
+      font-size: 0.96rem;
+      margin-top: 0.35rem;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.6rem;
+      align-items: center;
+    }
+    .search-input {
+      padding: 0.6rem 0.95rem;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.35);
+      background: rgba(255, 255, 255, 0.15);
+      color: #ffffff;
+      font-size: 0.95rem;
+      min-width: 230px;
+    }
+    .search-input::placeholder { color: rgba(255, 255, 255, 0.8); }
+    .btn {
+      padding: 0.6rem 1rem;
+      min-height: 44px;
+      border-radius: 10px;
+      border: 1px solid rgba(255, 255, 255, 0.4);
+      background: rgba(255, 255, 255, 0.16);
+      color: #ffffff;
+      font-weight: 600;
+      font-size: 0.9rem;
+      cursor: pointer;
+    }
+    .btn:hover { background: rgba(255, 255, 255, 0.28); }
+    .tabs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 1.4rem;
+    }
+    .tab-btn {
+      padding: 0.6rem 1.1rem;
+      min-height: 44px;
+      border-radius: 10px;
+      border: 1px solid var(--border);
+      background: var(--paper);
+      color: var(--ink2);
+      font-weight: 600;
+      font-size: 0.92rem;
+      cursor: pointer;
+    }
+    .tab-btn.active {
+      background: var(--a);
+      color: #ffffff;
+      border-color: var(--a);
+    }
+    section {
+      margin-bottom: 2.2rem;
+    }
+    .sec-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      flex-wrap: wrap;
+      gap: 0.5rem;
+      margin-bottom: 0.9rem;
+      border-bottom: 2px solid var(--border);
+      padding-bottom: 0.45rem;
+    }
+    .sec-head h2 {
+      font-size: 1.25rem;
+      color: var(--a);
+    }
+    .sec-head span {
+      font-size: 0.88rem;
+      color: var(--ink2);
+    }
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(310px, 1fr));
+      gap: 1rem;
+    }
+    .card {
+      background: var(--paper);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 1.1rem;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      gap: 0.75rem;
+      transition: transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .card:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 18px rgba(15, 37, 55, 0.08);
+    }
+    .card-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.5rem;
+    }
+    .code-tag {
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.78rem;
+      color: var(--teal);
+      font-weight: 700;
+    }
+    .badge {
+      font-size: 0.75rem;
+      font-weight: 700;
+      padding: 0.2rem 0.55rem;
+      border-radius: 999px;
+      white-space: nowrap;
+    }
+    .badge.ready { background: var(--badge-ready); color: var(--badge-ready-ink); }
+    .badge.plan { background: var(--badge-plan); color: var(--badge-plan-ink); }
+    .card h3 {
+      font-size: 1.05rem;
+      margin-top: 0.25rem;
+      color: var(--ink1);
+    }
+    .card p {
+      font-size: 0.9rem;
+      color: var(--ink2);
+    }
+    .card-foot {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 0.5rem;
+      padding-top: 0.5rem;
+      border-top: 1px dashed var(--border);
+      font-size: 0.84rem;
+    }
+    .open-link {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.45rem 0.9rem;
+      min-height: 44px;
+      border-radius: 8px;
+      background: var(--a);
+      color: #ffffff;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 0.86rem;
+    }
+    .open-link:hover { opacity: 0.92; }
+    .open-link.disabled {
+      background: var(--border);
+      color: var(--ink2);
+      pointer-events: none;
+    }
+    footer {
+      margin-top: 2rem;
+      padding-top: 1rem;
+      border-top: 1px solid var(--border);
+      font-size: 0.86rem;
+      color: var(--ink2);
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      gap: 0.5rem;
+    }
+    footer a { color: var(--a); }
+  </style>
+</head>
+<body>
+  <div class="hub">
+    <header>
+      <div>
+        <h1>Agentic AI &amp; Interactive ML Demos</h1>
+        <p>Interactive Machine Learning Simulations &amp; Single-File Agentic AI Web Demos</p>
+      </div>
+      <div class="controls">
+        <input id="q" class="search-input" type="search" placeholder="Tìm chương, thuật toán, demo..." aria-label="Tìm kiếm học liệu">
+        <button id="themeBtn" class="btn" type="button">Giao diện Tối / Sáng</button>
+      </div>
+    </header>
+
+    <div class="tabs" role="tablist">
+      <button class="tab-btn active" data-filter="all" type="button">Tất cả Demo (31)</button>
+      <button class="tab-btn" data-filter="modules" type="button">1. Mô phỏng Học phần Ch.1–Ch.5 (24)</button>
+      <button class="tab-btn" data-filter="showcases" type="button">2. Sản phẩm Mẫu Agentic AI (7)</button>
+    </div>
+
+    <section id="sec-modules" data-section="modules">
+      <div class="sec-head">
+        <h2>1. Phòng Thí Nghiệm Tương Tác Nội Dung Bài Học (<code>course_modules/</code>)</h2>
+        <span>Interactive HTML5 simulations across ML, GenAI, Vision &amp; AI Ethics</span>
+      </div>
+      <div class="grid" id="grid-modules"></div>
+    </section>
+
+    <section id="sec-showcases" data-section="showcases">
+      <div class="sec-head">
+        <h2>2. Sản Phẩm Mẫu Ứng Dụng Agentic AI 1-Shot (<code>agentic_showcases/</code>)</h2>
+        <span>Minh họa xây dựng sản phẩm tương tác hoàn chỉnh bằng AI Tác tử</span>
+      </div>
+      <div class="grid" id="grid-showcases"></div>
+    </section>
+
+    <footer><div>Interactive Single-File HTML Demos · Offline-Ready · Pure MathML</div></footer>
+  </div>
+
+  <script>
+    const MODULES = [
+      { id: "ch01_01_ai_timeline_spectrum", syllabus: "Mục 1.1–1.2", title: "Lịch sử tiến hóa AI & tương quan dữ liệu 6 chi nhánh (mô phỏng)", desc: "Dòng thời gian Dartmouth → AlexNet → Transformer, AI Hẹp (ANI) vs AI Tổng quát (AGI), phép thử Turing và hệ số tương quan giữa tỉ lệ đặt qua app với thời gian chờ.", href: "course_modules/ch01_01_ai_timeline_spectrum/index.html", ready: true },
+      { id: "ch01_02_ai_vs_traditional_code", syllabus: "Mục 1.2–1.4", title: "Lập trình Truyền thống (If-Else) vs Học máy từ Dữ liệu", desc: "Đối lập bộ luật if–else viết tay với mô hình AI học từ chuỗi GDP Việt Nam 2014–2026; đọc đồ thị ở thang tuyến tính và thang logarit.", href: "course_modules/ch01_02_ai_vs_traditional_code/index.html", ready: true },
+      { id: "ch01_03_bar_chart_race_viz", syllabus: "Mục 1.3", title: "Biểu đồ đua (Bar Chart Race) GDP & dữ liệu dạng dài/rộng", desc: "Dựng lại animation xếp hạng bằng SVG từ bảng số Lab sinh ra; tỉ lệ tăng trưởng suy ra bằng phép chia cầm tay; đối chiếu bảng dài (melt) và bảng rộng.", href: "course_modules/ch01_03_bar_chart_race_viz/index.html", ready: true },
+      { id: "ch02_01_linear_regression", syllabus: "Mục 2.1.1", title: "Hồi quy Tuyến tính (OLS, Hạ Gradient & Biến đổi Log)", desc: "Đường cong Preston (GDP & Tuổi thọ 154 quốc gia) và dự báo cước vận tải.", href: "course_modules/ch02_01_linear_regression/index.html", ready: true },
+      { id: "ch02_02_logistic_regression", syllabus: "Mục 2.1.2", title: "Hồi quy Logistic (Hàm Sigmoid, Log-Odds, MLE & BCE Loss)", desc: "Dự đoán xác suất thi Đỗ/Trượt theo giờ học qua 4 góc nhìn toán học.", href: "course_modules/ch02_02_logistic_regression/index.html", ready: true },
+      { id: "ch02_03_decision_tree_rf", syllabus: "Mục 2.1.3–2.1.4", title: "Cây Quyết định (Entropy/Gini) & Rừng Ngẫu nhiên", desc: "Từng bước tính Độ lợi thông tin (Information Gain) và bỏ phiếu đa số.", href: "course_modules/ch02_03_decision_tree_rf/index.html", ready: true },
+      { id: "ch02_04_knn_feature_scaling", syllabus: "Mục 2.1.5", title: "K-Láng giềng Gần nhất (KNN) & Bẫy Thang đo Đặc trưng", desc: "Trực quan hóa khoảng cách Euclid, chuẩn hóa Z-Score/Min-Max và chọn k tối ưu.", href: "course_modules/ch02_04_knn_feature_scaling/index.html", ready: true },
+      { id: "ch02_05_svm_margin", syllabus: "Mục 2.1.6", title: "Máy Vector Hỗ trợ (SVM): Siêu phẳng Tối ưu, Lề & Hệ số C", desc: "Tương tác vector hỗ trợ, độ rộng lề chuẩn xác từ Lab Python SSoT.", href: "course_modules/ch02_05_svm_margin/index.html", ready: true },
+      { id: "ch02_06_kmeans_pca", syllabus: "Mục 2.1.7", title: "Phân cụm K-Means (Phương pháp Khuỷu tay) & Giảm chiều PCA", desc: "Cập nhật tâm cụm từng bước, WCSS và chiếu phương sai cực đại.", href: "course_modules/ch02_06_kmeans_pca/index.html", ready: true },
+      { id: "ch02_07_mlp_cnn_attention", syllabus: "Mục 2.2", title: "Học sâu: Từ Perceptron, MLP, Tích chập CNN đến Cơ chế Chú ý", desc: "Bài toán XOR, lan truyền ngược, nhân chập ảnh và ma trận trọng số Self-Attention.", href: "course_modules/ch02_07_mlp_cnn_attention/index.html", ready: true },
+      { id: "ch02_08_q_learning_gridworld", syllabus: "Mục 2.3", title: "Học Tăng cường: Q-Learning & Phương trình Bellman trên Lưới", desc: "Tác tử xe tự hành cập nhật bảng Q-Table tìm đường tránh trạm thu phí.", href: "course_modules/ch02_08_q_learning_gridworld/index.html", ready: true },
+      { id: "ch02_09_react_agent_pipeline", syllabus: "Mục 2.4–2.5", title: "Vòng lặp Tác tử ReAct & Quy trình CRISP-DM Thực chiến", desc: "Chuỗi Suy luận – Hành động – Quan sát và kiểm soát Rò rỉ dữ liệu (Data Leakage).", href: "course_modules/ch02_09_react_agent_pipeline/index.html", ready: true },
+      { id: "ch02_10_decision_tree_pruning", syllabus: "Mục 2.1.3–2.1.4", title: "Cắt tỉa cây quyết định sau (Cost-Complexity Pruning)", desc: "Đường cong accuracy theo 23 mốc ccp_alpha; cây đầy đủ (10 sâu, 43 lá) so với cây cắt tỉa (5 sâu, 10 lá) và công thức R_α(T) = R(T) + α·|T|.", href: "course_modules/ch02_10_decision_tree_pruning/index.html", ready: true },
+      { id: "ch02_11_mlp_digit_recognition", syllabus: "Mục 2.2", title: "Mạng nơ-ron MLP nhận diện chữ số (Sklearn MNIST 8×8)", desc: "Ma trận nhầm lẫn 10×10 của lần chạy Lab (436/450 đúng, 14 nhầm), đếm 6.570 tham số và tách 1.347/450 train–test.", href: "course_modules/ch02_11_mlp_digit_recognition/index.html", ready: true },
+      { id: "ch02_12_q_learning_cartpole", syllabus: "Mục 2.3", title: "Q-Learning bảng rời rạc trên Con ngược có gió (CartPole + wind)", desc: "Rời rạc hoá trạng thái 3×3×6×12 $	o$ 1.296 ô Q, ε-greedy tham lam/khám phá và đường cong phần thưởng 10.000 tập của Lab.", href: "course_modules/ch02_12_q_learning_cartpole/index.html", ready: true },
+      { id: "ch02_13_q_learning_cartpole_wind", syllabus: "Mục 2.3", title: "Q(λ) — Vết khả tích trên Con ngược có gió", desc: "$\lambda = 0{,}8$ lan truyền phần thưởng ngược; lưới $10^4$ trạng thái (20.000 ô Q); Lab dừng sớm ở tập 100 khi điểm đánh giá vượt 300.", href: "course_modules/ch02_13_q_learning_cartpole_wind/index.html", ready: true },
+      { id: "ch03_01_tokenization_llm_sampling", syllabus: "Mục 3.1", title: "Không gian Ngữ nghĩa (Cosine Similarity) & Lấy mẫu Sinh văn bản LLM", desc: "Xếp hạng cosine similarity và ngưỡng lọc ngữ cảnh (RAG); phân phối Softmax theo Nhiệt độ (Temperature), entropy và Top-k/Top-p.", href: "course_modules/ch03_01_tokenization_llm_sampling/index.html", ready: true },
+      { id: "ch03_02_prompt_engineering_studio", syllabus: "Mục 3.1.3", title: "Phòng Thí nghiệm Kỹ thuật Thiết kế Câu lệnh (Prompt Studio)", desc: "Đối sánh Zero-shot, Few-shot, Chuỗi suy nghĩ (Chain-of-Thought) và Ràng buộc JSON.", href: "course_modules/ch03_02_prompt_engineering_studio/index.html", ready: true },
+      { id: "ch03_03_diffusion_factcheck_lab", syllabus: "Mục 3.2–3.3", title: "Quá trình Khuếch tán Ngược (Diffusion) & Kiểm chứng Ảo giác", desc: "Khử nhiễu ảnh từng bước và quy trình đối chiếu nguồn trích dẫn học thuật.", href: "course_modules/ch03_03_diffusion_factcheck_lab/index.html", ready: true },
+      { id: "ch03_04_speech_to_text_whisper", syllabus: "Mục 3.3", title: "Số hoá giọng nói & Phụ đề (Whisper, kịch bản offline)", desc: "Lấy mẫu 16.000 Hz · 3,0 giây = 48.000 mẫu, ngưỡng Nyquist, và đúng 3 phân đoạn phiên âm mẫu Lab dùng khi chưa cài Whisper.", href: "course_modules/ch03_04_speech_to_text_whisper/index.html", ready: true },
+      { id: "ch04_01_smart_logistics_routing", syllabus: "Mục 4.3", title: "Dự báo Rủi ro Giao hàng Trễ hạn (Hồi quy Logistic)", desc: "Mô hình logistic dự báo xác suất đơn hàng trễ hạn: trọng số theo quãng đường, điểm trung chuyển, thời tiết, khối lượng và độ quan trọng của đặc trưng.", href: "course_modules/ch04_01_smart_logistics_routing/index.html", ready: true },
+      { id: "ch04_02_predictive_maintenance_ocr", syllabus: "Mục 4.4–4.6", title: "Nhận diện Ảnh Đa phương thức (CLIP) & Bảo trì Dự đoán Máy bơm", desc: "Softmax zero-shot 4 nhãn văn bản (logit giả định kiểm tra được bằng tay) và kịch bản rung/nhiệt cho 8 máy bơm, ước lượng RUL.", href: "course_modules/ch04_02_predictive_maintenance_ocr/index.html", ready: true },
+      { id: "ch05_01_algorithmic_fairness_privacy", syllabus: "Mục 5.1–5.2", title: "Kiểm toán Thiên vị AI theo Quy tắc 4/5 (Disparate Impact)", desc: "Đo tác động bất cân xứng trong tuyển dụng/tín dụng trước và sau khi khử thiên kiến bằng ngưỡng quyết định.", href: "course_modules/ch05_01_algorithmic_fairness_privacy/index.html", ready: true },
+      { id: "ch05_02_eu_ai_act_risk_sandbox", syllabus: "Mục 5.3–5.6", title: "Phân tầng Rủi ro Pháp lý (EU AI Act) & Ma trận Kỹ năng Tương lai", desc: "Phân loại hệ thống AI theo 4 mức rủi ro pháp lý và lộ trình nghề nghiệp.", href: "course_modules/ch05_02_eu_ai_act_risk_sandbox/index.html", ready: true }
+    ];
+
+    const SHOWCASES = [
+      { id: "create_proj_by_frontier_models", syllabus: "Case Study", title: "Báo cáo Tương tác Xuất Nhập Khẩu Việt Nam (GSO V09.01)", desc: "Sản phẩm mẫu Đồ án nhóm sinh từ 1-shot Prompt + dữ liệu thật Cục Thống kê (GSO).", href: "agentic_showcases/create_proj_by_frontier_models/index.html", ready: true },
+      { id: "matrix_mastery", syllabus: "Nền tảng Toán cho AI", title: "Phòng Thí nghiệm Ma trận, Trị riêng & Tích chập CNN 2D", desc: "Biến đổi không gian tuyến tính, nhân ma trận từng bước và mô phỏng bộ lọc ảnh CNN.", href: "agentic_showcases/matrix_mastery/index.html", ready: true },
+      { id: "angry_bird-like", syllabus: "Mô phỏng Vật lý 2D & Tác tử", title: "Mô phỏng Quỹ đạo Đạn đạo & Va chạm Đàn hồi (Angry Birds-like)", desc: "Engine vật lý 2D tự chứa trong 1 file HTML, kiểm chứng qua Native Vision Loop.", href: "agentic_showcases/angry_bird-like/index.html", ready: true },
+      { id: "mario_kart-like", syllabus: "Đồ họa 3D & Điều khiển", title: "Mô phỏng Đua xe 3D & Quỹ đạo Bo cua (Mario Kart-like)", desc: "Đồ họa Three.js tương tác thời gian thực với điều khiển bàn phím và cảm ứng.", href: "agentic_showcases/mario_kart-like/index.html", ready: true },
+      { id: "milky_way_solar_system", syllabus: "Mô phỏng Không gian 3D", title: "Khám phá Dải Ngân Hà & Hệ Mặt Trời 3D (Three.js Offline)", desc: "Chuyển đổi mượt mà giữa toàn cảnh Ngân Hà và quỹ đạo chi tiết từng hành tinh.", href: "agentic_showcases/milky_way_solar_system/index.html", ready: true },
+      { id: "kaonashi_procedural_studio", syllabus: "Đồ họa & Âm thanh Thuật toán", title: "Kaonashi Procedural Studio (5 Phong cách Kết xuất & WebAudio)", desc: "Hoạt họa đường cong Bézier kết hợp 5 bộ lọc nghệ thuật thời gian thực và đàn ngũ cung.", href: "agentic_showcases/kaonashi_procedural_studio/index.html", ready: true },
+      { id: "vietnamese_michelin_chef", syllabus: "Thiết kế Sản phẩm Tương tác", title: "Ẩm thực Việt Nam Chuẩn 3 Sao Michelin (Interactive Gastronomy)", desc: "Ứng dụng tương tác đa giai đoạn từ sơ chế nguyên liệu đến trình bày đĩa nghệ thuật.", href: "agentic_showcases/vietnamese_michelin_chef/index.html", ready: true }
+    ];
+
+    function renderCards(items, containerId) {
+      const el = document.getElementById(containerId);
+      el.innerHTML = items.map(item => `
+        <article class="card" data-search="${(item.id + ' ' + item.syllabus + ' ' + item.title + ' ' + item.desc).toLowerCase()}">
+          <div>
+            <div class="card-top">
+              <span class="code-tag">${item.syllabus}</span>
+              <span class="badge ${item.ready ? 'ready' : 'plan'}">${item.ready ? 'Sẵn sàng (Offline)' : 'Lộ trình GĐ 3–5'}</span>
+            </div>
+            <h3>${item.title}</h3>
+            <p>${item.desc}</p>
+          </div>
+          <div class="card-foot">
+            <code>${item.id}</code>
+            <a class="open-link ${item.ready ? '' : 'disabled'}" href="${item.ready ? item.href : '#'}">${item.ready ? 'Mở Trực Tiếp →' : 'Đang biên dịch'}</a>
+          </div>
+        </article>
+      `).join('');
+    }
+
+    renderCards(MODULES, 'grid-modules');
+    renderCards(SHOWCASES, 'grid-showcases');
+
+    function applyFilter() {
+      const q = document.getElementById('q').value.trim().toLowerCase();
+      document.querySelectorAll('.card').forEach(card => {
+        card.style.display = (!q || card.dataset.search.includes(q)) ? 'flex' : 'none';
+      });
+    }
+
+    document.getElementById('q').addEventListener('input', applyFilter);
+
+    // Hỗ trợ lọc theo URL ?ch=1..5 (hoặc #ch01..#ch05) khi liên kết từ LMS
+    (function initFromUrl() {
+      const sp = new URLSearchParams(location.search);
+      let ch = sp.get('ch');
+      if (!ch && /^#ch0?([1-5])$/i.test(location.hash)) {
+        ch = location.hash.match(/^#ch0?([1-5])$/i)[1];
+      }
+      if (ch && /^[1-5]$/.test(ch)) {
+        const searchEl = document.getElementById('q');
+        searchEl.value = `ch0${ch}_`;
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        const modBtn = document.querySelector('.tab-btn[data-filter="modules"]');
+        if (modBtn) modBtn.classList.add('active');
+        document.querySelectorAll('section[data-section]').forEach(sec => {
+          sec.style.display = sec.dataset.section === 'modules' ? 'block' : 'none';
+        });
+        applyFilter();
+      }
+    })();
+
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+        btn.classList.add('active');
+        const f = btn.dataset.filter;
+        document.querySelectorAll('section[data-section]').forEach(sec => {
+          sec.style.display = (f === 'all' || sec.dataset.section === f) ? 'block' : 'none';
+        });
+      });
+    });
+
+    document.getElementById('themeBtn').addEventListener('click', () => {
+      const cur = document.documentElement.getAttribute('data-theme');
+      document.documentElement.setAttribute('data-theme', cur === 'dark' ? 'light' : 'dark');
+    });
+  </script>
+</body>
+</html>
