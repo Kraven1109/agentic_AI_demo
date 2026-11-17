@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Bài thực hành 2.13: CartPole (con ngược) có gió huấn luyện bằng Q-Learning với Vết khả tích (Eligibility Traces, Q(λ)). Rời rạc hoá không gian trạng thái 4 chiều thành lưới 10 mũ 4 ô, bảng Q 20.000 ô, cập nhật Q lan phần thưởng ngược qua vệt E với hệ số γλ. Toàn bộ số liệu là kết quả MỘT lần chạy Lab có np.random.seed(0) sau hai sửa đổi 2026-11-03 (giới hạn 200 bước mỗi tập theo chuẩn TimeLimit(200), và gió đưa vào phương trình lực): một tập tối đa 400 phần thưởng; Lab dừng sớm ở tập 2.900 vì điểm đánh giá chính sách vượt ngưỡng desired_reward = 300. Kèm phòng chạy thử: mô phỏng động CartPole-gió chạy bằng chính bảng Q (q_flat) mà Lab học được — số chạy thử là của mô phỏng trên trình duyệt.">
+<meta name="description" content="Bài thực hành 2.13: CartPole (con lắc ngược) có gió huấn luyện bằng Q-Learning với Vết khả tích (Eligibility Traces, Q(λ)). Rời rạc hoá không gian trạng thái 4 chiều thành lưới 10 mũ 4 trạng thái, bảng Q 20.000 ô, cập nhật Q lan truyền phần thưởng ngược qua vệt E theo hệ số γλ; giới hạn 200 bước mỗi tập (TimeLimit(200)), dừng sớm ở tập 2.900 khi điểm đánh giá vượt ngưỡng desired_reward = 300; kèm mô phỏng tương tác chạy bằng bảng Q (q_flat).">
 <title>CartPole có gió học bằng Vết khả tích Q(λ) (Eligibility Traces) — UTH AI Interactive Lab</title>
 <style>
 :root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);

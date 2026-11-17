@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Bài thực hành 2.12: Q-Learning bảng rời rạc trên CartPole có gió (con ngược cân bằng). Rời rạc hoá 4 chiều trạng thái thành lưới 3 × 3 × 6 × 12 = 648 trạng thái, bảng Q 1.296 ô, cập nhật Bellman một bước với gamma = 0,99, epsilon-tham lam có sàn 0,1, huấn luyện trọn 10.000 tập, mỗi tập cắt ở 200 bước (chuẩn TimeLimit(200)) nên một tập tối đa 200 điểm; gió thật sự đi vào phương trình lực. Toàn bộ số liệu là kết quả MỘT lần chạy Lab có np.random.seed(0) đặt trước khởi tạo bảng Q, chạy bằng mã sau hai sửa đổi của Giảng viên 2026-11-03.">
+<meta name="description" content="Bài thực hành 2.12: Q-Learning bảng rời rạc trên CartPole có gió (con lắc ngược cân bằng). Rời rạc hoá 4 chiều trạng thái thành lưới 3 × 3 × 6 × 12 = 648 trạng thái, bảng Q 1.296 ô, cập nhật Bellman một bước với gamma = 0,99, epsilon-tham lam có sàn 0,1, huấn luyện 10.000 tập, mỗi tập giới hạn 200 bước (TimeLimit(200)) với lực gió tích hợp vào phương trình chuyển động; tái lập với np.random.seed(0).">
 <title>Q-Learning bảng trên CartPole — Rời rạc hoá &amp; đường cong 10.000 tập — UTH AI Interactive Lab</title>
 <style>
 :root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
