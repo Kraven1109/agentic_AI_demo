@@ -2570,5 +2570,119 @@ Lập bảng so sánh 2 phương án (100% Đường bộ vs. Kết hợp Sà la
       renderSlide(0);
     });
   </script>
+
+<style id="__aiPromptStyle">
+#__aiPromptFab{position:fixed;right:14px;bottom:14px;z-index:2147483640;display:inline-flex;align-items:center;gap:6px;padding:7px 13px;border-radius:999px;border:1px solid rgba(56,189,248,.45);background:rgba(15,23,42,.88);color:#e0f2fe;font:600 12px/1.2 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;cursor:pointer;backdrop-filter:blur(8px);box-shadow:0 6px 20px rgba(2,6,23,.45);touch-action:manipulation;pointer-events:auto;transition:transform .15s ease,border-color .15s ease}
+#__aiPromptFab:hover{transform:translateY(-1px);border-color:#38bdf8;background:rgba(15,23,42,.96)}
+#__aiPromptBackdrop{position:fixed;inset:0;z-index:2147483646;display:none;align-items:center;justify-content:center;padding:16px;background:rgba(2,6,23,.78);backdrop-filter:blur(4px);pointer-events:auto}
+#__aiPromptBackdrop.open{display:flex}
+#__aiPromptCard{width:min(760px,100%);max-height:86vh;max-height:86dvh;display:flex;flex-direction:column;gap:10px;padding:18px;border-radius:14px;background:#0f172a;color:#e2e8f0;border:1px solid #334155;box-shadow:0 24px 60px rgba(0,0,0,.6);font:400 14px/1.55 system-ui,-apple-system,Segoe UI,Roboto,sans-serif;box-sizing:border-box;text-align:left}
+#__aiPromptHead{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
+#__aiPromptBadge{display:inline-block;padding:3px 9px;border-radius:999px;font:700 11px/1.2 system-ui,sans-serif;color:#a5f3fc;background:rgba(34,211,238,.14);border:1px solid rgba(34,211,238,.3);margin-bottom:6px}
+#__aiPromptTitle{margin:0;font:700 16px/1.35 system-ui,sans-serif;color:#f8fafc}
+#__aiPromptNote{margin:0;font-size:12.5px;color:#94a3b8}
+#__aiPromptPre{margin:0;padding:13px 14px;border-radius:10px;background:#020617;border:1px solid #1e293b;color:#e2e8f0;font:400 13px/1.55 ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;white-space:pre-wrap;word-break:break-word;overflow-y:auto;max-height:46vh;max-height:46dvh;user-select:text}
+#__aiPromptFoot{display:flex;justify-content:space-between;align-items:center;gap:8px;flex-wrap:wrap;padding-top:4px}
+#__aiPromptFootLeft,#__aiPromptFootRight{display:flex;gap:8px;flex-wrap:wrap}
+.__aiPBtn{padding:7px 13px;border-radius:8px;border:1px solid #334155;background:#1e293b;color:#e2e8f0;font:600 12.5px/1.2 system-ui,sans-serif;cursor:pointer;touch-action:manipulation}
+.__aiPBtn:hover{border-color:#38bdf8;color:#fff}
+.__aiPBtnPrimary{background:#0284c7;border-color:#0284c7;color:#fff}
+.__aiPBtnPrimary:hover{background:#0369a1;border-color:#0369a1}
+@media print{#__aiPromptFab,#__aiPromptBackdrop{display:none!important}}
+</style>
+<button type="button" id="__aiPromptFab" title="Xem và sao chép Prompt tạo demo này">✨ Xem Prompt</button>
+<div id="__aiPromptBackdrop" role="dialog" aria-modal="true" aria-labelledby="__aiPromptTitle">
+  <div id="__aiPromptCard">
+    <div id="__aiPromptHead">
+      <div>
+        <span id="__aiPromptBadge">1-Shot Golden Prompt</span>
+        <h3 id="__aiPromptTitle">Báo cáo Tương tác Xuất Nhập Khẩu Việt Nam (GSO V09.01)</h3>
+      </div>
+      <button type="button" class="__aiPBtn" id="__aiPromptCloseTop" aria-label="Đóng">✕</button>
+    </div>
+    <p id="__aiPromptNote">Sinh viên có thể sao chép prompt dưới đây (hoặc chuyển sang khung 4 khối) để tự yêu cầu AI tái tạo hoặc tùy biến demo này.</p>
+    <pre id="__aiPromptPre"></pre>
+    <div id="__aiPromptFoot">
+      <div id="__aiPromptFootLeft">
+        <button type="button" class="__aiPBtn" id="__aiPromptToggleTpl">Xem Khung Prompt Mẫu (4 khối)</button>
+      </div>
+      <div id="__aiPromptFootRight">
+        <button type="button" class="__aiPBtn __aiPBtnPrimary" id="__aiPromptCopy">Copy Prompt</button>
+        <button type="button" class="__aiPBtn" id="__aiPromptClose">Đóng</button>
+      </div>
+    </div>
+  </div>
+</div>
+<script type="application/json" id="__aiPromptData">{"title": "Báo cáo Tương tác Xuất Nhập Khẩu Việt Nam (GSO V09.01)", "kind": "1-Shot Golden Prompt", "prompt": "Đề cương môn học: <file đề cương>. Dữ liệu: <file data (ví dụ V09.01.json từ GSO)>.\n\nHãy hoàn thành trọn vẹn đồ án nhóm cho sinh viên năm nhất, bám sát đề cương và khai thác dữ liệu ở mức tốt nhất bạn có thể.\n\nSản phẩm:\n1. Một file HTML duy nhất, là báo cáo cuối cùng: trình bày trau chuốt, diễn giải dễ hiểu cho người mới, trực quan hóa dữ liệu hiện đại, chuẩn mực. Đính kèm đề cương như một phụ lục (memo) trong file.\n2. Chế độ trình chiếu slide deck ngay trong HTML (điều hướng bàn phím/chạm, toàn màn hình), và chuyển giao diện sáng/tối cho phòng chiếu.\n3. Một file .md riêng: gợi ý cấu trúc và cách viết báo cáo học thuật phù hợp với đề tài.\n\nHãy tự quyết định góc nhìn, phân tích và thiết kế sao cho kết quả vượt xa kỳ vọng của một đồ án năm nhất.", "template": "[VAI TRÒ & MỤC TIÊU]\nĐóng vai trò là Kỹ sư Lập trình Game & Mô phỏng Trực quan Web. Hãy phát triển 1 trò chơi/mô phỏng tương tác: <TÊN_HOẶC_Ý_TƯỞNG_DEMO> lấy cảm hứng trực quan và cơ chế từ <ỨNG_DỤNG_THAM_CHIẾU>.\n\n[KIẾN TRÚC & CÔNG NGHỆ]\n- Đóng gói gọn nhẹ: ưu tiên duy nhất 1 file index.html tự chứa toàn bộ cấu trúc, CSS hiện đại và logic JavaScript (chạy offline 100%, không CDN ngoài).\n- Điều khiển: hỗ trợ đồng thời Bàn phím/Chuột trên máy tính và Cảm ứng trên điện thoại.\n- Hiển thị: Responsive mượt mà từ màn hình điện thoại (390x844, 720p) đến 1080p và 4K UHD.\n\n[CƠ CHẾ CỐT LÕI & THUẬT TOÁN]\n- Mô phỏng rõ ràng thuật toán/cơ chế tương tác: <MÔ_TẢ_CƠ_CHẾ: ví dụ Thanh trượt tham số, Quỹ đạo vật lý, Đồ thị hội tụ, Bảng số liệu>.\n- Trạng thái hoàn chỉnh: Khởi tạo -> Tương tác/Thực nghiệm -> Kết quả & Giải thích -> Chơi lại/Đặt lại.\n\n[KIỂM CHỨNG BẰNG THỊ GIÁC (NATIVE VISION LOOP)]\n- Tự động chạy kịch bản kiểm thử trình duyệt (Playwright) ở nhiều độ phân giải (mobile, 720p, 1080p), chụp ảnh màn hình các trạng thái chính.\n- Tự rà soát ảnh chụp để sửa lỗi tràn khung, chồng chữ, mất cân đối trước khi kết thúc."}</script>
+<script>
+(function(){
+  var dataEl=document.getElementById('__aiPromptData');
+  if(!dataEl)return;
+  var data=JSON.parse(dataEl.textContent);
+  var fab=document.getElementById('__aiPromptFab');
+  var modal=document.getElementById('__aiPromptBackdrop');
+  var card=document.getElementById('__aiPromptCard');
+  var badge=document.getElementById('__aiPromptBadge');
+  var title=document.getElementById('__aiPromptTitle');
+  var pre=document.getElementById('__aiPromptPre');
+  var copyBtn=document.getElementById('__aiPromptCopy');
+  var tplBtn=document.getElementById('__aiPromptToggleTpl');
+  var showingTpl=false;
+  function renderView(){
+    copyBtn.textContent='Copy Prompt';
+    if(showingTpl){
+      badge.textContent='Khung Prompt 4 Khối';
+      title.textContent='Khung Prompt Mẫu để Tự Tạo Demo AI Mới';
+      pre.textContent=data.template;
+      tplBtn.textContent='← Quay lại Prompt của Demo';
+    }else{
+      badge.textContent=data.kind;
+      title.textContent=data.title;
+      pre.textContent=data.prompt;
+      tplBtn.textContent='Xem Khung Prompt Mẫu (4 khối)';
+    }
+  }
+  function openModal(e){
+    if(e){e.stopPropagation();}
+    showingTpl=false;
+    renderView();
+    modal.classList.add('open');
+  }
+  function closeModal(e){
+    if(e){e.stopPropagation();}
+    modal.classList.remove('open');
+  }
+  ['pointerdown','touchstart','mousedown'].forEach(function(ev){
+    fab.addEventListener(ev,function(e){e.stopPropagation();});
+    modal.addEventListener(ev,function(e){e.stopPropagation();});
+  });
+  fab.addEventListener('click',openModal);
+  card.addEventListener('click',function(e){e.stopPropagation();});
+  modal.addEventListener('click',closeModal);
+  document.getElementById('__aiPromptClose').addEventListener('click',closeModal);
+  document.getElementById('__aiPromptCloseTop').addEventListener('click',closeModal);
+  tplBtn.addEventListener('click',function(e){e.stopPropagation();showingTpl=!showingTpl;renderView();});
+  copyBtn.addEventListener('click',function(e){
+    e.stopPropagation();
+    var txt=pre.textContent;
+    function ok(){copyBtn.textContent='Đã sao chép ✓';setTimeout(function(){copyBtn.textContent='Copy Prompt';},1800);}
+    if(navigator.clipboard&&navigator.clipboard.writeText){
+      navigator.clipboard.writeText(txt).then(ok).catch(fallback);
+    }else{fallback();}
+    function fallback(){
+      var ta=document.createElement('textarea');
+      ta.value=txt;ta.style.position='fixed';ta.style.opacity='0';
+      document.body.appendChild(ta);ta.select();
+      try{document.execCommand('copy');ok();}catch(_e){}
+      document.body.removeChild(ta);
+    }
+  });
+  document.addEventListener('keydown',function(e){
+    if(!modal.classList.contains('open'))return;
+    e.stopPropagation();
+    if(e.key==='Escape')closeModal();
+  },true);
+})();
+</script>
 </body>
 </html>

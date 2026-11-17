@@ -3,6 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" href="data:,">
   <meta name="description" content="AI & Applications — Cổng học liệu số: Hệ sinh thái Bài giảng Trình chiếu, Mô phỏng Học phần & Sản phẩm Mẫu Agentic AI (Trí tuệ nhân tạo và Ứng dụng — UTH)">
   <title>Agentic AI &amp; Interactive ML Demos</title>
   <style>
@@ -197,29 +198,139 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      flex-wrap: wrap;
       gap: 0.5rem;
       padding-top: 0.5rem;
       border-top: 1px dashed var(--border);
       font-size: 0.84rem;
     }
+    .card-foot code {
+      min-width: 0;
+      flex: 1 1 110px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+      font-size: 0.75rem;
+      color: var(--ink2);
+    }
     .open-link {
       display: inline-flex;
       align-items: center;
       justify-content: center;
-      padding: 0.45rem 0.9rem;
+      padding: 0.45rem 0.85rem;
       min-height: 44px;
       border-radius: 8px;
       background: var(--a);
       color: #ffffff;
       text-decoration: none;
       font-weight: 600;
-      font-size: 0.86rem;
+      font-size: 0.84rem;
+      white-space: nowrap;
     }
     .open-link:hover { opacity: 0.92; }
     .open-link.disabled {
       background: var(--border);
       color: var(--ink2);
       pointer-events: none;
+    }
+    .card-actions {
+      display: flex;
+      gap: 0.45rem;
+      align-items: center;
+      flex-wrap: nowrap;
+      flex-shrink: 0;
+      margin-left: auto;
+    }
+    .prompt-btn {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0.45rem 0.75rem;
+      min-height: 44px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--bg);
+      color: var(--a);
+      font-weight: 600;
+      font-size: 0.84rem;
+      white-space: nowrap;
+      cursor: pointer;
+    }
+    .prompt-btn:hover { background: var(--border); }
+    .modal-backdrop {
+      position: fixed;
+      inset: 0;
+      background: rgba(10, 18, 30, 0.72);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 1rem;
+      z-index: 1000;
+    }
+    .modal-backdrop.open { display: flex; }
+    .modal-box {
+      background: var(--paper);
+      color: var(--ink1);
+      border: 1px solid var(--border);
+      border-radius: 14px;
+      max-width: 760px;
+      width: 100%;
+      max-height: 86dvh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 50px rgba(0, 0, 0, 0.35);
+      overflow: hidden;
+    }
+    .modal-head {
+      padding: 1rem 1.25rem;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 0.75rem;
+    }
+    .modal-head h3 { font-size: 1.05rem; margin-top: 0.25rem; }
+    .modal-body {
+      padding: 1rem 1.25rem;
+      overflow-y: auto;
+    }
+    .modal-pre {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 0.9rem 1rem;
+      font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      font-size: 0.86rem;
+      line-height: 1.55;
+      white-space: pre-wrap;
+      word-break: break-word;
+      color: var(--ink1);
+    }
+    .modal-foot {
+      padding: 0.85rem 1.25rem;
+      border-top: 1px solid var(--border);
+      display: flex;
+      justify-content: flex-end;
+      gap: 0.6rem;
+      flex-wrap: wrap;
+    }
+    .modal-btn {
+      padding: 0.5rem 1rem;
+      min-height: 44px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      background: var(--paper);
+      color: var(--ink1);
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      display: inline-flex;
+      align-items: center;
+    }
+    .modal-btn.primary {
+      background: var(--a);
+      color: #ffffff;
+      border-color: transparent;
     }
     footer {
       margin-top: 2rem;
@@ -244,6 +355,7 @@
       </div>
       <div class="controls">
         <input id="q" class="search-input" type="search" placeholder="Tìm chương, thuật toán, demo..." aria-label="Tìm kiếm học liệu">
+        <button id="tplBtn" class="btn" type="button">Khung Prompt Mẫu</button>
         <button id="themeBtn" class="btn" type="button">Giao diện Tối / Sáng</button>
       </div>
     </header>
@@ -273,6 +385,25 @@
     <footer><div>Interactive Single-File HTML Demos · Offline-Ready · Pure MathML</div></footer>
   </div>
 
+  <div id="promptModal" class="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="pmTitle">
+    <div class="modal-box">
+      <div class="modal-head">
+        <div>
+          <span id="pmBadge" class="badge ready">1-Shot Golden Prompt</span>
+          <h3 id="pmTitle">Prompt</h3>
+        </div>
+        <button id="pmClose" class="modal-btn" type="button" aria-label="Đóng">Đóng ✕</button>
+      </div>
+      <div class="modal-body">
+        <pre id="pmText" class="modal-pre"></pre>
+      </div>
+      <div class="modal-foot">
+        <a id="pmOpen" class="modal-btn" href="#" target="_blank" rel="noopener">Mở Demo ↗</a>
+        <button id="pmCopy" class="modal-btn primary" type="button">Copy Prompt</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     const MODULES = [
       { id: "ch01_01_ai_timeline_spectrum", syllabus: "Mục 1.1–1.2", title: "Lịch sử tiến hóa AI & tương quan dữ liệu 6 chi nhánh (mô phỏng)", desc: "Dòng thời gian Dartmouth → AlexNet → Transformer, AI Hẹp (ANI) vs AI Tổng quát (AGI), phép thử Turing và hệ số tương quan giữa tỉ lệ đặt qua app với thời gian chờ.", href: "course_modules/ch01_01_ai_timeline_spectrum/index.html", ready: true },
@@ -289,8 +420,8 @@
       { id: "ch02_09_react_agent_pipeline", syllabus: "Mục 2.4–2.5", title: "Vòng lặp Tác tử ReAct & Quy trình CRISP-DM Thực chiến", desc: "Chuỗi Suy luận – Hành động – Quan sát và kiểm soát Rò rỉ dữ liệu (Data Leakage).", href: "course_modules/ch02_09_react_agent_pipeline/index.html", ready: true },
       { id: "ch02_10_decision_tree_pruning", syllabus: "Mục 2.1.3–2.1.4", title: "Cắt tỉa cây quyết định sau (Cost-Complexity Pruning)", desc: "Đường cong accuracy theo 23 mốc ccp_alpha; cây đầy đủ (10 sâu, 43 lá) so với cây cắt tỉa (5 sâu, 10 lá) và công thức R_α(T) = R(T) + α·|T|.", href: "course_modules/ch02_10_decision_tree_pruning/index.html", ready: true },
       { id: "ch02_11_mlp_digit_recognition", syllabus: "Mục 2.2", title: "Mạng nơ-ron MLP nhận diện chữ số (Sklearn MNIST 8×8)", desc: "Ma trận nhầm lẫn 10×10 của lần chạy Lab (436/450 đúng, 14 nhầm), đếm 6.570 tham số và tách 1.347/450 train–test.", href: "course_modules/ch02_11_mlp_digit_recognition/index.html", ready: true },
-      { id: "ch02_12_q_learning_cartpole", syllabus: "Mục 2.3", title: "Q-Learning bảng rời rạc trên Con ngược có gió (CartPole + wind)", desc: "Rời rạc hoá trạng thái 3×3×6×12 $	o$ 1.296 ô Q, ε-greedy tham lam/khám phá và đường cong phần thưởng 10.000 tập của Lab.", href: "course_modules/ch02_12_q_learning_cartpole/index.html", ready: true },
-      { id: "ch02_13_q_learning_cartpole_wind", syllabus: "Mục 2.3", title: "Q(λ) — Vết khả tích trên Con ngược có gió", desc: "$\lambda = 0{,}8$ lan truyền phần thưởng ngược; lưới $10^4$ trạng thái (20.000 ô Q); Lab dừng sớm ở tập 100 khi điểm đánh giá vượt 300.", href: "course_modules/ch02_13_q_learning_cartpole_wind/index.html", ready: true },
+      { id: "ch02_12_q_learning_cartpole", syllabus: "Mục 2.3", title: "Q-Learning bảng rời rạc trên Con ngược có gió (CartPole + wind)", desc: "Rời rạc hoá trạng thái 3×3×6×12 → 1.296 ô Q, ε-greedy tham lam/khám phá và đường cong phần thưởng 10.000 tập của Lab.", href: "course_modules/ch02_12_q_learning_cartpole/index.html", ready: true },
+      { id: "ch02_13_q_learning_cartpole_wind", syllabus: "Mục 2.3", title: "Q(λ) — Vết khả tích trên Con ngược có gió", desc: "λ = 0,8 lan truyền phần thưởng ngược; lưới 10⁴ trạng thái (20.000 ô Q); Lab dừng sớm ở tập 100 khi điểm đánh giá vượt 300.", href: "course_modules/ch02_13_q_learning_cartpole_wind/index.html", ready: true },
       { id: "ch03_01_tokenization_llm_sampling", syllabus: "Mục 3.1", title: "Không gian Ngữ nghĩa (Cosine Similarity) & Lấy mẫu Sinh văn bản LLM", desc: "Xếp hạng cosine similarity và ngưỡng lọc ngữ cảnh (RAG); phân phối Softmax theo Nhiệt độ (Temperature), entropy và Top-k/Top-p.", href: "course_modules/ch03_01_tokenization_llm_sampling/index.html", ready: true },
       { id: "ch03_02_prompt_engineering_studio", syllabus: "Mục 3.1.3", title: "Phòng Thí nghiệm Kỹ thuật Thiết kế Câu lệnh (Prompt Studio)", desc: "Đối sánh Zero-shot, Few-shot, Chuỗi suy nghĩ (Chain-of-Thought) và Ràng buộc JSON.", href: "course_modules/ch03_02_prompt_engineering_studio/index.html", ready: true },
       { id: "ch03_03_diffusion_factcheck_lab", syllabus: "Mục 3.2–3.3", title: "Quá trình Khuếch tán Ngược (Diffusion) & Kiểm chứng Ảo giác", desc: "Khử nhiễu ảnh từng bước và quy trình đối chiếu nguồn trích dẫn học thuật.", href: "course_modules/ch03_03_diffusion_factcheck_lab/index.html", ready: true },
@@ -311,6 +442,134 @@
       { id: "vietnamese_michelin_chef", syllabus: "Thiết kế Sản phẩm Tương tác", title: "Ẩm thực Việt Nam Chuẩn 3 Sao Michelin (Interactive Gastronomy)", desc: "Ứng dụng tương tác đa giai đoạn từ sơ chế nguyên liệu đến trình bày đĩa nghệ thuật.", href: "agentic_showcases/vietnamese_michelin_chef/index.html", ready: true }
     ];
 
+    const REPRO_TEMPLATE = `[VAI TRÒ & MỤC TIÊU]
+Đóng vai trò là Kỹ sư Lập trình Game & Mô phỏng Trực quan Web. Hãy phát triển 1 trò chơi/mô phỏng tương tác: <TÊN_HOẶC_Ý_TƯỞNG_DEMO> lấy cảm hứng trực quan và cơ chế từ <ỨNG_DỤNG_THAM_CHIẾU>.
+
+[KIẾN TRÚC & CÔNG NGHỆ]
+- Đóng gói gọn nhẹ: ưu tiên duy nhất 1 file index.html tự chứa toàn bộ cấu trúc, CSS hiện đại và logic JavaScript (chạy offline 100%, không CDN ngoài).
+- Điều khiển: hỗ trợ đồng thời Bàn phím/Chuột trên máy tính và Cảm ứng trên điện thoại.
+- Hiển thị: Responsive mượt mà từ màn hình điện thoại (390x844, 720p) đến 1080p và 4K UHD.
+
+[CƠ CHẾ CỐT LÕI & THUẬT TOÁN]
+- Mô phỏng rõ ràng thuật toán/cơ chế tương tác: <MÔ_TẢ_CƠ_CHẾ: ví dụ Thanh trượt tham số, Quỹ đạo vật lý, Đồ thị hội tụ, Bảng số liệu>.
+- Trạng thái hoàn chỉnh: Khởi tạo -> Tương tác/Thực nghiệm -> Kết quả & Giải thích -> Chơi lại/Đặt lại.
+
+[KIỂM CHỨNG BẰNG THỊ GIÁC (NATIVE VISION LOOP)]
+- Tự động chạy kịch bản kiểm thử trình duyệt (Playwright) ở nhiều độ phân giải (mobile, 720p, 1080p), chụp ảnh màn hình các trạng thái chính.
+- Tự rà soát ảnh chụp để sửa lỗi tràn khung, chồng chữ, mất cân đối trước khi kết thúc.`;
+
+    const PROMPTS = {
+      "create_proj_by_frontier_models": {
+        kind: "1-Shot Golden Prompt",
+        text: `Đề cương môn học: <file đề cương>. Dữ liệu: <file data (ví dụ V09.01.json từ GSO)>.
+
+Hãy hoàn thành trọn vẹn đồ án nhóm cho sinh viên năm nhất, bám sát đề cương và khai thác dữ liệu ở mức tốt nhất bạn có thể.
+
+Sản phẩm:
+1. Một file HTML duy nhất, là báo cáo cuối cùng: trình bày trau chuốt, diễn giải dễ hiểu cho người mới, trực quan hóa dữ liệu hiện đại, chuẩn mực. Đính kèm đề cương như một phụ lục (memo) trong file.
+2. Chế độ trình chiếu slide deck ngay trong HTML (điều hướng bàn phím/chạm, toàn màn hình), và chuyển giao diện sáng/tối cho phòng chiếu.
+3. Một file .md riêng: gợi ý cấu trúc và cách viết báo cáo học thuật phù hợp với đề tài.
+
+Hãy tự quyết định góc nhìn, phân tích và thiết kế sao cho kết quả vượt xa kỳ vọng của một đồ án năm nhất.`
+      },
+      "matrix_mastery": {
+        kind: "1-Shot Golden Prompt",
+        text: `Hãy viết 1 công cụ phục vụ học tập giúp các bạn SV nắm vững kiến thức về ma trận. Đồ họa chất lượng cao chạy trên web bằng duy nhất 1 file html, hỗ trợ điện thoại có độ phân giải từ 720p tới 4k.
+Fanout cho tới khi bạn kiểm chứng được bằng native vision là game vừa tạo giống với mục tiêu đề ra.`
+      },
+      "angry_bird-like": {
+        kind: "1-Shot Golden Prompt",
+        text: `Hãy viết 1 trò chơi có cơ chế vật lý và giao diện giống Angry Birds.
+Đồ họa chất lượng cao chạy trên web bằng duy nhất 1 file html, hỗ trợ điện thoại có độ phân giải từ 720p tới 4k.
+Fanout cho tới khi bạn kiểm chứng được bằng native vision là game vừa tạo giống với mục tiêu đề ra.`
+      },
+      "mario_kart-like": {
+        kind: "1-Shot Golden Prompt",
+        text: `Hãy viết 1 trò chơi đua xe có giao diện giống như Mario Kart.
+Đồ họa chất lượng cao bằng Three.js để chạy trên web.
+Fanout cho tới khi bạn kiểm chứng được bằng native vision là game vừa tạo giống với mục tiêu đề ra.`
+      },
+      "milky_way_solar_system": {
+        kind: "1-Shot Golden Prompt",
+        text: `Hãy viết 1 ứng dụng web 3D mô phỏng Dải Ngân Hà (The Milky Way) và Hệ Mặt Trời với đồ họa chất lượng cao.
+Người dùng có thể chuyển đổi giữa toàn cảnh Ngân Hà và Hệ Mặt Trời, phóng to (zoom-in) để quan sát chi tiết từng hành tinh.
+Đồ họa chất lượng cao bằng Three.js chạy trên web bằng duy nhất 1 file HTML, hỗ trợ điện thoại từ 720p tới 4K.
+Fanout cho tới khi bạn kiểm chứng được bằng native vision là giao diện vừa tạo đạt chuẩn thẩm mỹ cao và bám sát mục tiêu đề ra.`
+      },
+      "kaonashi_procedural_studio": {
+        kind: "1-Shot Golden Prompt",
+        text: `Create a complete, self-contained, single-file HTML5 procedural animation and interactive audio-visual studio (index.html) using ONLY vanilla HTML, CSS, HTML5 2D Canvas, and the Web Audio API. Zero external libraries, zero images, zero video files, and zero audio assets are allowed.
+
+1. Subject & Procedural Scene (Ghibli "No-Face / Kaonashi" Aesthetic):
+- Draw the billowing semi-transparent dark cloak using dynamic trigonometric/Bézier spine curves, white oval mask, hidden torso mouth slider, swinging spirit lantern tracking cursor, and floating gold/spirit particles on click.
+2. Multi-Style Real-Time Render Pipeline (5 Switchable Art Styles):
+- Modern Anime Cel-Shaded, Pencil/Ink Sketch, Impressionist Oil Painting, Stained Glass Mosaic, Real-Time ASCII Art Matrix.
+3. Procedural Web Audio Synthesizer:
+- Japanese pentatonic (Hirajoshi scale) koto/chime melody + ambient drone adapting to cursor Y-position and art style.
+4. Custom Glassmorphism Control GUI:
+- Style switchers, sliders (wave speed, cloak billow, mouth openness, density, jitter, lantern glow, BPM), audio toggle, Randomize All, FPS HUD.`
+      },
+      "vietnamese_michelin_chef": {
+        kind: "1-Shot Golden Prompt",
+        text: `Hãy viết 1 ứng dụng với giao diện chất lượng cao, hỗ trợ nấu các món ăn thuần Việt, đảm bảo tiêu chuẩn Michellin.
+Đồ họa chất lượng cao chạy trên web bằng duy nhất 1 file html, hỗ trợ điện thoại có độ phân giải từ 720p tới 4k.
+Fanout cho tới khi bạn kiểm chứng được bằng native vision là game vừa tạo giống với mục tiêu đề ra.`
+      },
+      "ch02_01_linear_regression": {
+        kind: "1-Shot Golden Prompt",
+        text: `Tìm cho tôi 1 đề tài về kinh tế để minh họa cho thuật toán học máy Linear Regression, với số liệu thật mà bạn fetch được trên internet.
+Xây dựng giao diện đồ họa chất lượng cao để có thể chạy được mượt mà trên điện thoại có độ phân giải 720p trở lên.
+Yêu cầu chỉ tạo 1 file html duy nhất trong thư mục con tương ứng.
+Fanout cho tới khi bạn làm xong và kiểm chứng được là các tiêu chí đề ra đã được thỏa mãn.`
+      },
+      "ch02_02_logistic_regression": {
+        kind: "1-Shot Golden Prompt",
+        text: `Tôi cần demo với 1 single file .html về Hồi quy Logistic: dự đoán sinh viên đỗ (1) hay trượt (0) dựa trên số giờ học (1..8h).
+Hãy minh họa bằng 4 cách:
+0. Dùng thư viện có sẵn của Python
+1. Đối chiếu hồi quy tuyến tính / Logit
+2. Phương pháp Ước lượng Hợp lý Cực đại (MLE)
+3. Thuật toán Gradient Descent tối ưu hàm mất mát BCE
+Đồ họa chất lượng cao chạy trên web bằng duy nhất 1 file html, hỗ trợ điện thoại 720p tới 4k.
+Fanout cho tới khi bạn kiểm chứng được bằng native vision là demo đạt chuẩn thẩm mỹ cao.`
+      }
+    };
+
+    const ALL_ITEMS = [...MODULES, ...SHOWCASES];
+    function getPromptSpec(item) {
+      if (PROMPTS[item.id]) return PROMPTS[item.id];
+      return {
+        kind: "Prompt gợi ý tái tạo",
+        text: `Hãy xây dựng 1 mô phỏng tương tác web bằng duy nhất 1 tệp index.html (chạy offline 100%, không CDN ngoài, công thức dùng MathML thuần, responsive từ điện thoại 390x844 đến 4K).\n\nChủ đề: ${item.title}\nMục tiêu minh họa: ${item.desc}\n\nYêu cầu chức năng:\n- Có thanh trượt / nút điều khiển tham số để quan sát đồ thị và số liệu thay đổi trực tiếp.\n- Trình bày phần công thức toán học và bảng số liệu đối chiếu.\n- Có 2–3 câu hỏi trắc nghiệm tự kiểm tra kèm giải thích ngay trong trang.`
+      };
+    }
+
+    function openPromptModal(id) {
+      const modal = document.getElementById('promptModal');
+      const badge = document.getElementById('pmBadge');
+      const title = document.getElementById('pmTitle');
+      const pre = document.getElementById('pmText');
+      const openA = document.getElementById('pmOpen');
+      const copyBtn = document.getElementById('pmCopy');
+      copyBtn.textContent = 'Copy Prompt';
+      if (id === '__TEMPLATE__') {
+        badge.textContent = 'Khung Prompt 4 Khối';
+        title.textContent = 'Khung Prompt Mẫu để Tự Tạo Demo AI Mới';
+        pre.textContent = REPRO_TEMPLATE;
+        openA.style.display = 'none';
+      } else {
+        const item = ALL_ITEMS.find(x => x.id === id);
+        if (!item) return;
+        const spec = getPromptSpec(item);
+        badge.textContent = spec.kind;
+        title.textContent = item.title;
+        pre.textContent = spec.text;
+        openA.href = item.href;
+        openA.style.display = 'inline-flex';
+      }
+      modal.classList.add('open');
+    }
+
     function renderCards(items, containerId) {
       const el = document.getElementById(containerId);
       el.innerHTML = items.map(item => `
@@ -318,14 +577,17 @@
           <div>
             <div class="card-top">
               <span class="code-tag">${item.syllabus}</span>
-              <span class="badge ${item.ready ? 'ready' : 'plan'}">${item.ready ? 'Sẵn sàng (Offline)' : 'Lộ trình GĐ 3–5'}</span>
+              <span class="badge ${item.ready ? 'ready' : 'plan'}">${item.ready ? (PROMPTS[item.id] ? 'Có 1-Shot Prompt' : 'Sẵn sàng (Offline)') : 'Lộ trình GĐ 3–5'}</span>
             </div>
             <h3>${item.title}</h3>
             <p>${item.desc}</p>
           </div>
           <div class="card-foot">
             <code>${item.id}</code>
-            <a class="open-link ${item.ready ? '' : 'disabled'}" href="${item.ready ? item.href : '#'}">${item.ready ? 'Mở Trực Tiếp →' : 'Đang biên dịch'}</a>
+            <div class="card-actions">
+              <button class="prompt-btn" type="button" data-prompt="${item.id}">Prompt</button>
+              <a class="open-link ${item.ready ? '' : 'disabled'}" href="${item.ready ? item.href : '#'}">${item.ready ? 'Mở Trực Tiếp →' : 'Đang biên dịch'}</a>
+            </div>
           </div>
         </article>
       `).join('');
@@ -333,6 +595,31 @@
 
     renderCards(MODULES, 'grid-modules');
     renderCards(SHOWCASES, 'grid-showcases');
+
+    document.addEventListener('click', (e) => {
+      const btn = e.target.closest('[data-prompt]');
+      if (btn) openPromptModal(btn.getAttribute('data-prompt'));
+    });
+    document.getElementById('tplBtn').addEventListener('click', () => openPromptModal('__TEMPLATE__'));
+    document.getElementById('pmClose').addEventListener('click', () => document.getElementById('promptModal').classList.remove('open'));
+    document.getElementById('promptModal').addEventListener('click', (e) => {
+      if (e.target.id === 'promptModal') e.currentTarget.classList.remove('open');
+    });
+    document.addEventListener('keydown', (e) => {
+      if (e.key === 'Escape') document.getElementById('promptModal').classList.remove('open');
+    });
+    document.getElementById('pmCopy').addEventListener('click', async () => {
+      const txt = document.getElementById('pmText').textContent;
+      try {
+        await navigator.clipboard.writeText(txt);
+        document.getElementById('pmCopy').textContent = '✓ Đã copy!';
+      } catch {
+        const ta = document.createElement('textarea');
+        ta.value = txt; document.body.appendChild(ta); ta.select();
+        document.execCommand('copy'); ta.remove();
+        document.getElementById('pmCopy').textContent = '✓ Đã copy!';
+      }
+    });
 
     function applyFilter() {
       const q = document.getElementById('q').value.trim().toLowerCase();
