@@ -96,7 +96,7 @@ code.path{overflow-wrap:anywhere}
 <nav role="tablist" aria-label="Chuyển tab">
 <button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
 <button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
-<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng Tham số</button>
 <button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
 </nav>
 <main>
@@ -113,11 +113,11 @@ code.path{overflow-wrap:anywhere}
   </div>
   <svg id="plot" viewBox="0 0 440 356" role="img" aria-label="Bản đồ nhiệt 4x4 giá trị Q tối ưu với ô xuất phát, đích và hai ô bẫy"></svg>
   <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msup><mi>V</mi><mo>*</mo></msup><mo>(</mo><mi>s</mi><mo>)</mo><mo>=</mo><munder><mo>max</mo><mi>a</mi></munder><mrow><mo>[</mo><mi>R</mi><mo>(</mo><mi>s</mi><mo>,</mo><mi>a</mi><mo>)</mo><mo>+</mo><mi>&#947;</mi><msup><mi>V</mi><mo>*</mo></msup><mo>(</mo><msup><mi>s</mi><mo>&#8242;</mo></msup><mo>)</mo><mo>]</mo></mrow></math></div>
-  <p class="note">Kéo thanh trượt gamma để 6 ô trên lộ trình tối ưu được tính lại đúng phương trình Bellman V*(s) = R + γ·max Q*(s′); ở mặc định 0,9 mọi ô khớp bảng SSoT trong <code>01_qlearning_pathfinder_gridworld.py</code>.</p>
+  <p class="note">Kéo thanh trượt gamma để 6 ô trên lộ trình tối ưu được tính lại đúng phương trình Bellman V*(s) = R + γ·max Q*(s′); ở mặc định 0,9 mọi ô khớp bảng tham số trong <code>01_qlearning_pathfinder_gridworld.py</code>.</p>
  </div>
  <div class="card">
   <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
-  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu Tham số Lab</h2>
   <div class="stat" id="stat1"></div>
   <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
   <p class="note" id="insight1"></p>
@@ -149,11 +149,11 @@ code.path{overflow-wrap:anywhere}
 
 <section id="s3" role="tabpanel">
 <div class="card">
- <span class="eyebrow">Bảng đối chuẩn SSoT · 01_qlearning_pathfinder_gridworld.py</span>
+ <span class="eyebrow">Bảng Thông số Chuẩn · 01_qlearning_pathfinder_gridworld.py</span>
  <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
  <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_qlearning_pathfinder_gridworld.py</code>:</p>
  <table id="ssotTable">
-  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn</th></tr></thead>
   <tbody>
 <tr><td><code>[M01]</code> Kích thước cạnh bản đồ lưới GridWorld (4x4) <span class="sub">(grid_size_rl)</span></td><td class="ro hi">4</td></tr>
 <tr><td><code>[M02]</code> Tổng số trạng thái (States) trên bản đồ <span class="sub">(n_states_rl)</span></td><td class="ro hi">16</td></tr>
@@ -259,7 +259,7 @@ function renderTab1(){
     ["Bước tối ưu · tổng thưởng", esc(V.opt_steps_rl + " · " + fmt(V.opt_return_rl))]];
   $('#stat1').innerHTML = pairs.map(p => `<div class="chip"><b>${p[1]}</b><span>${esc(p[0])}</span></div>`).join('');
   $('#liveTable tbody').innerHTML = KEYS.map(k => `<tr><td>${esc(LABELS[k])}</td><td class="ro hi">${esc(fvi(k))}</td></tr>`).join('');
-  $('#insight1').innerHTML = `Kéo γ: 6 ô trên lộ trình tối ưu (viền cam) được tính lại theo chuỗi Bellman bắt đầu từ ${fmt(V.r_goal_rl)} tại ô sát đích; mặc định 0,9 tái hiện đúng bảng SSoT. Nguồn: <code>01_qlearning_pathfinder_gridworld.py</code>.`;
+  $('#insight1').innerHTML = `Kéo γ: 6 ô trên lộ trình tối ưu (viền cam) được tính lại theo chuỗi Bellman bắt đầu từ ${fmt(V.r_goal_rl)} tại ô sát đích; mặc định 0,9 tái hiện đúng bảng tham số. Nguồn: <code>01_qlearning_pathfinder_gridworld.py</code>.`;
 }
 
 function renderTab2(){

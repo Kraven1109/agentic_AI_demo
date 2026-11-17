@@ -96,7 +96,7 @@ code.path{overflow-wrap:anywhere}
 <nav role="tablist" aria-label="Chuyển tab">
 <button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
 <button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
-<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng Tham số</button>
 <button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
 </nav>
 <main>
@@ -117,7 +117,7 @@ code.path{overflow-wrap:anywhere}
  </div>
  <div class="card">
   <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
-  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu Tham số Lab</h2>
   <div class="stat" id="stat1"></div>
   <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
   <p class="note" id="insight1"></p>
@@ -129,12 +129,12 @@ code.path{overflow-wrap:anywhere}
 <div class="grid">
  <div class="card">
   <span class="eyebrow">Phân tích độ nhạy · Đường cong tham số</span>
-  <h2>Hệ số chuẩn hóa √d_k và trọng số Attention (SSoT)</h2>
+  <h2>Hệ số chuẩn hóa √d_k và trọng số Attention (mẫu chuẩn)</h2>
   <div class="ctl">
    <label for="dkSel" class="note">Số chiều khóa d_k trong Self-Attention: <b id="val2"></b></label>
    <input id="dkSel" type="range" min="1" max="16" step="1" value="4">
   </div>
-  <svg id="curve" viewBox="0 0 440 330" role="img" aria-label="Đồ thị hệ số chuẩn hóa căn bậc hai của d_k và trọng số attention mẫu từ dữ liệu SSoT"></svg>
+  <svg id="curve" viewBox="0 0 440 330" role="img" aria-label="Đồ thị hệ số chuẩn hóa căn bậc hai của d_k và trọng số attention mẫu từ dữ liệu bài thực hành"></svg>
   <p class="note" id="insight2"></p>
  </div>
  <div class="card">
@@ -149,11 +149,11 @@ code.path{overflow-wrap:anywhere}
 
 <section id="s3" role="tabpanel">
 <div class="card">
- <span class="eyebrow">Bảng đối chuẩn SSoT · 01_perceptron_logic_gates.py</span>
+ <span class="eyebrow">Bảng Thông số Chuẩn · 01_perceptron_logic_gates.py</span>
  <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
  <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_perceptron_logic_gates.py</code>:</p>
  <table id="ssotTable">
-  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn</th></tr></thead>
   <tbody>
 <tr><td><code>[M01]</code> Số tổ hợp đầu vào bảng chân trị 2 biến nhị phân <span class="sub">(n_logic_pts)</span></td><td class="ro hi">4</td></tr>
 <tr><td><code>[M02]</code> Độ chính xác của Perceptron đơn tầng trên cổng AND (%) <span class="sub">(acc_and_pct)</span></td><td class="ro hi">100,0</td></tr>
@@ -248,8 +248,8 @@ function renderTab1(){
   $('#liveTable tbody').innerHTML = ['n_logic_pts', 'acc_and_pct', 'acc_or_pct', 'acc_xor_perceptron_pct', 'acc_xor_mlp_pct']
     .map(kk => `<tr><td>${esc(LABELS[kk])}</td><td class="ro hi">${esc(fmtV(V[kk], kk === 'n_logic_pts' ? 0 : 1))}</td></tr>`).join('');
   $('#insight1').innerHTML = okMlp
-    ? `MLP đang thử với <b>${esc(k)}</b> nơ-ron tầng ẩn (≥ ngưỡng SSoT <b>${esc(minHid)}</b>): cổng XOR đạt <b>${esc(fmtV(V.acc_xor_mlp_pct, 1))}%</b>, MSE hội tụ <b>${esc(fmtV(V.xor_mlp_loss, 4))}</b>; Perceptron đơn tầng dừng ở <b>${esc(fmtV(V.acc_xor_perceptron_pct, 1))}%</b> — dữ liệu gốc trích xuất từ <code>01_perceptron_logic_gates.py</code>.`
-    : `Chỉ <b>${esc(k)}</b> nơ-ron tầng ẩn (&lt; ngưỡng SSoT <b>${esc(minHid)}</b>): một tầng không đủ phân tách XOR — cần tối thiểu <b>${esc(minHid)}</b> nơ-ron ẩn (OR + NAND), dữ liệu gốc trong <code>01_perceptron_logic_gates.py</code>.`;
+    ? `MLP đang thử với <b>${esc(k)}</b> nơ-ron tầng ẩn (≥ ngưỡng tối thiểu <b>${esc(minHid)}</b>): cổng XOR đạt <b>${esc(fmtV(V.acc_xor_mlp_pct, 1))}%</b>, MSE hội tụ <b>${esc(fmtV(V.xor_mlp_loss, 4))}</b>; Perceptron đơn tầng dừng ở <b>${esc(fmtV(V.acc_xor_perceptron_pct, 1))}%</b> — dữ liệu gốc trích xuất từ <code>01_perceptron_logic_gates.py</code>.`
+    : `Chỉ <b>${esc(k)}</b> nơ-ron tầng ẩn (&lt; ngưỡng tối thiểu <b>${esc(minHid)}</b>): một tầng không đủ phân tách XOR — cần tối thiểu <b>${esc(minHid)}</b> nơ-ron ẩn (OR + NAND), dữ liệu gốc trong <code>01_perceptron_logic_gates.py</code>.`;
 }
 
 function renderTab2(){
@@ -271,8 +271,8 @@ function renderTab2(){
   s += `<circle cx="${X(dk).toFixed(1)}" cy="${Y(Math.sqrt(dk)).toFixed(1)}" r="7" fill="var(--new)" stroke="var(--bg)" stroke-width="2"/>`;
   s += `<text class="ax" x="${x0}" y="216">Số chiều khóa d_k (1–16)</text>`;
   s += `<text class="ax" x="${x0}" y="26" font-weight="700">√d_k hiện hành = ${esc(fmtV(Math.sqrt(dk), 1))}</text>`;
-  s += `<text class="ax" x="${x0}" y="42">Mốc SSoT d_k = ${esc(dRef)} → hệ số ${esc(fmtV(V.scale_attn, 1))}</text>`;
-  s += `<text class="ax" x="${x0}" y="240" font-weight="700">Trọng số Self-Attention mẫu (SSoT)</text>`;
+  s += `<text class="ax" x="${x0}" y="42">Mốc chuẩn d_k = ${esc(dRef)} → hệ số ${esc(fmtV(V.scale_attn, 1))}</text>`;
+  s += `<text class="ax" x="${x0}" y="240" font-weight="700">Trọng số Self-Attention mẫu (Lab chuẩn)</text>`;
   const wSelf = V.attn_self_w, wCtx = V.attn_ctx_w, wMax = 260;
   s += `<text class="ax" x="${x0}" y="258">Tự liên kết (token với chính nó)</text>` +
        `<rect x="${x0}" y="262" width="${(wSelf * wMax).toFixed(1)}" height="13" rx="4" fill="var(--acc)"/>` +
@@ -284,11 +284,11 @@ function renderTab2(){
   $('#stat2').innerHTML = [
     ['Bộ lọc Sobel phát hiện biên (CNN)', fmtV(V.kernel_size_cnn, 0) + '×' + fmtV(V.kernel_size_cnn, 0)],
     ['Đáp ứng biên đứng cực đại', fmtV(V.sobel_peak_resp, 1)],
-    ['Hệ số chuẩn hóa tại mốc SSoT', fmtV(V.scale_attn, 1)],
+    ['Hệ số chuẩn hóa tại mốc chuẩn', fmtV(V.scale_attn, 1)],
     ['Trọng số chú ý tự liên kết', fmtV(V.attn_self_w, 3)],
     ['Trọng số chú ý ngữ cảnh', fmtV(V.attn_ctx_w, 4)]
   ].map(([lab, val]) => `<div class="chip"><b>${esc(val)}</b><span>${esc(lab)}</span></div>`).join('');
-  $('#insight2').innerHTML = `Đường cong mô tả đúng hệ số chuẩn hóa √d_k trong công thức Attention: điểm sáng là cấu hình đang chọn (d_k = ${esc(dk)}), nét đứt là mốc SSoT (d_k = ${esc(dRef)}). Hai cột dưới là trọng số thật của ví dụ Self-Attention — chia cho √d_k giữ softmax mịn thay vì bão hòa một-hot.`;
+  $('#insight2').innerHTML = `Đường cong mô tả đúng hệ số chuẩn hóa √d_k trong công thức Attention: điểm sáng là cấu hình đang chọn (d_k = ${esc(dk)}), nét đứt là mốc chuẩn (d_k = ${esc(dRef)}). Hai cột dưới là trọng số thực nghiệm của ví dụ Self-Attention — chia cho √d_k giữ phân phối Softmax mịn thay vì bão hòa một-hot.`;
 }
 
 function wireQuiz(){

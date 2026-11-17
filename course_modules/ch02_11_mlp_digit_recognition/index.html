@@ -99,7 +99,7 @@ code.path{overflow-wrap:anywhere}
 <span class="pill a">Mô phỏng tương tác</span>
 </div>
 <h1><span class="gr">Mạng Nơ-ron Nhiều Tầng (MLP) Nhận Diện Chữ Số Viết Tay</span></h1>
-<p class="lede">Mạng MLP cấu trúc 64 &rarr; 64 &rarr; 32 &rarr; 10 học nhận diện chữ số viết tay từ ảnh 8&times;8: mỗi ảnh là 64 đặc trưng điểm ảnh, tập dữ liệu có 1.797 ảnh. Toàn bộ số liệu — độ chính xác 96,89%, ma trận nhầm lẫn 10&times;10, số trọng số — trích một chiều từ bài thực hành <code>02_mang_noron_mnist_digit_recognition.py</code>. Lưu ý trung thực: các con số là kết quả lần chạy trong Lab với mức tối đa 200 vòng lặp (<code>max_iter</code>); Lab cố định <code>random_state=42</code>, nhưng chạy lại trên máy bạn — đặc biệt với phiên bản scikit-learn khác — có thể lệch đôi chút.</p>
+<p class="lede"><b>Bài toán thực tế:</b> Xây dựng mạng nơ-ron đa tầng (MLP) kiến trúc 64 &rarr; 64 &rarr; 32 &rarr; 10 để nhận diện chữ số viết tay từ ảnh kích thước 8&times;8 (64 đặc trưng điểm ảnh, tổng 1.797 mẫu trong tập dữ liệu). Toàn bộ số liệu (độ chính xác 96,89%, ma trận nhầm lẫn 10&times;10, số tham số) được trích xuất từ bài thực hành <code>02_mang_noron_mnist_digit_recognition.py</code> với cấu hình <code>max_iter = 200</code> và <code>random_state=42</code>.</p>
 <div class="heroctl">
 <button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
 <button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
@@ -109,7 +109,7 @@ code.path{overflow-wrap:anywhere}
 <nav role="tablist" aria-label="Chuyển tab">
 <button role="tab" aria-selected="true" data-tab="s1">01 · Ảnh 8×8 &amp; 64 đặc trưng</button>
 <button role="tab" aria-selected="false" data-tab="s2">02 · Ma trận nhầm lẫn 10×10</button>
-<button role="tab" aria-selected="false" data-tab="s3">03 · Đếm trọng số &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Đếm trọng số &amp; Bảng Tham số</button>
 <button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
 </nav>
 <main>
@@ -222,11 +222,11 @@ code.path{overflow-wrap:anywhere}
   <p class="note">Chia dữ liệu của Lab: <code>train_test_split(..., test_size=0.25, random_state=42)</code> trên 1.797 ảnh &rarr; <b>1.347 ảnh train (75%)</b> + <b>450 ảnh test (25%)</b>. Kiểm chéo được: tổng 100 ô của ma trận nhầm lẫn ở Tab 2 bằng đúng 450 ảnh test. Cấu hình Lab: <code>hidden_layer_sizes=(64, 32)</code>, <code>activation='relu'</code>, mạng chạy tối đa 200 vòng lặp (tham số <code>max_iter</code>).</p>
  </div>
  <div class="card">
-  <span class="eyebrow">Bảng đối chuẩn SSoT · 02_mang_noron_mnist_digit_recognition.py</span>
+  <span class="eyebrow">Bảng Thông số Chuẩn · 02_mang_noron_mnist_digit_recognition.py</span>
   <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
   <p class="note">Bảng dưới tổng hợp các đại lượng trích một chiều từ tệp Lab (ô code 1&ndash;9). M06&ndash;M08 và M10 tính từ <code>cm</code>; M09 tính từ số nơ-ron các tầng của Lab. Độ chính xác 96,89% là kết quả lần chạy được ghi lại khi xuất dữ liệu — không phải cam kết mọi lần chạy đều đạt.</p>
   <table id="ssotTable">
-   <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+   <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn</th></tr></thead>
    <tbody>
 <tr><td><code>[M01]</code> Độ chính xác của mạng trên tập test <span class="sub">(acc)</span></td><td class="ro hi">96,89%</td></tr>
 <tr><td><code>[M02]</code> Tổng số ảnh của tập dữ liệu chữ số <span class="sub">(n_samples)</span></td><td class="ro hi">1.797</td></tr>
@@ -277,7 +277,7 @@ const fvi = (x, nd = 2) => {
 };
 const fmtKey = k => k === "acc" ? fvi(V.acc * 100, dec(k)) + '%' : fvi(k in DER ? DER[k] : (k in V ? V[k] : D[k]), dec(k));
 
-// Đại lượng dẫn xuất — tính lại từ cm đúng như cổng parity tính:
+// Đại lượng dẫn xuất — tính lại trực tiếp từ ma trận nhầm lẫn <code>cm</code>:
 const DER = (() => {
   const n_test = V.cm.reduce((a, r) => a + r.reduce((x, y) => x + y, 0), 0);
   let n_correct = 0;
@@ -416,7 +416,7 @@ function renderTab3(){
   $('#val4').textContent = String(h2);
   const w1 = D.n_features * h1 + h1, w2 = h1 * h2 + h2, w3 = h2 * 10 + 10, W = w1 + w2 + w3;
   $('#wLive').textContent = `Cấu hình đang xem (ẩn 1 = ${h1}, ẩn 2 = ${h2}): (${D.n_features}·${h1} + ${h1}) + (${h1}·${h2} + ${h2}) + (${h2}·10 + 10) = ${fvi(w1, 0)} + ${fvi(w2, 0)} + ${fvi(w3, 0)} = ${fvi(W, 0)} tham số` +
-    (h1 === 64 && h2 === 32 ? ' — đúng cấu hình Lab: hidden_layer_sizes=(64, 32).' : ' — KHÔNG phải cấu hình của Lab; bảng SSoT vẫn là số của (64, 32).');
+    (h1 === 64 && h2 === 32 ? ' — đúng cấu hình Lab: hidden_layer_sizes=(64, 32).' : ' — KHÔNG phải cấu hình của Lab; bảng thông số chuẩn vẫn là số của (64, 32).');
 }
 
 function wireQuiz(){

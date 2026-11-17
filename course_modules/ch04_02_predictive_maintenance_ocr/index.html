@@ -96,7 +96,7 @@ code.path{overflow-wrap:anywhere}
 <nav role="tablist" aria-label="Chuyển tab">
 <button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
 <button role="tab" aria-selected="false" data-tab="s2">02 · Đường cong &amp; Phân tích</button>
-<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng Tham số</button>
 <button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
 </nav>
 <main>
@@ -113,11 +113,11 @@ code.path{overflow-wrap:anywhere}
   </div>
    <svg id="plot" viewBox="0 0 440 270" role="img" aria-label="Bốn cột xác suất softmax (tính từ logit giả định) cho bốn nhãn và thang rung động có ngưỡng bình thường, báo đỏ"></svg>
    <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>P</mi><mo>(</mo><msub><mi>y</mi><mi>i</mi></msub><mo>|</mo><mi>x</mi><mo>)</mo><mo>=</mo><mfrac><mrow><mo>exp</mo><mo>(</mo><msub><mi>s</mi><mi>i</mi></msub><mo>)</mo></mrow><mrow><munder><mo>&#8721;</mo><mi>j</mi></munder><mo>exp</mo><mo>(</mo><msub><mi>s</mi><mi>j</mi></msub><mo>)</mo></mrow></mfrac><mspace width="1em"/><mo>(</mo><mtext>Softmax zero-shot trên logit</mtext><mo>)</mo></math></div>
-   <p class="note">Bốn cột là xác suất softmax của 4 nhãn mô tả văn bản, tính từ bốn logit <b>giả định</b> (lab tự dùng bộ giả lập khi máy chưa tải được trọng số CLIP — xem ghi chú ở tab Bảng SSoT; thang log để nhìn rõ nhãn nhỏ). Kéo thanh trượt để đưa con trỏ rung qua hai ngưỡng vận hành thường và báo đỏ của ổ trục — RUL ước tính ở khung bên cập nhật theo công thức lab.</p>
+   <p class="note">Bốn cột biểu diễn phân phối xác suất Softmax qua 4 nhãn mô tả văn bản từ bộ điểm logit minh họa của CLIP (hiển thị theo thang log để quan sát rõ cả các nhãn có xác suất thấp). Kéo thanh trượt độ rung để quan sát ngưỡng vận hành bình thường, ngưỡng cảnh báo đỏ và thời gian vận hành còn lại (RUL) tương ứng.</p>
  </div>
  <div class="card">
   <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
-  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu Tham số Lab</h2>
   <div class="stat" id="stat1"></div>
   <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
   <p class="note" id="insight1"></p>
@@ -149,11 +149,11 @@ code.path{overflow-wrap:anywhere}
 
 <section id="s3" role="tabpanel">
 <div class="card">
- <span class="eyebrow">Bảng đối chuẩn SSoT · 01_multimodal_vision_language.py</span>
+ <span class="eyebrow">Bảng Thông số Chuẩn · 01_multimodal_vision_language.py</span>
  <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
- <p class="note">Bảng dưới đây tổng hợp các đại lượng trích xuất một chiều từ bài thực hành <code>01_multimodal_vision_language.py</code>. <b>Cần phân biệt khi giảng:</b> các dòng <code>exp_*</code>, <code>sum_exp</code> và <code>prob_*_pct</code> là phép softmax tính từ bốn logit GIẢ ĐỊNH (nhánh chạy khi máy chưa tải được trọng số CLIP); các ngưỡng <code>vib_*</code>, <code>temp_warn_c</code>, <code>rul_*</code> là giá trị KỊCH BẢN do người soạn đặt, không phải số đo từ camera hay cảm biến thật. Dòng M17–M21 cho phép kiểm tra lại mọi xác suất bằng máy tính cầm tay.</p>
+ <p class="note">Bảng tổng hợp các tham số và kết quả tính toán từ bài thực hành <code>01_multimodal_vision_language.py</code>. <b>Ghi chú thuật toán:</b> các giá trị <code>exp_*</code>, <code>sum_exp</code> và <code>prob_*_pct</code> minh họa phép chuẩn hóa Softmax trên 4 điểm logit mẫu; các ngưỡng <code>vib_*</code>, <code>temp_warn_c</code>, <code>rul_*</code> là thông số kịch bản giám sát thiết bị, giúp đối chiếu trực tiếp từng bước bằng máy tính cầm tay (dòng M17–M21).</p>
  <table id="ssotTable">
-  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn</th></tr></thead>
   <tbody>
 <tr><td><code>[M01]</code> Logit giả định (minh hoạ softmax) của nhãn 'Xe tải giao hàng đi qua cổng' <span class="sub">(logit_truck)</span></td><td class="ro hi">8,9</td></tr>
 <tr><td><code>[M02]</code> Logit giả định (minh hoạ softmax) của nhãn 'Cần cẩu xây dựng nâng vật liệu' <span class="sub">(logit_crane)</span></td><td class="ro hi">2,1</td></tr>
@@ -272,7 +272,7 @@ function renderTab1(){
     : v < V.vib_crit_mms
       ? `đã vượt ngưỡng vận hành thường ${vi(V.vib_normal_mms, 1)} mm/s nhưng còn dưới ngưỡng báo đỏ ${vi(V.vib_crit_mms, 1)} mm/s`
       : `đã vượt ngưỡng báo đỏ ${vi(V.vib_crit_mms, 1)} mm/s — phải lập lịch bảo trì chủ động ngay`;
-  $('#insight1').innerHTML = `Cổng camera: softmax zero-shot gán nhãn <b>Xe tải</b> <b>${vi(V.prob_truck_pct, 2)}%</b> (từ bộ logit giả định khi chưa tải trọng số CLIP), cao hơn hẳn ba nhãn còn lại. Máy bơm: độ rung chọn <b>${vi(v, 1)} mm/s</b> ${st}; RUL ước tính còn <b>${vi(rul, 1)} giờ</b>. Dữ liệu trích xuất một chiều từ <code>01_multimodal_vision_language.py</code>.`;
+  $('#insight1').innerHTML = `Cổng camera: Softmax zero-shot gán nhãn <b>Xe tải</b> <b>${vi(V.prob_truck_pct, 2)}%</b> (trên bộ logit minh họa), cao hơn hẳn ba nhãn còn lại. Máy bơm: độ rung chọn <b>${vi(v, 1)} mm/s</b> ${st}; RUL ước tính còn <b>${vi(rul, 1)} giờ</b>. Dữ liệu trích xuất một chiều từ <code>01_multimodal_vision_language.py</code>.`;
 }
 
 function renderTab2(){
@@ -394,7 +394,7 @@ renderTab1(); renderTab2(); wireQuiz();
     </div>
   </div>
 </div>
-<script type="application/json" id="__aiPromptData">{"title": "Nhận diện Ảnh Đa phương thức (CLIP) & Bảo trì Dự đoán Máy bơm", "kind": "Prompt gợi ý tái tạo", "prompt": "Hãy xây dựng 1 mô phỏng tương tác web bằng duy nhất 1 tệp index.html (chạy offline 100%, không CDN ngoài, công thức dùng MathML thuần, responsive từ điện thoại 390x844 đến 4K).\n\nChủ đề: Nhận diện Ảnh Đa phương thức (CLIP) & Bảo trì Dự đoán Máy bơm\nMục tiêu minh họa: Softmax zero-shot 4 nhãn văn bản (logit giả định kiểm tra được bằng tay) và kịch bản rung/nhiệt cho 8 máy bơm, ước lượng RUL.\n\nYêu cầu chức năng:\n- Có thanh trượt / nút điều khiển tham số để quan sát đồ thị và số liệu thay đổi trực tiếp.\n- Trình bày phần công thức toán học và bảng số liệu đối chiếu.\n- Có 2–3 câu hỏi trắc nghiệm tự kiểm tra kèm giải thích ngay trong trang.", "template": "[VAI TRÒ & MỤC TIÊU]\nĐóng vai trò là Kỹ sư Lập trình Game & Mô phỏng Trực quan Web. Hãy phát triển 1 trò chơi/mô phỏng tương tác: <TÊN_HOẶC_Ý_TƯỞNG_DEMO> lấy cảm hứng trực quan và cơ chế từ <ỨNG_DỤNG_THAM_CHIẾU>.\n\n[KIẾN TRÚC & CÔNG NGHỆ]\n- Đóng gói gọn nhẹ: ưu tiên duy nhất 1 file index.html tự chứa toàn bộ cấu trúc, CSS hiện đại và logic JavaScript (chạy offline 100%, không CDN ngoài).\n- Điều khiển: hỗ trợ đồng thời Bàn phím/Chuột trên máy tính và Cảm ứng trên điện thoại.\n- Hiển thị: Responsive mượt mà từ màn hình điện thoại (390x844, 720p) đến 1080p và 4K UHD.\n\n[CƠ CHẾ CỐT LÕI & THUẬT TOÁN]\n- Mô phỏng rõ ràng thuật toán/cơ chế tương tác: <MÔ_TẢ_CƠ_CHẾ: ví dụ Thanh trượt tham số, Quỹ đạo vật lý, Đồ thị hội tụ, Bảng số liệu>.\n- Trạng thái hoàn chỉnh: Khởi tạo -> Tương tác/Thực nghiệm -> Kết quả & Giải thích -> Chơi lại/Đặt lại.\n\n[KIỂM CHỨNG BẰNG THỊ GIÁC (NATIVE VISION LOOP)]\n- Tự động chạy kịch bản kiểm thử trình duyệt (Playwright) ở nhiều độ phân giải (mobile, 720p, 1080p), chụp ảnh màn hình các trạng thái chính.\n- Tự rà soát ảnh chụp để sửa lỗi tràn khung, chồng chữ, mất cân đối trước khi kết thúc."}</script>
+<script type="application/json" id="__aiPromptData">{"title": "Nhận diện Ảnh Đa phương thức (CLIP) & Bảo trì Dự đoán Máy bơm", "kind": "Prompt gợi ý tái tạo", "prompt": "Hãy xây dựng 1 mô phỏng tương tác web bằng duy nhất 1 tệp index.html (chạy offline 100%, không CDN ngoài, công thức dùng MathML thuần, responsive từ điện thoại 390x844 đến 4K).\n\nChủ đề: Nhận diện Ảnh Đa phương thức (CLIP) & Bảo trì Dự đoán Máy bơm\nMục tiêu minh họa: Softmax zero-shot qua 4 nhãn văn bản minh họa và mô phỏng rung/nhiệt độ cho 8 máy bơm để ước lượng RUL.\n\nYêu cầu chức năng:\n- Có thanh trượt / nút điều khiển tham số để quan sát đồ thị và số liệu thay đổi trực tiếp.\n- Trình bày phần công thức toán học và bảng số liệu đối chiếu.\n- Có 2–3 câu hỏi trắc nghiệm tự kiểm tra kèm giải thích ngay trong trang.", "template": "[VAI TRÒ & MỤC TIÊU]\nĐóng vai trò là Kỹ sư Lập trình Game & Mô phỏng Trực quan Web. Hãy phát triển 1 trò chơi/mô phỏng tương tác: <TÊN_HOẶC_Ý_TƯỞNG_DEMO> lấy cảm hứng trực quan và cơ chế từ <ỨNG_DỤNG_THAM_CHIẾU>.\n\n[KIẾN TRÚC & CÔNG NGHỆ]\n- Đóng gói gọn nhẹ: ưu tiên duy nhất 1 file index.html tự chứa toàn bộ cấu trúc, CSS hiện đại và logic JavaScript (chạy offline 100%, không CDN ngoài).\n- Điều khiển: hỗ trợ đồng thời Bàn phím/Chuột trên máy tính và Cảm ứng trên điện thoại.\n- Hiển thị: Responsive mượt mà từ màn hình điện thoại (390x844, 720p) đến 1080p và 4K UHD.\n\n[CƠ CHẾ CỐT LÕI & THUẬT TOÁN]\n- Mô phỏng rõ ràng thuật toán/cơ chế tương tác: <MÔ_TẢ_CƠ_CHẾ: ví dụ Thanh trượt tham số, Quỹ đạo vật lý, Đồ thị hội tụ, Bảng số liệu>.\n- Trạng thái hoàn chỉnh: Khởi tạo -> Tương tác/Thực nghiệm -> Kết quả & Giải thích -> Chơi lại/Đặt lại.\n\n[KIỂM CHỨNG BẰNG THỊ GIÁC (NATIVE VISION LOOP)]\n- Tự động chạy kịch bản kiểm thử trình duyệt (Playwright) ở nhiều độ phân giải (mobile, 720p, 1080p), chụp ảnh màn hình các trạng thái chính.\n- Tự rà soát ảnh chụp để sửa lỗi tràn khung, chồng chữ, mất cân đối trước khi kết thúc."}</script>
 <script>
 (function(){
   var dataEl=document.getElementById('__aiPromptData');

@@ -96,7 +96,7 @@ code.path{overflow-wrap:anywhere}
 <nav role="tablist" aria-label="Chuyển tab">
 <button role="tab" aria-selected="true" data-tab="s1">01 · Thực nghiệm tương tác</button>
 <button role="tab" aria-selected="false" data-tab="s2">02 · Dòng thời gian AI</button>
-<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Công thức &amp; Bảng Tham số</button>
 <button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
 </nav>
 <main>
@@ -118,7 +118,7 @@ code.path{overflow-wrap:anywhere}
  </div>
  <div class="card">
   <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
-  <h2>Trạng thái dữ liệu &amp; Đối chiếu SSoT</h2>
+  <h2>Trạng thái dữ liệu &amp; Đối chiếu Tham số Lab</h2>
   <div class="stat" id="stat1"></div>
   <table id="liveTable"><thead><tr><th>Chi nhánh</th><th class="ro">Doanh thu 2025 (tỷ đồng)</th><th class="ro">Tăng trưởng (%)</th><th class="ro">Chờ món (phút)</th><th class="ro">Qua app (%)</th></tr></thead><tbody></tbody></table>
   <p class="note" id="insight1"></p>
@@ -136,7 +136,7 @@ code.path{overflow-wrap:anywhere}
    <input id="yrSel" type="range" min="1950" max="2026" step="1" value="2017">
   </div>
   <svg id="curve" viewBox="0 0 440 250" role="img" aria-label="Dòng thời gian lịch sử AI từ 1950 đến 2026 với ba mốc Dartmouth, AlexNet, Transformer và điểm năm đang chọn"></svg>
-  <p class="note" id="cap2">Trục ngang là năm; ba cột mốc trên dòng thời gian là các mốc AI thật trích từ Lab (Hội thảo Dartmouth khai sinh thuật ngữ AI, mạng AlexNet mở đầu bùng nổ Học sâu, kiến trúc Transformer nền tảng của AI tạo sinh). Điểm cam là năm đang chọn; vùng tô sáng tính từ mốc khai sinh AI đến năm đó.</p>
+  <p class="note" id="cap2">Trục ngang là năm; ba cột mốc trên dòng thời gian là các mốc AI trích từ Lab (Hội thảo Dartmouth khai sinh thuật ngữ AI, mạng AlexNet đánh dấu bước chuyển sang Học sâu, kiến trúc Transformer nền tảng của AI tạo sinh). Điểm cam là năm đang chọn; vùng tô sáng tính từ mốc khai sinh AI đến năm đó.</p>
  </div>
  <div class="card">
    <span class="eyebrow">Các mốc trong dữ liệu Lab</span>
@@ -151,11 +151,11 @@ code.path{overflow-wrap:anywhere}
 
 <section id="s3" role="tabpanel">
 <div class="card">
- <span class="eyebrow">Bảng đối chuẩn SSoT · 01_kham_pha_du_lieu_open_data.py</span>
+ <span class="eyebrow">Bảng Thông số Chuẩn · 01_kham_pha_du_lieu_open_data.py</span>
  <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
  <p class="note">Bảng dưới đây tổng hợp đầy đủ các đại lượng và tham số kết quả từ bài thực hành <code>01_kham_pha_du_lieu_open_data.py</code>:</p>
  <table id="ssotTable">
-  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn</th></tr></thead>
   <tbody>
 <tr><td><code>[M01]</code> Số chi nhánh khảo sát <span class="sub">(n_branches)</span></td><td class="ro hi">6</td></tr>
 <tr><td><code>[M02]</code> Tổng doanh thu năm 2024 (tỷ đồng) <span class="sub">(total_rev_2024_tyd)</span></td><td class="ro hi">14,68</td></tr>
@@ -171,7 +171,7 @@ code.path{overflow-wrap:anywhere}
 <tr><td><code>[M12]</code> Thời gian chờ món trung bình 6 chi nhánh (phút) <span class="sub">(mean_wait_min)</span></td><td class="ro hi">3,68</td></tr>
 <tr><td><code>[M13]</code> Tỷ lệ đơn đặt qua app trung bình 6 chi nhánh (%) <span class="sub">(mean_app_pct)</span></td><td class="ro hi">57,5</td></tr>
 <tr><td><code>[M14]</code> Hội thảo Dartmouth khai sinh thuật ngữ AI <span class="sub">(year_dartmouth)</span></td><td class="ro hi">1956</td></tr>
-<tr><td><code>[M15]</code> Cột mốc AlexNet bùng nổ Học sâu (Deep Learning) <span class="sub">(year_alexnet)</span></td><td class="ro hi">2012</td></tr>
+<tr><td><code>[M15]</code> Cột mốc AlexNet mở đầu làn sóng Học sâu (Deep Learning) <span class="sub">(year_alexnet)</span></td><td class="ro hi">2012</td></tr>
 <tr><td><code>[M16]</code> Cột mốc kiến trúc Transformer (Attention) <span class="sub">(year_transformer)</span></td><td class="ro hi">2017</td></tr>
   </tbody>
  </table>
@@ -197,7 +197,7 @@ Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) —
 const LAB = {"source_lab":"lab","cells":[1,2,3,4,5,6,7,8,9,10,11,12],"vars":{"n_branches":6,"total_rev_2024_tyd":14.68,"total_rev_2025_tyd":16.26,"overall_growth_pct":10.76,"branch_a_rev_2025_tyd":6.2,"branch_a_wait_min":4.2,"branch_b_growth_pct":16.67,"branch_b_app_pct":90,"branch_b_wait_min":2.8,"r_app_wait":-0.4821,"r2_app_wait":0.2324,"mean_wait_min":3.68,"mean_app_pct":57.5,"year_dartmouth":1956,"year_alexnet":2012,"year_transformer":2017,"branches_table":[{"name":"Chi nhánh A","rev24":5.8,"rev25":6.2,"growth":6.9,"wait":4.2,"app_pct":85},{"name":"Chi nhánh B","rev24":4.2,"rev25":4.9,"growth":16.67,"wait":2.8,"app_pct":90},{"name":"Chi nhánh C","rev24":3.1,"rev25":3.45,"growth":11.29,"wait":3.5,"app_pct":70},{"name":"Chi nhánh D","rev24":0.85,"rev25":0.92,"growth":8.24,"wait":3.1,"app_pct":45},{"name":"Chi nhánh E","rev24":0.45,"rev25":0.48,"growth":6.67,"wait":4.0,"app_pct":30},{"name":"Chi nhánh F","rev24":0.28,"rev25":0.31,"growth":10.71,"wait":4.5,"app_pct":25}]},"derived":{}};
 const V = LAB.vars;
 const KEYS = ["n_branches", "total_rev_2024_tyd", "total_rev_2025_tyd", "overall_growth_pct", "branch_a_rev_2025_tyd", "branch_a_wait_min", "branch_b_growth_pct", "branch_b_app_pct", "branch_b_wait_min", "r_app_wait", "r2_app_wait", "mean_wait_min", "mean_app_pct", "year_dartmouth", "year_alexnet", "year_transformer"];
-const LABELS = {"n_branches": "Số chi nhánh khảo sát", "total_rev_2024_tyd": "Tổng doanh thu năm 2024 (tỷ đồng)", "total_rev_2025_tyd": "Tổng doanh thu năm 2025 (tỷ đồng)", "overall_growth_pct": "Tốc độ tăng trưởng chung của 6 chi nhánh chuỗi (%)", "branch_a_rev_2025_tyd": "Doanh thu Chi nhánh A năm 2025 (tỷ đồng)", "branch_a_wait_min": "Thời gian chờ món Chi nhánh A (phút)", "branch_b_growth_pct": "Tăng trưởng Chi nhánh B (%)", "branch_b_app_pct": "Tỷ lệ đơn đặt qua app tại Chi nhánh B (%)", "branch_b_wait_min": "Thời gian chờ món Chi nhánh B (phút)", "r_app_wait": "Hệ số tương quan Pearson r (đặt qua app vs Thời gian chờ)", "r2_app_wait": "Hệ số xác định R bình phương", "mean_wait_min": "Thời gian chờ món trung bình 6 chi nhánh (phút)", "mean_app_pct": "Tỷ lệ đơn đặt qua app trung bình 6 chi nhánh (%)", "year_dartmouth": "Hội thảo Dartmouth khai sinh thuật ngữ AI", "year_alexnet": "Cột mốc AlexNet bùng nổ Học sâu (Deep Learning)", "year_transformer": "Cột mốc kiến trúc Transformer (Attention)"};
+const LABELS = {"n_branches": "Số chi nhánh khảo sát", "total_rev_2024_tyd": "Tổng doanh thu năm 2024 (tỷ đồng)", "total_rev_2025_tyd": "Tổng doanh thu năm 2025 (tỷ đồng)", "overall_growth_pct": "Tốc độ tăng trưởng chung của 6 chi nhánh chuỗi (%)", "branch_a_rev_2025_tyd": "Doanh thu Chi nhánh A năm 2025 (tỷ đồng)", "branch_a_wait_min": "Thời gian chờ món Chi nhánh A (phút)", "branch_b_growth_pct": "Tăng trưởng Chi nhánh B (%)", "branch_b_app_pct": "Tỷ lệ đơn đặt qua app tại Chi nhánh B (%)", "branch_b_wait_min": "Thời gian chờ món Chi nhánh B (phút)", "r_app_wait": "Hệ số tương quan Pearson r (đặt qua app vs Thời gian chờ)", "r2_app_wait": "Hệ số xác định R bình phương", "mean_wait_min": "Thời gian chờ món trung bình 6 chi nhánh (phút)", "mean_app_pct": "Tỷ lệ đơn đặt qua app trung bình 6 chi nhánh (%)", "year_dartmouth": "Hội thảo Dartmouth khai sinh thuật ngữ AI", "year_alexnet": "Cột mốc AlexNet mở đầu làn sóng Học sâu (Deep Learning)", "year_transformer": "Cột mốc kiến trúc Transformer (Attention)"};
 const FB = {1:{"q1_1":["Ch\u00ednh x\u00e1c! Chi nh\u00e1nh B t\u0103ng t\u1eeb 4,20 l\u00ean 4,90 t\u1ef7 \u0111\u1ed3ng (+16,67%) v\u00e0 c\u00f3 th\u1eddi gian ch\u1edd m\u00f3n ng\u1eafn nh\u1ea5t (2,8 ph\u00fat).",1],"q1_2":["Ch\u01b0a \u0111\u00fang: Chi nh\u00e1nh A c\u00f3 doanh thu l\u1edbn nh\u1ea5t (6,20 t\u1ef7 \u0111\u1ed3ng) nh\u01b0ng t\u1ed1c \u0111\u1ed9 t\u0103ng tr\u01b0\u1edfng % th\u1ea5p h\u01a1n Chi nh\u00e1nh B.",0],"q1_3":["Ch\u01b0a \u0111\u00fang: Chi nh\u00e1nh F ch\u1ec9 \u0111\u1ea1t 0,31 t\u1ef7 \u0111\u1ed3ng v\u00e0 th\u1eddi gian ch\u1edd m\u00f3n 4,5 ph\u00fat.",0]},2:{"q2_1":["\u0110\u00fang! T\u1ef1 \u0111\u1ed9ng h\u00f3a \u0111\u1eb7t m\u00f3n (app, kiosk t\u1ef1 ph\u1ee5c v\u1ee5) gi\u00fap x\u1eed l\u00fd \u0111\u01a1n nhanh h\u01a1n v\u00e0 gi\u1ea3m th\u1eddi gian ch\u1edd m\u00f3n.",1],"q2_2":["Sai d\u1ea5u c\u1ee7a h\u1ec7 s\u1ed1 t\u01b0\u01a1ng quan r < 0.",0],"q2_3":["Sai: r = -0,4821 cho th\u1ea5y xu h\u01b0\u1edbng ngh\u1ecbch r\u00f5 r\u1ec7t tr\u00ean 6 chi nh\u00e1nh.",0]},3:{"q3_1":["\u0110\u00fang! N\u0103m 1956 khai sinh AI t\u1ea1i Dartmouth, 2012 b\u00f9ng n\u1ed5 Deep Learning v\u1edbi AlexNet, v\u00e0 2017 ra \u0111\u1eddi Transformer.",1],"q3_2":["Sai: 1956 l\u00e0 m\u1ed1c ra \u0111\u1eddi thu\u1eadt ng\u1eef Artificial Intelligence.",0],"q3_3":["Sai: 2012 l\u00e0 m\u1ed1c CNN AlexNet chi\u1ebfn th\u1eafng ImageNet.",0]}};
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');

@@ -104,8 +104,8 @@ code.path{overflow-wrap:anywhere}
 <span class="pill mut">Dữ liệu GIẢ LẬP · random_state=42</span>
 </div>
 <h1><span class="gr">Cây quyết định &amp; Cắt tỉa sau (Post-pruning với ccp_alpha)</span></h1>
-<p class="lede">Bài toán của Lab: dự đoán Mua xe theo Tuổi và Thu nhập trên <b>1.000 mẫu GIẢ LẬP</b> (luật Tuổi × Thu nhập so với ngưỡng 60.000, cộng nhiễu). Cây Gini đầy đủ không cắt tỉa bị <b>quá khớp (overfitting)</b> — nó tách cây tới tận 43 lá để "học thuộc" cả nhiễu từ hai đặc trưng ngẫu nhiên. Kéo thanh trượt <code>ccp_alpha</code> trên đúng 23 mốc mà <code>cost_complexity_pruning_path</code> sinh ra để xem độ chính xác trên tập kiểm tra thay đổi, và bấm <b>Play</b> ở Tab 2 để xem <b>dây chuyền cắt tỉa</b> vẽ lại đúng 23 cây sklearn mà Lab xuất.</p>
-<p class="lede"><b>Quy tắc trung thực:</b> mọi con số dưới đây là <b>kết quả MỘT lần chạy Lab có <code>random_state=42</code></b> trên 1.000 mẫu giả lập — không phải số đo thực nghiệm và không phải cam kết "luôn đạt". Nhãn luôn ghi rõ bản chất: "độ chính xác trên tập kiểm tra của lần chạy Lab".</p>
+<p class="lede"><b>Bài toán thực tế:</b> Dự đoán hành vi mua xe dựa trên hai biến giải thích (Tuổi và Thu nhập) cùng hai biến nhiễu ngẫu nhiên trên tập dữ liệu <b>1.000 mẫu giả lập</b> (luật phân tách Tuổi × Thu nhập so với ngưỡng 60.000). Cây Quyết định Gini đầy đủ (không cắt tỉa) tách tới 43 lá nên <b>quá khớp (overfitting)</b> với nhiễu; thanh trượt <code>ccp_alpha</code> cho phép khảo sát 23 mốc trong <code>cost_complexity_pruning_path</code> để cân bằng độ chính xác và độ phức tạp cây.</p>
+<p class="lede"><b>Thiết lập thực nghiệm:</b> Các chỉ số trình bày (như độ chính xác trên tập kiểm tra 300 mẫu) được trích xuất từ lần chạy bài thực hành với <code>random_state=42</code> trên tập dữ liệu giả lập nêu trên.</p>
 <div class="heroctl">
 <button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
 <button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
@@ -115,7 +115,7 @@ code.path{overflow-wrap:anywhere}
 <nav role="tablist" aria-label="Chuyển tab">
 <button role="tab" aria-selected="true" data-tab="s1">01 · Học thuộc hay học tổng quát?</button>
 <button role="tab" aria-selected="false" data-tab="s2">02 · Dây chuyền cắt tỉa</button>
-<button role="tab" aria-selected="false" data-tab="s3">03 · Phép tính cost-complexity &amp; SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Phép tính cost-complexity &amp; Tham số</button>
 <button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
 </nav>
 <main>
@@ -136,7 +136,7 @@ code.path{overflow-wrap:anywhere}
  </div>
  <div class="card">
   <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
-  <h2>Trạng thái đang xem &amp; Đối chiếu SSoT</h2>
+  <h2>Trạng thái đang xem &amp; Đối chiếu Tham số Lab</h2>
   <div class="stat" id="stat1"></div>
   <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
   <p class="note" id="insight1"></p>
@@ -159,7 +159,7 @@ code.path{overflow-wrap:anywhere}
   <input id="alphaTree" type="range" min="0" max="22" step="1" value="0">
  </div>
  <div class="treebox"><svg id="svgTree" viewBox="0 0 1042 606" role="img" aria-label="Dây chuyền cắt tỉa: sơ đồ cây quyết định thật vẽ từ tree_seq của Lab, từ 43 lá xuống 1 lá theo 23 mốc ccp_alpha"></svg></div>
- <p class="note">Điện thoại: kéo ngang trong khung để quét hết cây 43 lá. Nhãn nút tách = <b>tên cột của Lab</b> + ngưỡng <code>th</code> của <code>full_tree</code> (Lab xuất ở <b>4 chữ số</b>), <b>trang hiển thị làm tròn 1 chữ số</b> — giá trị 4 chữ số vẫn nằm nguyên trong <code>lab_data.js</code>. <code>NN1</code>/<code>NN2</code> là viết tắt của <code>Biến ngẫu nhiên 1</code>/<code>Biến ngẫu nhiên 2</code> — hai đặc trưng nhiễu Lab cố tình thêm vào. Ô vuông nhỏ = lá: mỗi lá dự đoán một lớp, Lab không xuất nhãn từng lá nên trang không bịa nhãn. <b>α trượt theo 23 mốc thật của Lab</b>: mỗi nấc thanh trượt nạp nguyên vẹn <code>tree_seq[k]</code>, không nội suy cây ở α nằm giữa hai mốc.</p>
+ <p class="note">Điện thoại: kéo ngang trong khung để quét hết cây 43 lá. Nhãn nút tách hiển thị tên thuộc tính và ngưỡng phân tách từ bài thực hành (làm tròn 1 chữ số thập phân để dễ quan sát). Hai ký hiệu <code>NN1</code>/<code>NN2</code> là hai biến nhiễu ngẫu nhiên đưa vào tập dữ liệu để minh họa hiện tượng quá khớp. Các ô vuông nhỏ biểu diễn nút lá; thanh trượt nạp lần lượt từng cấu trúc cây trong <code>tree_seq[k]</code> ở cả 23 mốc α.</p>
  <div class="stat" id="statTree"></div>
  <table id="treeTable">
   <thead><tr><th>Đại lượng của cây đang xem</th><th class="ro">Giá trị đọc thẳng từ Lab</th></tr></thead>
@@ -192,14 +192,14 @@ code.path{overflow-wrap:anywhere}
  <h2>Chi phí của một cây = sai số huấn luyện + α × (số lá)</h2>
  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><msub><mi>R</mi><mi>α</mi></msub><mo stretchy="false">(</mo><mi>T</mi><mo stretchy="false">)</mo><mo>=</mo><mi>R</mi><mo stretchy="false">(</mo><mi>T</mi><mo stretchy="false">)</mo><mo>+</mo><mi>α</mi><mo form="prefix">|</mo><mi>T</mi><mo stretchy="false">|</mo></math></div>
  <p class="note">Trong đó <math xmlns="http://www.w3.org/1998/Math/MathML"><mi>R</mi><mo stretchy="false">(</mo><mi>T</mi><mo stretchy="false">)</mo></math> là tổng sai số huấn luyện (độ sạch của các lá, sklearn gọi là impurity) trên 700 mẫu huấn luyện, và <math xmlns="http://www.w3.org/1998/Math/MathML"><mo form="prefix">|</mo><mi>T</mi><mo stretchy="false">|</mo></math> là số lá. <code>cost_complexity_pruning_path</code> duyệt các ngưỡng α hiệu dụng; Lab đã xuất sẵn 23 mốc α đó. Một nhánh con chỉ bị cắt khi phần impurity nó "cứu" được nhỏ hơn α cho mỗi lá bỏ đi.</p>
- <p class="note"><b>Lab đã xuất đủ dữ liệu (2026-11-03)</b> nên trang tính <b>đủ hai vế</b> của công thức: <code>impurities</code> = 23 giá trị R(T) THẬT (một giá trị cho mỗi mốc α, export làm tròn 6 chữ số), <code>full_tree</code> = 85 node cây đầy đủ, <code>pruned_tree</code> = 19 node cây cắt tỉa tối ưu, <code>tree_seq</code> = 23 cây (một cây cho mỗi mốc α) — cả bốn có trong <code>lab_data.js</code> và <code>parity_source.json</code>. Ba dòng dưới là ba cây sklearn thật ở ba mốc α, không phải cây minh hoạ.</p>
+ <p class="note">Bài thực hành xuất đầy đủ 23 giá trị sai số huấn luyện <code>impurities</code> tương ứng với 23 mốc α, cùng cấu trúc cây đầy đủ (85 nút) và cây tối ưu sau cắt tỉa (19 nút) để tính trực tiếp cả hai vế của hàm chi phí. Ba dòng trong bảng dưới tương ứng với ba cây scikit-learn tại ba mốc α tiêu biểu.</p>
  <table id="costTable">
-  <thead><tr><th>Mốc α (cây sklearn thật, |T| = số lá của chính cây đó)</th><th class="ro">R(T) = impurities[k]</th><th class="ro">α·|T| (phép nhân ghi nguyên văn)</th><th class="ro">R_α(T) = R(T) + α·|T|</th></tr></thead>
+  <thead><tr><th>Mốc α (cây scikit-learn, |T| = số lá)</th><th class="ro">R(T) = impurities[k]</th><th class="ro">α·|T| (phép nhân ghi nguyên văn)</th><th class="ro">R_α(T) = R(T) + α·|T|</th></tr></thead>
   <tbody id="costBody"></tbody>
  </table>
  <p class="note" id="costNote"></p>
- <p class="note"><b>Chữ số làm tròn vs chữ số tính toán:</b> cột α hiển thị làm tròn 6 chữ số để dễ đọc, nhưng mọi phép nhân dùng <b>α nguyên vẹn</b> trong <code>ccp_alphas</code>. α nguyên vẹn của ba mốc trên: <code id="costPrec"></code></p>
- <p class="note">Mọi dòng ở bảng kế tiếp là phép tính suy ra, ghi nguyên văn phép nhân để Giảng viên bấm lại bằng máy tính cầm tay.</p>
+ <p class="note"><b>Chữ số làm tròn và chữ số tính toán:</b> cột α hiển thị làm tròn 6 chữ số để dễ đọc, còn mọi phép nhân sử dụng giá trị α đầy đủ trong <code>ccp_alphas</code>: <code id="costPrec"></code></p>
+ <p class="note">Bảng dưới trình bày từng bước phép tính suy ra để người học tự đối chiếu bằng máy tính cầm tay.</p>
  <table id="penTable">
   <thead><tr><th>Đại lượng suy ra từ số Lab</th><th>Phép tính ghi nguyên văn</th><th class="ro">Kết quả</th></tr></thead>
   <tbody>
@@ -215,11 +215,11 @@ code.path{overflow-wrap:anywhere}
  <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>α</mi><mo stretchy="false">(</mo><mo form="prefix">|</mo><msub><mi>T</mi><mtext>đầy đủ</mtext></msub><mo form="postfix">|</mo><mo>-</mo><mo form="prefix">|</mo><msub><mi>T</mi><mtext>cắt tỉa</mtext></msub><mo stretchy="false">|</mo><mo stretchy="false">)</mo><mo>=</mo><mn>33</mn><mo>×</mo><mn>0,002916</mn><mo>=</mo><mn>0,0962</mn></math></div>
 </div>
 <div class="card">
- <span class="eyebrow">Bảng đối chuẩn SSoT · 03_decision_tree_post_pruning.py</span>
- <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
- <p class="note">Bảng dưới tổng hợp đầy đủ các đại lượng mà <code>export_lab_data.py</code> chạy trực tiếp trên các ô code của <code>03_decision_tree_post_pruning.py</code> và xuất ra <code>lab_data.js</code> / <code>parity_source.json</code>:</p>
+ <span class="eyebrow">Bảng Thông số Chuẩn · 03_decision_tree_post_pruning.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ bài thực hành</h2>
+ <p class="note">Bảng dưới tổng hợp các đại lượng được trích xuất trực tiếp từ bài thực hành <code>03_decision_tree_post_pruning.py</code>:</p>
  <table id="ssotTable">
-  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn</th></tr></thead>
   <tbody>
 <tr><td><code>[M01]</code> Số mẫu giả lập của Lab <span class="sub">(n_observations)</span></td><td class="ro hi">1.000</td></tr>
 <tr><td><code>[M02]</code> Ngưỡng luật sinh dữ liệu Tuổi × Thu nhập <span class="sub">(threshold)</span></td><td class="ro hi">60.000</td></tr>

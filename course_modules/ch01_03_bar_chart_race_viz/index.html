@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<meta name="description" content="Bar chart race dựng lại bằng SVG thuần từ bảng số nhúng trong lab 02_bar_chart_race_animation.py: 10 nền kinh tế, 10 mốc năm 1980 đến 2024, đơn vị nghìn tỷ USD PPP. Kèm phép tính cầm tay suy từ ma trận pivot, so sánh dữ liệu dạng dài (melt) và dạng rộng (pivot), bảng SSoT và câu hỏi tự luyện. Giá trị là ước lượng minh hoạ, không phải bản trích xuất chính thức của World Bank.">
+<meta name="description" content="Bar chart race dựng lại bằng SVG thuần từ bảng số trong lab 02_bar_chart_race_animation.py: 10 nền kinh tế, 10 mốc năm 1980 đến 2024, đơn vị nghìn tỷ USD PPP. Kèm phép tính cầm tay suy từ ma trận pivot, so sánh dữ liệu dạng dài (melt) và dạng rộng (pivot), bảng thông số chuẩn và câu hỏi tự luyện. Giá trị là ước lượng minh hoạ, không phải bản trích xuất chính thức của World Bank.">
 <title>Bar Chart Race GDP 1980–2024 &amp; dữ liệu dài vs rộng — UTH AI Interactive Lab</title>
 <style>
 :root{--bg:#070E1A;--panel:#0F172A;--panel2:#111c30;--ink:#F8FAFC;--mut:#94A3B8;--line:rgba(56,189,248,.16);
@@ -98,7 +98,7 @@ code.path{overflow-wrap:anywhere}
 <span class="pill a">bar_chart_race dựng lại bằng SVG</span>
 </div>
 <h1><span class="gr">Bar Chart Race GDP 1980–2024 &amp; dữ liệu dạng dài vs dạng rộng</span></h1>
-<p class="lede">Module dựng lại đúng ý đồ <code>bcr.bar_chart_race(df=df_pivot_gdp)</code> của lab <code>02_bar_chart_race_animation.py</code> bằng SVG thuần: 10 thanh ngang đua theo 10 mốc năm, kèm bước nội suy giữa các mốc (giống <code>steps_per_period</code>). <b>Trung thực số liệu:</b> mọi con số lấy từ <b>bảng số nhúng minh hoạ trong Lab</b> — giá trị ước lượng, KHÔNG phải bản trích xuất chính thức của World Bank — và chỉ được dùng khi Lab không tải được KaggleHub.</p>
+<p class="lede"><b>Bài toán thực tế:</b> Trực quan hóa chuỗi dữ liệu đa quốc gia (10 nền kinh tế qua 10 mốc năm 1980–2024) và thực hành chuyển đổi cấu trúc bảng giữa <b>dạng dài (long/melt)</b> và <b>dạng rộng (wide/pivot)</b> trong quy trình phân tích dữ liệu (<code>02_bar_chart_race_animation.py</code>). Số liệu trong bảng nhúng là giá trị ước lượng minh họa (không phải số liệu công bố chính thức của World Bank), dùng khi bài thực hành không kết nối tới KaggleHub.</p>
 <div class="heroctl">
 <button class="btn cta" id="resetHero" type="button">Về mốc 2024 của Lab</button>
 <button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
@@ -108,7 +108,7 @@ code.path{overflow-wrap:anywhere}
 <nav role="tablist" aria-label="Chuyển tab">
 <button role="tab" aria-selected="true" data-tab="s1">01 · Đua bar chart (SVG)</button>
 <button role="tab" aria-selected="false" data-tab="s2">02 · Đường về đích &amp; phép tính</button>
-<button role="tab" aria-selected="false" data-tab="s3">03 · Dài vs Rộng &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Dài vs Rộng &amp; Bảng Tham số</button>
 <button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
 </nav>
 <main>
@@ -127,11 +127,11 @@ code.path{overflow-wrap:anywhere}
   <svg id="race" viewBox="0 0 440 406" role="img" aria-label="Bar chart race 10 quốc gia, thanh nằm ngang xếp giảm dần, giá trị GDP nghìn tỷ USD PPP tại mốc năm đang xem"></svg>
   <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>v</mi><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><mo>(</mo><mn>1</mn><mo>&#8722;</mo><mi>&#945;</mi><mo>)</mo><mo>&#8901;</mo><msub><mi>v</mi><mi>k</mi></msub><mo>+</mo><mi>&#945;</mi><mo>&#8901;</mo><msub><mi>v</mi><mrow><mi>k</mi><mo>+</mo><mn>1</mn></mrow></msub></math></div>
   <p class="note">Đơn vị trục: <b>nghìn tỷ USD (PPP)</b>. Thanh và thứ hạng tính trực tiếp từ ma trận <code>pivot</code> (10 mốc × 10 quốc gia) mà lab xuất ra sau <code>df_gdp_melted.pivot_table(index='Year', columns='Country', values='GDP')</code>. Thứ tự sắp xếp giảm dần và bước nội suy mô phỏng đúng <code>sort='desc'</code>, <code>steps_per_period=10</code> của <code>bar_chart_race</code>.</p>
-  <div class="note warn"><b>Trung thực dữ liệu (đọc trước khi dùng số):</b> bảng số trong module là <b>bảng nhúng minh hoạ trong Lab</b>, giá trị <b>ước lượng</b>, <b>KHÔNG phải bản trích xuất chính thức của World Bank</b>, và chỉ được Lab dùng ở nhánh dự phòng <b>khi không tải được KaggleHub</b>. Khi Lab chạy với mạng, bộ dữ liệu mở <code>codebynadiia/gdp-1975-2025</code> sẽ cho số khác (nhiều quốc gia và nhiều năm hơn, top 15). Biến <code>DU_LIEU_NGUON</code> trong lab ghi đúng điều này — xem dòng [M01] ở tab 03.</div>
+  <div class="note warn"><b>Lưu ý nguồn dữ liệu:</b> bảng số minh họa dưới đây chứa giá trị ước lượng dùng cho kịch bản chạy ngoại tuyến (khi không tải được KaggleHub). Khi chạy trực tuyến, bài thực hành tải bộ dữ liệu <code>codebynadiia/gdp-1975-2025</code> với nhiều quốc gia và mốc năm hơn. Biến <code>DU_LIEU_NGUON</code> ở mục [M01] (tab 03) ghi nhận rõ nguồn dữ liệu đang sử dụng.</div>
  </div>
  <div class="card">
   <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
-  <h2>Trạng thái bảng số &amp; Đối chiếu SSoT</h2>
+  <h2>Trạng thái bảng số &amp; Đối chiếu Tham số Lab</h2>
   <div class="stat" id="stat1"></div>
   <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
   <p class="note" id="insight1"></p>
@@ -185,10 +185,10 @@ df_pivot_gdp = df_gdp_melted.pivot_table(index='Year', columns='Country',
  <p class="note"><code>bar_chart_race</code> hiện chưa tương thích pandas 3 (bên trong gọi <code>fillna(method=...)</code> đã bị loại), nên lab bọc lời gọi trong nhánh <code>try/except</code>; module này dựng lại animation đó bằng SVG từ chính <code>df_pivot_gdp</code>.</p>
 </div>
 <div class="card">
- <span class="eyebrow">Bảng đối chuẩn SSoT · 02_bar_chart_race_animation.py</span>
+ <span class="eyebrow">Bảng Thông số Chuẩn · 02_bar_chart_race_animation.py</span>
  <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
  <table id="ssotTable">
-  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn</th></tr></thead>
   <tbody>
 <tr><td><code>[M01]</code> Nguồn dữ liệu Lab ghi lúc chạy <span class="sub">(DU_LIEU_NGUON)</span></td><td>Bảng số nhúng trong lab (10 quốc gia, 1980-2024) - gia tri uoc luong minh hoa, chi dung khi khong tai duoc KaggleHub</td></tr>
 <tr><td><code>[M02]</code> Mốc năm mới nhất trong bảng <span class="sub">(latest_year)</span></td><td class="ro hi">2024</td></tr>
@@ -199,7 +199,7 @@ df_pivot_gdp = df_gdp_melted.pivot_table(index='Year', columns='Country',
 <tr><td><code>[M07]</code> Ma trận pivot năm × quốc gia (bảng 10 × 10 ở trên, 100 giá trị) <span class="sub">(pivot)</span></td><td class="ro hi">10 × 10</td></tr>
   </tbody>
  </table>
- <p class="note">Toàn bộ số trong bảng trên được cổng <code>parity.py</code> đối chiếu một chiều với <code>parity_source.json</code> — tệp do <code>export_lab_data.py</code> xuất từ chính lab SSoT.</p>
+ <p class="note">Toàn bộ số liệu trong bảng trên được trích xuất một chiều từ bài thực hành chuẩn <code>02_bar_chart_race_animation.py</code>.</p>
 </div>
 </section>
 

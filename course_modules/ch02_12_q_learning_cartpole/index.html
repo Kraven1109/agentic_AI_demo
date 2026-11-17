@@ -90,8 +90,8 @@ code.path{overflow-wrap:anywhere}
 <span class="pill mut">Một lần chạy Lab · np.random.seed(0)</span>
 </div>
 <h1><span class="gr">Q-Learning bảng trên CartPole — Rời rạc hoá &amp; đường cong 10.000 tập</span></h1>
-<p class="lede">Bài toán của Lab 2.12: giữ thăng bằng con ngược trên xe (CartPole) bằng <b>Q-Learning bảng rời rạc</b> — không mạng nơ-ron, không vết khả tích. Môi trường là <code>CartPoleWindEnv</code> (con ngược có gió); môi trường CartPole được viết bằng numpy thuần ngay trong lab vì máy không cài <code>gym</code>. Bốn chiều trạng thái liên tục (vị trí xe, vận tốc xe, góc con ngược, vận tốc góc) được rời rạc hoá thành lưới 3 × 3 × 6 × 12 = 648 trạng thái; bảng Q có 648 × 2 hành động = 1.296 ô. Cập nhật theo phương trình Bellman một bước với γ = 0,99; chọn hành động theo ε-tham lam với mức sàn ε = 0,1; huấn luyện trọn 10.000 tập, mỗi tập cắt ở 200 bước (đúng chuẩn wrapper <code>TimeLimit(200)</code> của Gym).</p>
-<p class="lede"><b>Quy tắc trung thực:</b> mọi con số là <b>kết quả MỘT lần chạy Lab với <code>np.random.seed(0)</code></b> đặt trước khởi tạo bảng Q; mã lab <b>tất định</b> (hai lần chạy trọn 10.000 tập trước 2026-11-03 cho đúng cùng bộ số), còn bộ số hiện tại là của lần chạy với mã <b>sau hai sửa đổi 2026-11-03</b> (gió vào phương trình lực + giới hạn 200 bước/tập). Lab này <b>không có</b> <code>evaluate_policy</code> / <code>desired_reward</code> như Lab 2.13, nên không có con số "đánh giá chính sách" hay "dừng sớm" để nói. Gió là <b>kịch bản tham số ghi trong Lab</b> (<code>CartPoleWindEnv</code>): gió trung bình 0 N (<code>wind_mean</code>), độ lệch chuẩn 10 N (<code>wind_std</code>), xác suất rút gió mới 0,1 (<code>wind_probability</code>), một giá trị gió giữ nguyên 3–10 bước — và gió được <b>CỘNG vào lực</b>: <code>step</code> tự tích phân Euler với tổng lực ±10 N + gió (Giảng viên chốt SỬA lỗi 2026-11-03; trước đó gió chỉ được vẽ chứ không đẩy xe). Mỗi bước sống sót được +1 phần thưởng; <code>CartPoleWindEnv</code> cắt mỗi tập ở <b>200 bước</b> — đúng chuẩn wrapper <code>TimeLimit(200)</code> của <code>gym.make('CartPole-v1')</code> — nên một tập tối đa <b>200 điểm</b>; Lab này KHÔNG có phần thưởng phụ giữ thẳng như Lab 2.13; hết 200 bước là <code>truncated</code>, không phải thất bại.</p>
+<p class="lede"><b>Bài toán thực tế:</b> Điều khiển xe giữ thăng bằng <b>con lắc ngược (CartPole)</b> trong môi trường <code>CartPoleWindEnv</code> (mô phỏng con lắc ngược chịu nhiễu gió ngẫu nhiên) bằng thuật toán <b>Q-Learning bảng rời rạc</b> một bước. Bốn chiều trạng thái liên tục (vị trí xe, vận tốc xe, góc con lắc ngược, vận tốc góc) được rời rạc hóa thành lưới 3 × 3 × 6 × 12 = 648 trạng thái; bảng Q gồm 648 × 2 hành động = 1.296 ô. Chính sách được cập nhật theo phương trình Bellman với γ = 0,99, chiến lược ε-tham lam (sàn ε = 0,1) qua 10.000 tập huấn luyện, mỗi tập giới hạn 200 bước theo chuẩn <code>TimeLimit(200)</code>.</p>
+<p class="lede"><b>Thiết lập thực nghiệm:</b> Số liệu trình bày là kết quả một lần chạy tái lập với <code>np.random.seed(0)</code> đặt trước khi khởi tạo bảng Q; bài thực hành này không sử dụng cơ chế dừng sớm <code>evaluate_policy</code> / <code>desired_reward</code> như Lab 2.13. Nhiễu gió tuân theo tham số ghi trong Lab (<code>CartPoleWindEnv</code>): trung bình 0 N (<code>wind_mean</code>), độ lệch chuẩn 10 N (<code>wind_std</code>), xác suất đổi gió 0,1 (<code>wind_probability</code>), giữ nguyên 3–10 bước và được <b>CỘNG vào lực</b> điều khiển ±10 N trong bước tích phân Euler. Mỗi bước sống sót nhận +1 phần thưởng (tối đa <b>200 điểm</b> — trần do cấu hình); kết thúc 200 bước là <code>truncated</code> chứ không phải thất bại.</p>
 <div class="heroctl">
 <button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
 <button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
@@ -101,7 +101,7 @@ code.path{overflow-wrap:anywhere}
 <nav role="tablist" aria-label="Chuyển tab">
 <button role="tab" aria-selected="true" data-tab="s1">01 · Rời rạc hoá trạng thái</button>
 <button role="tab" aria-selected="false" data-tab="s2">02 · Phòng chạy thử &amp; đường cong</button>
-<button role="tab" aria-selected="false" data-tab="s3">03 · Q-learning &amp; Bảng SSoT</button>
+<button role="tab" aria-selected="false" data-tab="s3">03 · Q-learning &amp; Tham số Chuẩn</button>
 <button role="tab" aria-selected="false" data-tab="s4">04 · Tự luyện</button>
 </nav>
 <main>
@@ -124,7 +124,7 @@ code.path{overflow-wrap:anywhere}
   <span class="eyebrow">Phép nhân cầm tay · từ hằng số buckets trong mã Lab</span>
   <h2>Vì sao bảng Q đúng 1.296 ô?</h2>
   <div class="formula handcalc">3 × 3 = 9 (vị trí xe × vận tốc xe)<br>
-   9 × 6 = 54 (thêm góc con ngược)<br>
+   9 × 6 = 54 (thêm góc con lắc ngược)<br>
    54 × 12 = 648 (thêm vận tốc góc) → 648 trạng thái<br>
    648 × 2 hành động (đẩy trái / đẩy phải) = 1.296 ô — đúng bằng <code>q_cells</code> Lab xuất</div>
    <div class="formula handcalc">490 ÷ 1.296 = 0,3781 ≈ 37,8%<br>
@@ -142,7 +142,7 @@ code.path{overflow-wrap:anywhere}
   <tbody>
    <tr><td>Vị trí xe (cart position)</td><td>±2,4 m — trùng ngưỡng xe trượt khỏi ray</td><td class="ro hi">3</td></tr>
    <tr><td>Vận tốc xe (cart velocity)</td><td>±0,5 m/s</td><td class="ro hi">3</td></tr>
-   <tr><td>Góc con ngược (pole angle)</td><td>±0,2094 rad (≈ 12°) — ngưỡng pole đổ</td><td class="ro hi">6</td></tr>
+   <tr><td>Góc con lắc ngược (pole angle)</td><td>±0,2094 rad (≈ 12°) — ngưỡng pole đổ</td><td class="ro hi">6</td></tr>
    <tr><td>Vận tốc góc (pole angular velocity)</td><td>±50°/s (đổi sang rad trong mã)</td><td class="ro hi">12</td></tr>
   </tbody>
  </table>
@@ -154,8 +154,8 @@ code.path{overflow-wrap:anywhere}
 <div class="card">
  <span class="eyebrow">Phòng chạy thử · chính sách Lab vừa học</span>
  <h2>CartPole chạy bằng chính bảng Q Lab học được (mô phỏng trên trình duyệt)</h2>
- <svg id="cart" viewBox="0 0 640 260" role="img" aria-label="Mô phỏng động CartPole có gió chạy bằng bảng Q của Lab: ray, xe, con ngược đổi màu gần ngưỡng 12 độ, mũi tên lực gió, HUD chỉ số"></svg>
- <p class="note">Mũi tên cyan = lực gió (bố cục theo <code>render_with_wind</code> của Lab) · mũi tên xanh = lực xe ±10 N · guides đứt = ngưỡng 12° quanh trục xe và mốc ±2,4 m. Con ngược đổi xanh → vàng → đỏ khi |θ| tiến ngưỡng 12°.</p>
+ <svg id="cart" viewBox="0 0 640 260" role="img" aria-label="Mô phỏng động CartPole có gió chạy bằng bảng Q của Lab: ray, xe, con lắc ngược đổi màu gần ngưỡng 12 độ, mũi tên lực gió, HUD chỉ số"></svg>
+ <p class="note">Mũi tên cyan = lực gió (bố cục theo <code>render_with_wind</code> của Lab) · mũi tên xanh = lực xe ±10 N · vạch đứt = ngưỡng 12° quanh trục xe và mốc ±2,4 m. Con lắc ngược đổi màu xanh → vàng → đỏ khi |θ| tiến sát ngưỡng 12°.</p>
  <div class="stat" id="simStat"></div>
  <div class="ctl">
   <button class="btn cta" id="simPlay" type="button">Play</button>
@@ -176,8 +176,8 @@ code.path{overflow-wrap:anywhere}
   idx = (((b0 × 3 + b1) × 6 + b2) × 12 + b3) × 2 + a — với a = 0 (đẩy −10 N) hoặc a = 1 (đẩy +10 N)<br>
   buckets (b0…b3): int((B−1) × tỉ lệ) với tỉ lệ = clamp((v − biên dưới)/(biên trên − biên dưới), 0, 1) — <code>int()</code> là CẮT BỎ, KHÔNG round (Lab 2.13 mới dùng int(round(…))); biên ±2,4 m · ±0,5 m/s · ±0,20943951 rad (≈ ±12°) · ±50°/s; B = 3, 3, 6, 12</div>
  <p class="note">Nguồn: mô phỏng lại đúng <code>CartPoleWindEnv.step</code> (bản numpy tự chứa) trong <code class="path">02_qlearning_cartpole_balancing.py</code>, chạy bằng bảng Q Lab học được ở <b>tập 10.000</b> (<code>q_at_episode</code>), làm tròn 2 chữ số khi xuất. Bảng Q nhúng: 1.296 giá trị phẳng (nhỏ nhất 0,0 — do Q khởi tạo bằng 0; lớn nhất 74,02 tại ô (1, 1, 2, 5), hành động đẩy phải). Vật lý đúng hằng số Lab: g = 9,8 · m_c = 1 · m_p = 0,1 · ℓ = 0,5 m (nửa chiều dài) · F = ±10 N · τ = 0,02 s · ngưỡng 12° và 2,4 m; gió N(0, 10) N, xác suất 0,1 mỗi chu kỳ, giữ 3–10 bước và CỘNG vào lực; mỗi bước sống +1 phần thưởng (KHÔNG có thưởng phụ); phòng chạy thử cũng <b>cắt tập ở 200 bước</b> như <code>CartPoleWindEnv</code>, nên một tập ở đây tối đa 200 điểm.</p>
- <p class="note warn">Minh hoạ số: số bước và phần thưởng chạy thử là của <b>mô phỏng trên trình duyệt bằng bảng Q của Lab</b> — không phải số đo của Lab, không phải <code>avg_last100 = 94,72</code> của Lab. Chuỗi gió ở đây do trang sinh để minh hoạ (RNG <code>mulberry32</code>, seed công khai <code>20261103</code>), <b>KHÔNG phải</b> chuỗi <code>numpy</code> của Lab; bảng Q và hằng số vật lý là của Lab. <b>Đo bằng chính machinery của trang</b> (policy tham lam, 20 tập liên tiếp, gió BẬT, chuỗi <code>mulberry32</code> seed <code>20261103</code>): trung bình <b>120,50 bước/tập</b>, <b>2/20</b> tập trụ đủ 200 bước (trần 200 điểm), ngắn nhất 27 bước; khi tắt gió, trung bình <b>141,70 bước</b> — cả hai vẫn xa trần 200, giống hệt tinh thần <code>avg_last100 = 94,72</code> của Lab. Đó là số của mô phỏng trên trình duyệt — không phải số đo Lab.</p>
- <p class="note warn">Đối chiếu với <code>.py</code> (sau hai sửa đổi 2026-11-03): <code>CartPoleWindEnv.step</code> <b>không còn gọi <code>super().step(action)</code></b> mà tự tích phân Euler với tổng lực <code>±10 N + current_wind</code> — nên gió thật sự đẩy xe và con ngược, không chỉ nằm trên mũi tên vẽ. Phòng chạy thử dùng đúng cùng công thức lực đó và cùng mức cắt 200 bước/tập; khác biệt còn lại chỉ là chuỗi số ngẫu nhiên (RNG của trang, không phải <code>numpy</code> của Lab).</p>
+ <p class="note warn">Minh hoạ số: số bước và phần thưởng chạy thử là của <b>mô phỏng trên trình duyệt bằng bảng Q của Lab</b> — không phải số đo trực tiếp từ lần chạy Python (<code>avg_last100 = 94,72</code>). Chuỗi gió trên trình duyệt dùng RNG <code>mulberry32</code> (seed <code>20261103</code>) thay cho <code>numpy</code>; bảng Q và hằng số vật lý lấy nguyên từ Lab. Khi chạy 20 tập liên tiếp bằng cơ chế mô phỏng của trang (policy tham lam, gió BẬT, seed <code>20261103</code>): trung bình đạt <b>120,50 bước/tập</b>, <b>2/20</b> tập trụ đủ 200 bước (trần 200 điểm), ngắn nhất 27 bước; khi tắt gió, trung bình <b>141,70 bước</b> — vẫn dưới trần 200, tương đồng với mức hội tụ <code>avg_last100 = 94,72</code> của Lab.</p>
+ <p class="note warn">Đối chiếu phương trình động lực học trong <code>.py</code>: <code>CartPoleWindEnv.step</code> tích phân Euler trực tiếp với tổng lực <code>±10 N + current_wind</code> nên gió thật sự tác động lên xe và con lắc ngược. Phòng chạy thử dùng đúng công thức lực và giới hạn 200 bước/tập này; khác biệt còn lại chỉ là chuỗi số ngẫu nhiên sinh gió.</p>
 </div>
 <div class="grid">
  <div class="card">
@@ -190,7 +190,7 @@ code.path{overflow-wrap:anywhere}
   </div>
    <svg id="curve" viewBox="0 0 440 272" role="img" aria-label="Đường cong 400 mẫu phần thưởng huấn luyện theo tập, có mốc tập đầu tiên đạt 200, bình quân 100 tập cuối và trung vị 1000 tập cuối"></svg>
   <p class="note">Đường cong là nguyên văn 400 giá trị <code>curve</code> Lab xuất — phần thưởng tích luỹ, mẫu mỗi 25 tập (mẫu thứ i ↔ tập i×25, đánh số từ 0). Nét đứt xanh lá đứng: mốc <b>1.231</b> — tập ĐẦU TIÊN chạm trần 200 điểm. Nét đứt hổ phách ngang: trần 200 điểm do cấu hình (200 bước × +1). Hai mốc còn lại: bình quân 100 tập cuối <b>94,72</b> và trung vị 1.000 tập cuối <b>118</b>; trục dọc chỉ cao tới 200 nên nhìn rõ cả hai, không chìm sát đáy.</p>
-  <p class="note"><b>Đọc đúng bản chất:</b> mỗi bước sống sót được +1 phần thưởng và <code>CartPoleWindEnv</code> cắt ở 200 bước (TimeLimit(200)) nên <b>trần một tập là 200 điểm</b> — <code>best_reward = 200</code> là <b>trần do cấu hình, không phải kỷ lục</b>. <code>first_200 = 1.231</code> là tập đầu tiên chạm trần. Nhưng <code>avg_last100 = 94,72</code>: trung bình 100 tập cuối chỉ trụ khoảng 95/200 bước; <code>median_last1000 = 118</code>: phần lớn tập vẫn gãy giữa chừng. Kết luận trung thực: chính sách <b>không hội tụ tới trần</b> — lưới 3 × 3 × 6 × 12 (648 trạng thái) quá thô khi gió N(0, 10) N thực sự đẩy xe (cùng cỡ với lực điều khiển ±10 N). Đây là kết quả tốt để dạy về sức chứa của Q-learning dạng bảng, không phải lỗi.</p>
+  <p class="note"><b>Phân tích hội tụ:</b> mỗi bước duy trì trạng thái nhận +1 phần thưởng và <code>CartPoleWindEnv</code> giới hạn 200 bước (<code>TimeLimit(200)</code>) nên <b>trần một tập là 200 điểm</b> — <code>best_reward = 200</code> là <b>trần do cấu hình, không phải kỷ lục</b>. Mốc <code>first_200 = 1.231</code> ghi nhận tập đầu tiên chạm trần. Tuy nhiên, <code>avg_last100 = 94,72</code> cho thấy trung bình 100 tập cuối chỉ trụ khoảng 95/200 bước (<code>median_last1000 = 118</code>). Như vậy chính sách chưa hội tụ ổn định tới trần do lưới rời rạc 3 × 3 × 6 × 12 (648 trạng thái) khá thô trước nhiễu gió N(0, 10) N tác động trực tiếp vào lực đẩy (cùng độ lớn với lực điều khiển ±10 N).</p>
  </div>
  <div class="card">
   <span class="eyebrow">Chỉ số đọc từ dữ liệu xuất của Lab</span>
@@ -215,7 +215,7 @@ code.path{overflow-wrap:anywhere}
    <button class="btn" id="btnDefault3" type="button">Về sàn 0,1</button>
   </div>
    <svg id="epsbar" viewBox="0 0 440 172" role="img" aria-label="Thanh tỉ lệ giữa xác suất làm bừa bằng epsilon và xác suất theo hành động Q tốt nhất"></svg>
-  <p class="note">γ = 0,99 (đúng hằng số <code>gamma_rl</code>). ε bắt đầu bằng 1 (khám phá hoàn toàn), bị nhân 0,995 sau mỗi tập nhưng <b>không bao giờ thấp hơn mức sàn 0,1</b> (<code>min_epsilon_rl</code>); giá trị ε khi kết thúc chạy là 0,1 (<code>epsilon_final</code>), khớp số xuất. Học rate α được dùng trực tiếp bằng mức sàn 0,1 (<code>min_lr_rl</code>) — không giảm thấp hơn mức này. Hằng số <code>ada_divisor</code> = 25 có ghi trong cấu hình nhưng <b>không xuất hiện trong công thức <code>update_q</code></b> của lab này.</p>
+  <p class="note">γ = 0,99 (đúng hằng số <code>gamma_rl</code>). ε bắt đầu bằng 1 (khám phá hoàn toàn), nhân 0,995 sau mỗi tập nhưng <b>không thấp hơn mức sàn 0,1</b> (<code>min_epsilon_rl</code>); giá trị ε khi kết thúc là 0,1 (<code>epsilon_final</code>). Tốc độ học α dùng cố định ở mức sàn 0,1 (<code>min_lr_rl</code>). Hằng số <code>ada_divisor</code> = 25 xuất hiện trong cấu hình nhưng không tham gia biểu thức cập nhật <code>update_q</code>.</p>
   <div class="formula handcalc">Phép kiểm tay tốc độ ε chạm sàn — <i>suy ra từ hằng số Lab</i> (0,995 và sàn 0,1):<br>
    0,995<sup>459</sup> ≈ 0,10018 &gt; 0,1 → chưa chạm sàn<br>
    0,995<sup>460</sup> ≈ 0,09968 &lt; 0,1 → sàn 0,1 tiếp quản từ tập ≈ 460<br>
@@ -235,15 +235,15 @@ code.path{overflow-wrap:anywhere}
    </tbody></table>
   <div class="formula handcalc">20.000 ÷ 1.296 = 15,43 lần — bảng của Lab 2.13 to hơn hẳn<br>
    (hằng số lấy từ số xuất của hai lab; 1.296 = 3 × 3 × 6 × 12 × 2)</div>
-  <p class="note warn">Không được kết luận Q(λ) "tốt hơn" hay "kém hơn" một cách tuyệt đối: hai lab khác khởi tạo Q, khác lịch học rate, khác lưới rời rạc hoá, khác phần thưởng (2.13 cộng thêm +1 khi |θ| &lt; 5°) — và Lab 2.12 <b>không có</b> <code>evaluate_policy</code> / <code>desired_reward</code>, nên không có con số đánh giá chính sách hay mốc dừng sớm để đặt cạnh số của 2.13; chỉ so được các hằng số có trong số liệu của cả hai lab.</p>
+  <p class="note warn">Không được kết luận Q(λ) "tốt hơn" hay "kém hơn" một cách tuyệt đối: hai bài thực hành khác nhau về khởi tạo Q, lịch tốc độ học, lưới rời rạc hoá và hàm phần thưởng (Lab 2.13 cộng thêm +1 khi |θ| &lt; 5°); đồng thời Lab 2.12 không dùng <code>evaluate_policy</code> / <code>desired_reward</code> nên chỉ đối chiếu các hằng số thiết kế tương ứng.</p>
  </div>
 </div>
 <div class="card">
- <span class="eyebrow">Bảng đối chuẩn SSoT · 02_qlearning_cartpole_balancing.py</span>
- <h2>Toàn bộ hằng số và kết quả trích xuất từ Lab chuẩn</h2>
-  <p class="note">Toàn bộ giá trị dưới đây do <code>export_lab_data.py</code> trích một chiều từ tệp SSoT; chúng là kết quả MỘT lần chạy Lab với <code>np.random.seed(0)</code> đặt trước khởi tạo bảng Q, chạy bằng mã <b>sau hai sửa đổi 2026-11-03</b> (tính tất định của mã đã được chứng minh bằng hai lần chạy trọn 10.000 tập khớp số trước 2026-11-03):</p>
+ <span class="eyebrow">Bảng Thông số Chuẩn · 02_qlearning_cartpole_balancing.py</span>
+ <h2>Toàn bộ hằng số và kết quả trích xuất từ bài thực hành</h2>
+  <p class="note">Các giá trị dưới đây được trích xuất một chiều từ tệp bài thực hành chuẩn từ một lần chạy tái lập với <code>np.random.seed(0)</code>:</p>
  <table id="ssotTable">
-  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn</th></tr></thead>
   <tbody>
 <tr><td><code>[M01]</code> Số tập huấn luyện đã chạy trọn <span class="sub">(n_eps)</span></td><td class="ro hi">10.000</td></tr>
 <tr><td><code>[M02]</code> Số tập ghi trong cấu hình <code>QLearningAgent</code> <span class="sub">(n_episodes_rl)</span></td><td class="ro hi">10.000</td></tr>
@@ -257,7 +257,7 @@ code.path{overflow-wrap:anywhere}
 <tr><td><code>[M10]</code> Hệ số chiết khấu γ <span class="sub">(gamma_rl)</span></td><td class="ro hi">0,99</td></tr>
 <tr><td><code>[M11]</code> Mức sàn của ε trong ε-tham lam <span class="sub">(min_epsilon_rl)</span></td><td class="ro hi">0,1</td></tr>
 <tr><td><code>[M12]</code> ε thực tế khi kết thúc chạy — đã chạm sàn <span class="sub">(epsilon_final)</span></td><td class="ro hi">0,1</td></tr>
-<tr><td><code>[M13]</code> Học rate α mà <code>update_q</code> dùng (= mức sàn) <span class="sub">(min_lr_rl)</span></td><td class="ro hi">0,1</td></tr>
+<tr><td><code>[M13]</code> Tốc độ học α mà <code>update_q</code> dùng (= mức sàn) <span class="sub">(min_lr_rl)</span></td><td class="ro hi">0,1</td></tr>
 <tr><td><code>[M14]</code> Hằng số ghi trong cấu hình nhưng không dùng ở <code>update_q</code> <span class="sub">(ada_divisor_rl)</span></td><td class="ro hi">25</td></tr>
 <tr><td><code>[M15]</code> Chuỗi phần thưởng tích luỹ, mẫu mỗi 25 tập (vẽ ở Tab 02; 5 mẫu đầu: 13, 10, 13, 45, 14; 5 mẫu cuối: 34, 110, 53, 19, 112; mẫu lớn nhất 200 = đúng trần) <span class="sub">(curve)</span></td><td class="ro hi">400 giá trị</td></tr>
 <tr><td><code>[M16]</code> Giới hạn bước mỗi tập trong <code>CartPoleWindEnv</code> — chuẩn <code>TimeLimit(200)</code>; hết mức là <code>truncated</code>, không phải thất bại <span class="sub">(max_steps)</span></td><td class="ro hi">200</td></tr>
@@ -282,7 +282,7 @@ code.path{overflow-wrap:anywhere}
 </main>
 
 <footer>
-Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code class="path">demos_and_labs/Chuong_2_ThuatToan_HocMay/06_HocCungCo_ReinforcementLearning/02_qlearning_cartpole_balancing.py</code>. Module "đối thủ" cùng môi trường: Lab 2.13 Q(λ) — <code class="path">03_qlearning_cartpole_lambda.py</code>.
+Học phần Trí tuệ Nhân tạo và Ứng dụng (AI &amp; Applications) — Trường ĐH Giao thông Vận tải TP.HCM (UTH) · <a href="../../index.html">← All Demos</a> · Bài thực hành gốc: <code class="path">demos_and_labs/Chuong_2_ThuatToan_HocMay/06_HocCungCo_ReinforcementLearning/02_qlearning_cartpole_balancing.py</code>. Bài thực hành đối chiếu cùng môi trường: Lab 2.13 Q(λ) — <code class="path">03_qlearning_cartpole_lambda.py</code>.
 </footer>
 
 <script>
@@ -290,9 +290,9 @@ const LAB = {"source_lab":"lab","cells":[1,2,3,4],"vars":{},"derived":{"n_eps":1
 
 const D = LAB.derived;
 const KEYS = ["n_eps", "n_episodes_rl", "first_200", "avg_last100", "median_last1000", "best_reward", "buckets", "q_cells", "q_nonzero", "gamma_rl", "min_epsilon_rl", "epsilon_final", "min_lr_rl", "ada_divisor_rl", "curve"];
-const LABELS = {"n_eps": "Số tập huấn luyện đã chạy trọn", "n_episodes_rl": "Số tập ghi trong cấu hình QLearningAgent", "first_200": "Tập đầu tiên có phần thưởng tích luỹ ≥ 200", "avg_last100": "Bình quân phần thưởng 100 tập cuối", "median_last1000": "Trung vị phần thưởng 1.000 tập cuối", "best_reward": "Phần thưởng cao nhất một tập = đúng trần 200 bước do cấu hình", "buckets": "Số ngăn rời rạc hoá cho 4 chiều trạng thái", "q_cells": "Số ô bảng Q (trạng thái × hành động)", "q_nonzero": "Số ô Q khác 0 sau 10.000 tập", "gamma_rl": "Hệ số chiết khấu γ", "min_epsilon_rl": "Mức sàn của ε trong ε-tham lam", "epsilon_final": "ε thực tế khi kết thúc chạy", "min_lr_rl": "Học rate α mà update_q dùng", "ada_divisor_rl": "Hằng số cấu hình không dùng ở update_q", "curve": "Chuỗi phần thưởng tích luỹ, mẫu mỗi 25 tập"};
+const LABELS = {"n_eps": "Số tập huấn luyện đã chạy trọn", "n_episodes_rl": "Số tập ghi trong cấu hình QLearningAgent", "first_200": "Tập đầu tiên có phần thưởng tích luỹ ≥ 200", "avg_last100": "Bình quân phần thưởng 100 tập cuối", "median_last1000": "Trung vị phần thưởng 1.000 tập cuối", "best_reward": "Phần thưởng cao nhất một tập = đúng trần 200 bước do cấu hình", "buckets": "Số ngăn rời rạc hoá cho 4 chiều trạng thái", "q_cells": "Số ô bảng Q (trạng thái × hành động)", "q_nonzero": "Số ô Q khác 0 sau 10.000 tập", "gamma_rl": "Hệ số chiết khấu γ", "min_epsilon_rl": "Mức sàn của ε trong ε-tham lam", "epsilon_final": "ε thực tế khi kết thúc chạy", "min_lr_rl": "Tốc độ học α mà update_q dùng", "ada_divisor_rl": "Hằng số cấu hình không dùng ở update_q", "curve": "Chuỗi phần thưởng tích luỹ, mẫu mỗi 25 tập"};
 const dec = k => (k === 'gamma_rl' || k === 'avg_last100') ? 2 : (k === 'min_epsilon_rl' || k === 'epsilon_final' || k === 'min_lr_rl') ? 1 : 0;
-const FB = {1:{"q1_1":["Đúng. ε khởi tạo bằng 1 — mọi bước đều 'làm bừa'; 5 mẫu đầu của curve chỉ 13, 10, 13, 45, 14 điểm. Bảng Q khởi tạo bằng 0 với 1.296 ô cần nhiều nghìn tập cập nhật để giá trị lan; mốc 1.231 (first_200) là tập ĐẦU TIÊN chạm trần 200 điểm trong MỘT lần chạy có seed 0 — sau đó vẫn lâu lâu mới chạm lại.",1],"q1_2":["Sai. Mức cắt 200 bước chỉ đặt TRẦN cho mỗi tập; nó không 'trì hoãn' việc chạm trần — chính sách chỉ chạm trần khi bảng Q đã đủ tốt (và ở đây phần lớn tập còn KHÔNG chạm).",0],"q1_3":["Sai. ε = 1 lúc khởi tạo; nó giảm theo 0,995 mỗi tập và chỉ chạm sàn 0,1 từ khoảng tập 460.",0]},2:{"q2_1":["Đúng. Bảng Q khởi tạo bằng 0, nên ô khác 0 ⇔ từng được cập nhật. 490 ÷ 1.296 = 0,3781: lưới 3×3×6×12 đã thô mà vẫn còn gần hai phần ba ô chưa từng ghé sau 10.000 tập.",1],"q2_2":["Sai. Số tập chạm trần là con số khác; 490 đếm Ô của bảng Q, không đếm tập.",0],"q2_3":["Sai. 490 là số Ô (s, a) khác 0 — trạng thái tối đa chỉ 648, còn 490 được đếm trên bảng 1.296 ô (trạng thái × 2 hành động).",0]},3:{"q3_1":["Đúng. Gió N(0, 10) N — cùng cỡ với lực điều khiển ±10 N — thật sự đẩy xe (sửa đổi 2026-11-03); lưới 648 trạng thái quá thô nên chính sách không hội tụ tới trần: bình quân 100 tập cuối 94,72/200 và trung vị 1.000 tập cuối 118/200.",1],"q3_2":["Sai. Lab 2.12 chỉ có +1 mỗi bước sống, không có thưởng phụ nào bị 'mất' ở các bước gần ngưỡng.",0],"q3_3":["Sai. Lab chạy trọn 10.000 tập; không có desired_reward/dừng sớm (cơ chế đó chỉ có ở Lab 2.13).",0]}};
+const FB = {1:{"q1_1":["Đúng. ε khởi tạo bằng 1 — mọi bước đều 'làm bừa'; 5 mẫu đầu của curve chỉ 13, 10, 13, 45, 14 điểm. Bảng Q khởi tạo bằng 0 với 1.296 ô cần nhiều nghìn tập cập nhật để giá trị lan; mốc 1.231 (first_200) là tập ĐẦU TIÊN chạm trần 200 điểm trong MỘT lần chạy có seed 0 — sau đó vẫn lâu lâu mới chạm lại.",1],"q1_2":["Sai. Mức cắt 200 bước chỉ đặt TRẦN cho mỗi tập; nó không 'trì hoãn' việc chạm trần — chính sách chỉ chạm trần khi bảng Q đã đủ tốt (và ở đây phần lớn tập còn KHÔNG chạm).",0],"q1_3":["Sai. ε = 1 lúc khởi tạo; nó giảm theo 0,995 mỗi tập và chỉ chạm sàn 0,1 từ khoảng tập 460.",0]},2:{"q2_1":["Đúng. Bảng Q khởi tạo bằng 0, nên ô khác 0 ⇔ từng được cập nhật. 490 ÷ 1.296 = 0,3781: lưới 3×3×6×12 đã thô mà vẫn còn gần hai phần ba ô chưa từng ghé sau 10.000 tập.",1],"q2_2":["Sai. Số tập chạm trần là con số khác; 490 đếm Ô của bảng Q, không đếm tập.",0],"q2_3":["Sai. 490 là số Ô (s, a) khác 0 — trạng thái tối đa chỉ 648, còn 490 được đếm trên bảng 1.296 ô (trạng thái × 2 hành động).",0]},3:{"q3_1":["Đúng. Gió N(0, 10) N — cùng độ lớn với lực điều khiển ±10 N — tác động trực tiếp vào phương trình lực; lưới 648 trạng thái quá thô nên chính sách chưa hội tụ tới trần: bình quân 100 tập cuối 94,72/200 và trung vị 1.000 tập cuối 118/200.",1],"q3_2":["Sai. Lab 2.12 chỉ có +1 mỗi bước sống, không có thưởng phụ nào bị giảm ở các bước gần ngưỡng.",0],"q3_3":["Sai. Lab chạy trọn 10.000 tập; không có desired_reward/dừng sớm (cơ chế đó chỉ có ở Lab 2.13).",0]}};
 const $ = s => document.querySelector(s);
 const esc = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
 
@@ -634,7 +634,7 @@ renderTab1(); renderTab2(); renderTab3(); wireQuiz(); wireSim();
     <div id="__aiPromptHead">
       <div>
         <span id="__aiPromptBadge">Prompt gợi ý tái tạo</span>
-        <h3 id="__aiPromptTitle">Q-Learning bảng rời rạc trên Con ngược có gió (CartPole + wind)</h3>
+        <h3 id="__aiPromptTitle">Q-Learning bảng rời rạc trên Con lắc ngược có gió (CartPole + wind)</h3>
       </div>
       <button type="button" class="__aiPBtn" id="__aiPromptCloseTop" aria-label="Đóng">✕</button>
     </div>
@@ -651,7 +651,7 @@ renderTab1(); renderTab2(); renderTab3(); wireQuiz(); wireSim();
     </div>
   </div>
 </div>
-<script type="application/json" id="__aiPromptData">{"title": "Q-Learning bảng rời rạc trên Con ngược có gió (CartPole + wind)", "kind": "Prompt gợi ý tái tạo", "prompt": "Hãy xây dựng 1 mô phỏng tương tác web bằng duy nhất 1 tệp index.html (chạy offline 100%, không CDN ngoài, công thức dùng MathML thuần, responsive từ điện thoại 390x844 đến 4K).\n\nChủ đề: Q-Learning bảng rời rạc trên Con ngược có gió (CartPole + wind)\nMục tiêu minh họa: Rời rạc hoá trạng thái 3×3×6×12 → 1.296 ô Q, ε-greedy tham lam/khám phá và đường cong phần thưởng 10.000 tập của Lab.\n\nYêu cầu chức năng:\n- Có thanh trượt / nút điều khiển tham số để quan sát đồ thị và số liệu thay đổi trực tiếp.\n- Trình bày phần công thức toán học và bảng số liệu đối chiếu.\n- Có 2–3 câu hỏi trắc nghiệm tự kiểm tra kèm giải thích ngay trong trang.", "template": "[VAI TRÒ & MỤC TIÊU]\nĐóng vai trò là Kỹ sư Lập trình Game & Mô phỏng Trực quan Web. Hãy phát triển 1 trò chơi/mô phỏng tương tác: <TÊN_HOẶC_Ý_TƯỞNG_DEMO> lấy cảm hứng trực quan và cơ chế từ <ỨNG_DỤNG_THAM_CHIẾU>.\n\n[KIẾN TRÚC & CÔNG NGHỆ]\n- Đóng gói gọn nhẹ: ưu tiên duy nhất 1 file index.html tự chứa toàn bộ cấu trúc, CSS hiện đại và logic JavaScript (chạy offline 100%, không CDN ngoài).\n- Điều khiển: hỗ trợ đồng thời Bàn phím/Chuột trên máy tính và Cảm ứng trên điện thoại.\n- Hiển thị: Responsive mượt mà từ màn hình điện thoại (390x844, 720p) đến 1080p và 4K UHD.\n\n[CƠ CHẾ CỐT LÕI & THUẬT TOÁN]\n- Mô phỏng rõ ràng thuật toán/cơ chế tương tác: <MÔ_TẢ_CƠ_CHẾ: ví dụ Thanh trượt tham số, Quỹ đạo vật lý, Đồ thị hội tụ, Bảng số liệu>.\n- Trạng thái hoàn chỉnh: Khởi tạo -> Tương tác/Thực nghiệm -> Kết quả & Giải thích -> Chơi lại/Đặt lại.\n\n[KIỂM CHỨNG BẰNG THỊ GIÁC (NATIVE VISION LOOP)]\n- Tự động chạy kịch bản kiểm thử trình duyệt (Playwright) ở nhiều độ phân giải (mobile, 720p, 1080p), chụp ảnh màn hình các trạng thái chính.\n- Tự rà soát ảnh chụp để sửa lỗi tràn khung, chồng chữ, mất cân đối trước khi kết thúc."}</script>
+<script type="application/json" id="__aiPromptData">{"title": "Q-Learning bảng rời rạc trên Con lắc ngược có gió (CartPole + wind)", "kind": "Prompt gợi ý tái tạo", "prompt": "Hãy xây dựng 1 mô phỏng tương tác web bằng duy nhất 1 tệp index.html (chạy offline 100%, không CDN ngoài, công thức dùng MathML thuần, responsive từ điện thoại 390x844 đến 4K).\n\nChủ đề: Q-Learning bảng rời rạc trên Con lắc ngược có gió (CartPole + wind)\nMục tiêu minh họa: Rời rạc hoá trạng thái 3×3×6×12 → 1.296 ô Q, ε-tham lam và đường cong phần thưởng 10.000 tập.\n\nYêu cầu chức năng:\n- Có thanh trượt / nút điều khiển tham số để quan sát đồ thị và số liệu thay đổi trực tiếp.\n- Trình bày phần công thức toán học và bảng số liệu đối chiếu.\n- Có 2–3 câu hỏi trắc nghiệm tự kiểm tra kèm giải thích ngay trong trang.", "template": "[VAI TRÒ & MỤC TIÊU]\nĐóng vai trò là Kỹ sư Lập trình Game & Mô phỏng Trực quan Web. Hãy phát triển 1 trò chơi/mô phỏng tương tác: <TÊN_HOẶC_Ý_TƯỞNG_DEMO> lấy cảm hứng trực quan và cơ chế từ <ỨNG_DỤNG_THAM_CHIẾU>.\n\n[KIẾN TRÚC & CÔNG NGHỆ]\n- Đóng gói gọn nhẹ: ưu tiên duy nhất 1 file index.html tự chứa toàn bộ cấu trúc, CSS hiện đại và logic JavaScript (chạy offline 100%, không CDN ngoài).\n- Điều khiển: hỗ trợ đồng thời Bàn phím/Chuột trên máy tính và Cảm ứng trên điện thoại.\n- Hiển thị: Responsive mượt mà từ màn hình điện thoại (390x844, 720p) đến 1080p và 4K UHD.\n\n[CƠ CHẾ CỐT LÕI & THUẬT TOÁN]\n- Mô phỏng rõ ràng thuật toán/cơ chế tương tác: <MÔ_TẢ_CƠ_CHẾ: ví dụ Thanh trượt tham số, Quỹ đạo vật lý, Đồ thị hội tụ, Bảng số liệu>.\n- Trạng thái hoàn chỉnh: Khởi tạo -> Tương tác/Thực nghiệm -> Kết quả & Giải thích -> Chơi lại/Đặt lại.\n\n[KIỂM CHỨNG BẰNG THỊ GIÁC (NATIVE VISION LOOP)]\n- Tự động chạy kịch bản kiểm thử trình duyệt (Playwright) ở nhiều độ phân giải (mobile, 720p, 1080p), chụp ảnh màn hình các trạng thái chính.\n- Tự rà soát ảnh chụp để sửa lỗi tràn khung, chồng chữ, mất cân đối trước khi kết thúc."}</script>
 <script>
 (function(){
   var dataEl=document.getElementById('__aiPromptData');

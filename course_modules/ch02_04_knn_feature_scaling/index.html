@@ -123,7 +123,7 @@ a{color:var(--new)}
    <span class="eyebrow">Thực nghiệm · kéo để đổi thang đo</span>
    <h2>Kéo thanh "trọng số của màu sắc"</h2>
   <div class="ctl">
-   <label for="lam" class="note">λ — sức nặng của màu trong khoảng cách</label>
+   <label for="lam" class="note">λ — trọng số của đặc trưng màu trong khoảng cách</label>
    <input id="lam" type="range" min="0" max="32" step="any" value="1">
    <button class="btn" id="zBtn">z-score của lab <span id="zLam"></span></button>
    <button class="btn" id="rawBtn">Về λ = 1 (dữ liệu thô)</button>
@@ -394,7 +394,7 @@ const FB = {
      'Quả #3 (Cam, 140 g)':['Gần đúng: d = '+fmt(D.d_raw[2])+', lớn hơn '+fmt(D.d_raw[0])+' một chút.',0],
      'Quả #2 (Táo, 170 g)':['Sai — Δ cân nặng 25 gam nên d = '+fmt(D.d_raw[1])+', xa nhất trong 6 quả.',0]},
   2:{'λ ≈ 11,18':['Đúng — λ = √125 ≈ '+fmt(D.lam_flip)+': khi λ vượt mức đó, màu đủ mạnh để đưa #1 và #2 vào top 3, đa số thành Táo.',1],
-     'λ ≈ 1,00':['Sai — đó là dữ liệu thô, kết luận vẫn là Cam; '+fmt(D.share_w)+' sức nặng thuộc về cân nặng ở cặp xa nhất.',0],
+     'λ ≈ 1,00':['Sai — đó là dữ liệu thô, kết luận vẫn là Cam; '+fmt(D.share_w)+' đóng góp khoảng cách thuộc về cân nặng ở cặp xa nhất.',0],
      'λ ≈ 150,83':['Sai — ' + fmt(V['scaler_std.mean_'][0]) +' là trung bình cân nặng (μ), không phải ngưỡng λ.',0]},
   3:{'k=3 tốt nhất, F1=96,32%':['Đúng — cross-validation của lab: k* = '+V.optimal_k+', F1 = '+pct(D.cv_best)+'.',1],
      'k=30 tốt nhất vì dùng nhiều dữ liệu nhất':['Sai — F1 ở k = 30 chỉ '+pct(D.cv_k30)+', thấp nhất trong 30 giá trị.',0],

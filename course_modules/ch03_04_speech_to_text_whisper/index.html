@@ -99,7 +99,7 @@ code.path{overflow-wrap:anywhere}
 <span class="pill a">Tín hiệu tổng hợp · Kịch bản phiên âm mẫu</span>
 </div>
 <h1><span class="gr">Số hóa giọng nói, Phổ Mel &amp; Phụ đề .srt với Whisper</span></h1>
-<p class="lede">Whisper "nghe" bằng cách nào? Bài học dựng lại từng bước của bài thực hành <code>01_speech_to_text_whisper.py</code>: sóng âm tổng hợp (f_s = 16.000 Hz, 3,0 giây = 48.000 mẫu, f₀ = 150 Hz), phổ hài âm và Log-Mel Spectrogram 80 kênh làm đầu vào, rồi 3 phân đoạn phiên âm kèm phụ đề .srt. Lưu ý trung thực: Lab chạy trong môi trường không cài <code>whisper</code>, nên văn bản phiên âm là <b>kịch bản mẫu ghi sẵn trong <code>.py</code></b>, không phải kết quả Whisper nhận dạng giọng nói thật.</p>
+<p class="lede"><b>Bài toán thực tế:</b> Phân tích quy trình số hóa tín hiệu âm thanh thành đầu vào cho mô hình nhận dạng giọng nói Whisper (<code>01_speech_to_text_whisper.py</code>): từ sóng âm tổng hợp (f_s = 16.000 Hz, 3,0 giây = 48.000 mẫu, f₀ = 150 Hz), phổ hài âm và Log-Mel Spectrogram 80 kênh đến cấu trúc 3 phân đoạn phiên âm cùng phụ đề <code>.srt</code>. <b>Lưu ý thực nghiệm:</b> trong môi trường không cài sẵn <code>whisper</code>, hàm suy luận sử dụng <b>kịch bản phiên âm mẫu</b> trong mã nguồn để minh họa định dạng dữ liệu đầu ra.</p>
 <div class="heroctl">
 <button class="btn cta" id="resetHero" type="button">Khôi phục tham số chuẩn của Lab</button>
 <button class="btn amber" id="themeBtn" type="button" aria-pressed="false">Theme sáng (máy chiếu)</button>
@@ -128,11 +128,11 @@ code.path{overflow-wrap:anywhere}
   </div>
    <svg id="waveSvg" viewBox="0 0 440 260" role="img" aria-label="Waveform tín hiệu tổng hợp của Lab trong 0,1 giây đầu, vẽ lại khi đổi tần số cơ bản f0"></svg>
   <div class="formula"><math xmlns="http://www.w3.org/1998/Math/MathML" display="block"><mi>x</mi><mo>(</mo><mi>t</mi><mo>)</mo><mo>=</mo><mn>0,5</mn><mspace width="0.15em"></mspace><mi>sin</mi><mo>(</mo><mn>2</mn><mi>π</mi><mspace width="0.15em"></mspace><msub><mi>f</mi><mn>0</mn></msub><mspace width="0.15em"></mspace><mi>t</mi><mo>)</mo><mo>+</mo><mn>0,3</mn><mspace width="0.15em"></mspace><mi>sin</mi><mo>(</mo><mn>2</mn><mi>π</mi><mo>&#183;</mo><mn>2</mn><mspace width="0.15em"></mspace><msub><mi>f</mi><mn>0</mn></msub><mspace width="0.15em"></mspace><mi>t</mi><mo>)</mo><mo>+</mo><mn>0,2</mn><mspace width="0.15em"></mspace><mi>sin</mi><mo>(</mo><mn>2</mn><mi>π</mi><mo>&#183;</mo><mn>3</mn><mspace width="0.15em"></mspace><msub><mi>f</mi><mn>0</mn></msub><mspace width="0.15em"></mspace><mi>t</mi><mo>)</mo></math></div>
-  <p class="note">Cảnh giác với tên gọi: đây là <b>tín hiệu TỔNG HỢP do Lab tự tạo bằng công thức trên</b> (cộng ba hài âm 0,5/0,3/0,2 rồi nhân biến điệu biên độ 1,5 Hz) — <b>không phải ghi âm giọng nói thật</b>, và trang này không phát lại bất kỳ âm thanh nào. Hình vẽ lấy 0,1 giây đầu của tín hiệu (như ô vẽ <code>ax1.plot(t[:1600], ...)</code> trong Lab: đúng 1.600 điểm ở tần số lấy mẫu chuẩn). Kéo <b>f_s</b> để thấy tổng số điểm lấy mẫu đổi theo công thức N = f_s × thời lượng: ở mặc định của Lab, N = 16.000 × 3,0 = 48.000 mẫu. Kéo <b>f₀</b> để thấy số điểm lấy mẫu trên mỗi chu kỳ sóng (f_s ÷ f₀) và mật độ sóng đổi theo. Kiểm tra cầm tay với định lý Nyquist: tái tạo riêng âm cơ bản 150 Hz đã cần f_s ≥ 2 × 150 = 300 Hz — Lab lấy mẫu 16.000 Hz, cách rất xa ngưỡng này.</p>
+  <p class="note"><b>Lưu ý tín hiệu mô phỏng:</b> đây là <b>tín hiệu tổng hợp tạo theo công thức trên</b> (cộng ba hài âm 0,5/0,3/0,2 rồi nhân điều biến biên độ 1,5 Hz) — <b>không phải ghi âm giọng nói thật</b> và trình duyệt không phát âm thanh ra loa. Hình vẽ trích 0,1 giây đầu của tín hiệu (<code>ax1.plot(t[:1600], ...)</code>: 1.600 điểm ở tần số lấy mẫu chuẩn). Kéo <b>f_s</b> để quan sát tổng số điểm lấy mẫu thay đổi theo N = f_s × thời lượng (mặc định 16.000 × 3,0 = 48.000 mẫu); kéo <b>f₀</b> để thấy mật độ chu kỳ và số mẫu trên mỗi chu kỳ (f_s ÷ f₀). Theo định lý Nyquist, tái tạo riêng âm cơ bản 150 Hz cần f_s ≥ 2 × 150 = 300 Hz.</p>
  </div>
  <div class="card">
   <span class="eyebrow">Chỉ số đọc trực tiếp từ dữ liệu Lab</span>
-  <h2>Trạng thái số hóa &amp; Đối chiếu SSoT</h2>
+  <h2>Trạng thái số hóa &amp; Đối chiếu Tham số Lab</h2>
   <div class="stat" id="stat1"></div>
   <table id="liveTable"><thead><tr><th>Đại lượng giám sát</th><th class="ro">Giá trị</th></tr></thead><tbody></tbody></table>
   <p class="note" id="insight1"></p>
@@ -141,12 +141,7 @@ code.path{overflow-wrap:anywhere}
 <div class="card" id="animCard">
  <span class="eyebrow">Animation · Dạng sóng chạy · mảng env do Lab xuất</span>
  <h2>Dạng sóng chạy: đầu phát quét qua toàn bộ thời lượng của Lab</h2>
- <div class="banner">⚠ Hai dòng trung thực của khối này: (1) đường sóng vẽ từ mảng <code>env</code> do Lab xuất —
-  đó là <b>tín hiệu TỔNG HỢP do Lab sinh</b> (sóng cơ bản f₀ + họa âm 2·f₀, 3·f₀ + bao đạn biên độ trong <code>.py</code>),
-  <b>không phải ghi âm giọng nói thật</b>, và trang không phát ra loa bất kỳ âm thanh nào;
-  (2) <code>transcription</code> (3 phân đoạn + phụ đề <code>.srt</code>) là <b>kịch bản phiên âm mẫu</b> ghi sẵn trong
-  <code>.py</code> vì môi trường repo không cài <code>whisper</code> — việc một phân đoạn sáng lên chỉ minh hoạ mốc
-  thời gian của kịch bản, không phải Whisper đang nhận dạng.</div>
+ <div class="banner"><b>Lưu ý mô phỏng:</b> (1) đường sóng được vẽ từ mảng <code>env</code> xuất từ bài thực hành — là <b>tín hiệu TỔNG HỢP do Lab sinh</b> (tần số cơ bản f₀ + họa âm 2·f₀, 3·f₀ + điều biến biên độ), <b>không phải ghi âm giọng nói thật</b>; (2) phần <code>transcription</code> (3 phân đoạn + phụ đề <code>.srt</code>) là <b>kịch bản phiên âm mẫu</b> minh họa mốc thời gian tương ứng định dạng đầu ra của <code>.py</code>.</div>
  <div class="ctl">
   <button class="btn cta" id="animPlay" type="button" aria-pressed="false">▶ Phát</button>
   <button class="btn" id="animPause" type="button">⏸ Tạm dừng</button>
@@ -169,9 +164,7 @@ code.path{overflow-wrap:anywhere}
  <div class="segs" id="animSegs"></div>
  <p class="note" id="animSegLine"></p>
  <p class="note" id="animReadout"></p>
- <p class="note">Đối chiếu trung thực: bảng phân đoạn ở tab 03 trải tới mốc 7,80 giây trong khi tín hiệu tổng hợp của
-  Lab chỉ dài 3,0 giây — nên đầu phát không bao giờ đi vào phân đoạn 3 (bắt đầu 5,20 giây). Lab không ràng buộc
-  timestamp của kịch bản với độ dài tín hiệu; trang vẽ đúng những gì Lab xuất, không chỉnh cho "khớp".</p>
+ <p class="note"><b>Lưu ý mốc thời gian:</b> bảng phân đoạn ở tab 03 kéo dài tới 7,80 giây trong khi tín hiệu tổng hợp dài 3,0 giây, do đó đầu phát kết thúc quét trước khi chạm phân đoạn 3 (bắt đầu tại 5,20 giây).</p>
  <div id="harmBox"></div>
  <p class="note" id="animHarmNote"></p>
 </div>
@@ -191,7 +184,7 @@ code.path{overflow-wrap:anywhere}
   <span class="eyebrow">Đầu vào thật sự của Whisper</span>
   <h2>Log-Mel Spectrogram 80 kênh</h2>
   <svg id="melSvg" viewBox="0 0 440 96" role="img" aria-label="Minh họa dải bộ lọc Mel phủ lên dải tần số, Whisper dùng 80 kênh"></svg>
-  <p class="note">Mục 2 của Lab ghi rõ: <i>"Whisper không nhìn vào dạng sóng 1D mà chuyển sóng âm thành ảnh quang phổ Mel 80 kênh (80-channel Log-Mel Spectrogram)"</i>. Dải tần số được gom qua 80 bộ lọc Mel (tark density cao ở tần số thấp — nơi tai người và giọng nói tinh nhất), rồi lấy log biên độ. Ảnh phổ 2D này (trục thời gian × 80 kênh tần số) chính là "hình ảnh" mà Encoder của Transformer Whisper ăn vào.</p>
+  <p class="note">Mục 2 của bài thực hành nêu rõ: <i>"Whisper không xử lý trực tiếp dạng sóng 1D mà biến đổi tín hiệu âm thanh thành ảnh quang phổ Mel 80 kênh (80-channel Log-Mel Spectrogram)"</i>. Dải tần số được tổng hợp qua 80 bộ lọc Mel (mật độ bộ lọc dày hơn ở miền tần số thấp — nơi thính giác và giọng nói người nhạy cảm nhất), sau đó lấy logarit biên độ. Biểu diễn 2D (trục thời gian × 80 kênh tần số) đóng vai trò đầu vào cho bộ mã hóa (Encoder) của kiến trúc Transformer Whisper.</p>
   <div class="stat" id="stat2"></div>
  </div>
 </div>
@@ -202,30 +195,30 @@ code.path{overflow-wrap:anywhere}
  <div class="card">
   <span class="eyebrow">Phiên âm · Bảng phân đoạn &amp; phụ đề .srt</span>
   <h2>Ba phân đoạn phiên âm và tệp phụ đề Lab sinh ra</h2>
-  <div class="banner">⚠ Dòng bắt buộc về tính trung thực: Đây là <b>kịch bản phiên âm mẫu</b> ghi trong tệp <code>.py</code> của Lab (môi trường chạy Lab không cài <code>whisper</code>), <b>KHÔNG phải kết quả Whisper nhận dạng trên giọng nói thật</b>. Ô mã trong Lab thử <code>import whisper</code>; khi thất bại, hàm <code>transcribe_speech()</code> trả về sẵn kịch bản 3 phân đoạn này (pipeline dự phòng).</div>
+  <div class="banner"><b>Lưu ý dữ liệu phiên âm:</b> Đây là <b>kịch bản phiên âm mẫu</b> cấu hình sẵn trong tệp <code>.py</code> (dùng khi môi trường chưa cài thư viện <code>whisper</code>), <b>không phải</b> kết quả suy luận trực tiếp trên tệp ghi âm giọng nói thật.</div>
   <table id="segTable">
    <thead><tr><th>Phân đoạn</th><th class="ro">Bắt đầu (s)</th><th class="ro">Kết thúc (s)</th><th>Văn bản</th></tr></thead>
    <tbody></tbody>
   </table>
-  <p class="note">Bảng dựng nguyên văn từ <code>transcription.segments</code> trong <code>lab_data.js</code>.</p>
+  <p class="note">Bảng trích xuất từ trường <code>transcription.segments</code> của bài thực hành.</p>
   <div class="eyebrow" style="margin-top:14px">Xem nội dung tệp subtitles_uth.srt Lab sinh ra</div>
   <pre class="srt" id="srtBox"></pre>
-  <p class="note">Nội dung trên được dựng lại đúng định dạng SRT (thứ tự · dòng thời gian <code>HH:MM:SS,mmm --&gt; HH:MM:SS,mmm</code> · văn bản) theo đúng hàm <code>export_to_srt()</code> / <code>fmt_time()</code> trong Lab, từ đúng 3 phân đoạn. Chi tiết đáng học: dòng 3 in ra <code>07,799</code> chứ không phải <code>07,800</code> — vì số 7,8 giây không biểu diễn chính xác bằng số thực nhị phân, nên <code>int((7,8 − 7) × 1000) = int(799,99…) = 799</code> (đây đúng là kết quả hàm <code>fmt_time()</code> của Lab chạy trên Python).</p>
+  <p class="note">Nội dung trên tuân theo định dạng chuẩn SRT (thứ tự · dòng thời gian <code>HH:MM:SS,mmm --&gt; HH:MM:SS,mmm</code> · văn bản) từ hàm <code>export_to_srt()</code> / <code>fmt_time()</code>. Lưu ý kỹ thuật: mốc cuối dòng 3 hiển thị <code>07,799</code> thay vì <code>07,800</code> do sai số biểu diễn dấu phẩy động nhị phân IEEE 754 khiến <code>int((7,8 − 7) × 1000) = int(799,99…) = 799</code>.</p>
  </div>
  <div class="card">
   <span class="eyebrow">Toàn văn &amp; chỉ số phiên âm</span>
-  <h2>Kết quả trả về của pipeline dự phòng</h2>
+  <h2>Kết quả từ kịch bản minh họa</h2>
   <div class="stat" id="stat3"></div>
   <p class="note">Văn bản đầy đủ theo kịch bản mẫu:</p>
   <blockquote class="formula" id="fullText" style="margin:6px 0;font-style:italic"></blockquote>
-  <p class="note">Ngôn ngữ khai báo trong kịch bản: <code>vi</code>. Không có bất kỳ suy luận nào trên âm thanh thật được chạy trong bài này — đừng phát biểu rằng "Whisper đã nhận dạng được giọng nói".</p>
+  <p class="note">Ngôn ngữ khai báo trong kịch bản: <code>vi</code>. Dữ liệu trên minh họa cấu trúc đầu ra chuẩn của hệ thống chuyển giọng nói thành văn bản và xuất phụ đề.</p>
  </div>
 </div>
 <div class="card">
- <span class="eyebrow">Bảng đối chuẩn SSoT · 01_speech_to_text_whisper.py</span>
+ <span class="eyebrow">Bảng Thông số Chuẩn · 01_speech_to_text_whisper.py</span>
  <h2>Toàn bộ hằng số trích xuất từ Lab chuẩn</h2>
  <table id="ssotTable">
-  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn SSoT</th></tr></thead>
+  <thead><tr><th>Mã kiểm định · Đại lượng trong Lab</th><th class="ro">Giá trị chuẩn</th></tr></thead>
   <tbody>
 <tr><td><code>[M01]</code> Tần số lấy mẫu chuẩn Whisper <span class="sub">(sample_rate)</span></td><td class="ro hi">16.000 Hz</td></tr>
 <tr><td><code>[M02]</code> Độ dài đoạn tín hiệu tổng hợp <span class="sub">(duration)</span></td><td class="ro hi">3,0 giây</td></tr>
@@ -584,7 +577,7 @@ renderTab1(); renderTab2(); renderTab3(); renderAnimAll(); wireQuiz();
     <div id="__aiPromptHead">
       <div>
         <span id="__aiPromptBadge">Prompt gợi ý tái tạo</span>
-        <h3 id="__aiPromptTitle">Số hoá giọng nói &amp; Phụ đề (Whisper, kịch bản offline)</h3>
+        <h3 id="__aiPromptTitle">Số hoá giọng nói, Phổ Mel &amp; Phụ đề .srt (Whisper)</h3>
       </div>
       <button type="button" class="__aiPBtn" id="__aiPromptCloseTop" aria-label="Đóng">✕</button>
     </div>
@@ -601,7 +594,7 @@ renderTab1(); renderTab2(); renderTab3(); renderAnimAll(); wireQuiz();
     </div>
   </div>
 </div>
-<script type="application/json" id="__aiPromptData">{"title": "Số hoá giọng nói & Phụ đề (Whisper, kịch bản offline)", "kind": "Prompt gợi ý tái tạo", "prompt": "Hãy xây dựng 1 mô phỏng tương tác web bằng duy nhất 1 tệp index.html (chạy offline 100%, không CDN ngoài, công thức dùng MathML thuần, responsive từ điện thoại 390x844 đến 4K).\n\nChủ đề: Số hoá giọng nói & Phụ đề (Whisper, kịch bản offline)\nMục tiêu minh họa: Lấy mẫu 16.000 Hz · 3,0 giây = 48.000 mẫu, ngưỡng Nyquist, và đúng 3 phân đoạn phiên âm mẫu Lab dùng khi chưa cài Whisper.\n\nYêu cầu chức năng:\n- Có thanh trượt / nút điều khiển tham số để quan sát đồ thị và số liệu thay đổi trực tiếp.\n- Trình bày phần công thức toán học và bảng số liệu đối chiếu.\n- Có 2–3 câu hỏi trắc nghiệm tự kiểm tra kèm giải thích ngay trong trang.", "template": "[VAI TRÒ & MỤC TIÊU]\nĐóng vai trò là Kỹ sư Lập trình Game & Mô phỏng Trực quan Web. Hãy phát triển 1 trò chơi/mô phỏng tương tác: <TÊN_HOẶC_Ý_TƯỞNG_DEMO> lấy cảm hứng trực quan và cơ chế từ <ỨNG_DỤNG_THAM_CHIẾU>.\n\n[KIẾN TRÚC & CÔNG NGHỆ]\n- Đóng gói gọn nhẹ: ưu tiên duy nhất 1 file index.html tự chứa toàn bộ cấu trúc, CSS hiện đại và logic JavaScript (chạy offline 100%, không CDN ngoài).\n- Điều khiển: hỗ trợ đồng thời Bàn phím/Chuột trên máy tính và Cảm ứng trên điện thoại.\n- Hiển thị: Responsive mượt mà từ màn hình điện thoại (390x844, 720p) đến 1080p và 4K UHD.\n\n[CƠ CHẾ CỐT LÕI & THUẬT TOÁN]\n- Mô phỏng rõ ràng thuật toán/cơ chế tương tác: <MÔ_TẢ_CƠ_CHẾ: ví dụ Thanh trượt tham số, Quỹ đạo vật lý, Đồ thị hội tụ, Bảng số liệu>.\n- Trạng thái hoàn chỉnh: Khởi tạo -> Tương tác/Thực nghiệm -> Kết quả & Giải thích -> Chơi lại/Đặt lại.\n\n[KIỂM CHỨNG BẰNG THỊ GIÁC (NATIVE VISION LOOP)]\n- Tự động chạy kịch bản kiểm thử trình duyệt (Playwright) ở nhiều độ phân giải (mobile, 720p, 1080p), chụp ảnh màn hình các trạng thái chính.\n- Tự rà soát ảnh chụp để sửa lỗi tràn khung, chồng chữ, mất cân đối trước khi kết thúc."}</script>
+<script type="application/json" id="__aiPromptData">{"title": "Số hoá giọng nói, Phổ Mel & Phụ đề .srt (Whisper)", "kind": "Prompt gợi ý tái tạo", "prompt": "Hãy xây dựng 1 mô phỏng tương tác web bằng duy nhất 1 tệp index.html (chạy offline 100%, không CDN ngoài, công thức dùng MathML thuần, responsive từ điện thoại 390x844 đến 4K).\n\nChủ đề: Số hoá giọng nói, Phổ Mel & Phụ đề .srt (Whisper)\nMục tiêu minh họa: Lấy mẫu 16.000 Hz · 3,0 giây = 48.000 mẫu, ngưỡng Nyquist, Log-Mel 80 kênh và 3 phân đoạn phụ đề .srt minh họa.\n\nYêu cầu chức năng:\n- Có thanh trượt / nút điều khiển tham số để quan sát đồ thị và số liệu thay đổi trực tiếp.\n- Trình bày phần công thức toán học và bảng số liệu đối chiếu.\n- Có 2–3 câu hỏi trắc nghiệm tự kiểm tra kèm giải thích ngay trong trang.", "template": "[VAI TRÒ & MỤC TIÊU]\nĐóng vai trò là Kỹ sư Lập trình Game & Mô phỏng Trực quan Web. Hãy phát triển 1 trò chơi/mô phỏng tương tác: <TÊN_HOẶC_Ý_TƯỞNG_DEMO> lấy cảm hứng trực quan và cơ chế từ <ỨNG_DỤNG_THAM_CHIẾU>.\n\n[KIẾN TRÚC & CÔNG NGHỆ]\n- Đóng gói gọn nhẹ: ưu tiên duy nhất 1 file index.html tự chứa toàn bộ cấu trúc, CSS hiện đại và logic JavaScript (chạy offline 100%, không CDN ngoài).\n- Điều khiển: hỗ trợ đồng thời Bàn phím/Chuột trên máy tính và Cảm ứng trên điện thoại.\n- Hiển thị: Responsive mượt mà từ màn hình điện thoại (390x844, 720p) đến 1080p và 4K UHD.\n\n[CƠ CHẾ CỐT LÕI & THUẬT TOÁN]\n- Mô phỏng rõ ràng thuật toán/cơ chế tương tác: <MÔ_TẢ_CƠ_CHẾ: ví dụ Thanh trượt tham số, Quỹ đạo vật lý, Đồ thị hội tụ, Bảng số liệu>.\n- Trạng thái hoàn chỉnh: Khởi tạo -> Tương tác/Thực nghiệm -> Kết quả & Giải thích -> Chơi lại/Đặt lại.\n\n[KIỂM CHỨNG BẰNG THỊ GIÁC (NATIVE VISION LOOP)]\n- Tự động chạy kịch bản kiểm thử trình duyệt (Playwright) ở nhiều độ phân giải (mobile, 720p, 1080p), chụp ảnh màn hình các trạng thái chính.\n- Tự rà soát ảnh chụp để sửa lỗi tràn khung, chồng chữ, mất cân đối trước khi kết thúc."}</script>
 <script>
 (function(){
   var dataEl=document.getElementById('__aiPromptData');
