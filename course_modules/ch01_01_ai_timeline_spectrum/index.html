@@ -14,25 +14,29 @@ body.light{--bg:#F1F5F9;--panel:#FFFFFF;--panel2:#F8FAFC;--ink:#0F172A;--mut:#47
 --line2:#CBD5E1;--táo:#DC2626;--cam:#D97706;--new:#0284C7;--acc:#0369A1;--acc2:#075985;--ok:#059669;
 --plot:#EAF3FB;--hero:linear-gradient(135deg,#FFFFFF 0%,#F0F9FF 65%,#E0F2FE 100%)}
 *{box-sizing:border-box}
+code{overflow-wrap:anywhere}
 html{-webkit-text-size-adjust:100%}
 body{margin:0;background:var(--bg);color:var(--ink);line-height:1.55;font-size:16px;overscroll-behavior:contain;
 font-family:system-ui,-apple-system,"Segoe UI",Roboto,"DejaVu Sans",sans-serif}
-header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,3vw,24px)}
+header.hero{background:var(--hero);border-bottom:1px solid var(--line);padding:clamp(14px,2.2vw,20px) max(clamp(12px,3vw,24px),calc(50% - 566px))}
 .pills{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:10px}
 .pill{font:600 .78em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.04em;padding:6px 10px;
-border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:nowrap}
+border-radius:999px;border:1px solid var(--line);background:rgba(34,211,238,.10);color:var(--acc);white-space:normal;line-height:1.25;max-width:100%}
 .pill.g{background:rgba(52,211,153,.10);color:var(--ok);border-color:rgba(52,211,153,.35)}
 .pill.a{background:rgba(251,191,36,.12);color:var(--cam);border-color:rgba(251,191,36,.4)}
 .pill.mut{background:transparent;color:var(--mut)}
-h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em;max-width:34em}
+h1{margin:0 0 8px;font-size:clamp(1.35em,2.5vw,1.95em);line-height:1.2;letter-spacing:-.01em}
 h1 .gr{background:var(--grad);-webkit-background-clip:text;background-clip:text;color:transparent}
-.lede{color:var(--mut);margin:0 0 12px;max-width:78ch}
+.lede{color:var(--mut);margin:0 0 10px;max-width:none;font-size:.95em}
+.lede-grid{display:grid;gap:8px 20px;margin:0 0 12px}
+@media(min-width:900px){.lede-grid{grid-template-columns:1fr 1fr}}
+.lede-grid .lede{margin:0}
 .heroctl{display:flex;flex-wrap:wrap;gap:10px}
 .btn{display:inline-flex;align-items:center;gap:8px;padding:10px 14px;min-height:44px;border-radius:12px;
 border:1px solid var(--line2);background:var(--panel2);color:var(--ink);font-size:.96em;font-weight:600;cursor:pointer}
 .btn.cta{border:none;background:var(--grad);color:#04121f}
 .btn.amber{border:none;background:linear-gradient(90deg,#fbbf24,#fb923c);color:#1f1300}
-nav{display:flex;gap:8px;padding:10px clamp(10px,3vw,24px);background:var(--panel);border-bottom:1px solid var(--line);
+nav{display:flex;gap:8px;padding:10px max(clamp(12px,3vw,24px),calc(50% - 566px));background:var(--panel);border-bottom:1px solid var(--line);
 flex-wrap:wrap;position:sticky;top:0;z-index:5}
 nav button{flex:1 1 165px;padding:11px 10px;min-height:44px;border:1px solid var(--line2);border-radius:12px;
 background:var(--panel2);color:var(--ink);font-size:.95em;font-weight:600;cursor:pointer}
@@ -40,7 +44,7 @@ nav button[aria-selected=true]{background:var(--grad);color:#04121f;border-color
 main{padding:16px clamp(12px,3vw,24px) 32px;max-width:1180px;margin:0 auto}
 section{display:none}
 section.on{display:block}
-.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:16px 18px;margin:0 0 14px;min-width:0}
 .eyebrow{font:700 .74em/1 ui-monospace,SFMono-Regular,Menlo,monospace;letter-spacing:.12em;text-transform:uppercase;
 color:var(--acc);display:inline-block;padding:5px 9px;border:1px solid var(--line);border-radius:8px;margin-bottom:8px}
 h2{font-size:1.12em;margin:.2em 0 .6em}
@@ -73,7 +77,7 @@ border-radius:12px;margin:6px 0;background:var(--panel);font-size:.96em;cursor:p
 .fb{margin-top:8px;padding:10px 12px;border-radius:12px;font-size:.95em;display:none;border:1px solid var(--line)}
 .fb.ok{display:block;background:rgba(52,211,153,.12);border-color:rgba(52,211,153,.45);color:var(--ok)}
 .fb.no{display:block;background:rgba(248,113,113,.12);border-color:rgba(248,113,113,.45);color:var(--táo)}
-footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px clamp(12px,3vw,24px);background:var(--panel)}
+footer{border-top:1px solid var(--line);color:var(--mut);font-size:.92em;padding:16px max(clamp(12px,3vw,24px),calc(50% - 566px)) 54px;background:var(--panel)}
 code.path{overflow-wrap:anywhere}
 </style>
 </head>
@@ -213,7 +217,7 @@ function renderTab1(){
   $('#val1').textContent = String(v1);
   const PT = V.branches_table;
   const near = PT.reduce((b, p) => Math.abs(p.app_pct - v1) < Math.abs(b.app_pct - v1) ? p : b, PT[0]);
-  const X0 = 46, X1 = 416, Y0 = 22, Y1 = 214;
+  const X0 = 46, X1 = 416, Y0 = 38, Y1 = 214;
   const xs = x => X0 + (x - 20) / 75 * (X1 - X0);
   const ys = y => Y1 - y / 5 * (Y1 - Y0);
   const mx = PT.reduce((a, p) => a + p.app_pct, 0) / PT.length;
@@ -226,26 +230,25 @@ function renderTab1(){
   g += `<line class="ln" x1="${X0}" y1="${Y0}" x2="${X0}" y2="${Y1}"/><line class="ln" x1="${X0}" y1="${Y1}" x2="${X1}" y2="${Y1}"/>`;
   [20, 40, 60, 80].forEach(tv => { g += `<text class="ax" x="${xs(tv).toFixed(1)}" y="${Y1 + 15}" text-anchor="middle">${tv}</text>`; });
   [1, 2, 3, 4].forEach(tv => { g += `<text class="ax" x="${X0 - 6}" y="${(ys(tv) + 4).toFixed(1)}" text-anchor="end">${tv}</text>`; });
-  g += `<text class="ax" x="${((X0 + X1) / 2).toFixed(0)}" y="${Y1 + 34}" text-anchor="middle">Tỷ lệ đơn đặt qua app (%)</text>`;
+  g += `<text class="ax" x="${((X0 + X1) / 2).toFixed(0)}" y="${Y1 + 33}" text-anchor="middle">Tỷ lệ đơn đặt qua app (%)</text>`;
   g += `<text class="ax" transform="rotate(-90 14 ${((Y0 + Y1) / 2).toFixed(0)})" x="14" y="${((Y0 + Y1) / 2).toFixed(0)}" text-anchor="middle">Thời gian chờ món (phút)</text>`;
   g += `<line x1="${xs(20).toFixed(1)}" y1="${ys(ic + sl * 20).toFixed(1)}" x2="${xs(95).toFixed(1)}" y2="${ys(ic + sl * 95).toFixed(1)}" stroke="var(--ok)" stroke-width="2" stroke-dasharray="7 5" opacity=".85"/>`;
   g += `<rect x="${(xs(v1) - 1.2).toFixed(1)}" y="${Y0}" width="2.4" height="${Y1 - Y0}" fill="var(--ok)" opacity=".8"/>`;
-  g += `<text class="ax" x="${Math.min(Math.max(xs(v1), X0 + 24), X1 - 24).toFixed(1)}" y="14" text-anchor="middle">app đang chọn: ${v1}%</text>`;
-  g += `<rect x="${X0 + 2}" y="${Y0 + 6}" width="9" height="9" rx="2" fill="var(--acc)"/>`;
-  g += `<rect x="${X0 + 150}" y="${Y0 + 6}" width="9" height="9" rx="2" fill="var(--cam)"/>`;
-  g += `<text class="ax" x="${X0 + 15}" y="${Y0 + 15}">${esc(V.n_branches)} chi nhánh trong dữ liệu Lab</text>`;
-  g += `<text class="ax" x="${X0 + 163}" y="${Y0 + 15}">chi nhánh gần mốc đang chọn</text>`;
+  g += `<rect x="${X0}" y="9" width="9" height="9" rx="2" fill="var(--acc)"/>`;
+  g += `<text class="ax" x="${X0 + 13}" y="17">${esc(V.n_branches)} chi nhánh</text>`;
+  g += `<rect x="${X0 + 96}" y="9" width="9" height="9" rx="2" fill="var(--cam)"/>`;
+  g += `<text class="ax" x="${X0 + 109}" y="17">Đang chọn</text>`;
+  g += `<text class="ax" x="${X1}" y="17" text-anchor="end">app: ${v1}%</text>`;
   PT.forEach(p => {
     const mxp = xs(p.app_pct) - 5, myp = ys(p.wait) - 5, hi = p === near;
     g += `<rect x="${mxp.toFixed(1)}" y="${myp.toFixed(1)}" width="10" height="10" rx="2" fill="${hi ? 'var(--cam)' : 'var(--acc)'}" stroke="${hi ? 'var(--cam)' : 'none'}" stroke-width="3" opacity=".92"/>`;
     g += `<text class="ax" x="${(mxp + 14).toFixed(1)}" y="${(myp + 4).toFixed(1)}">${esc(p.name.replace('Chi nhánh ', ''))}</text>`;
   });
   const nx = xs(near.app_pct), ny = ys(near.wait);
-  const right = nx > (X0 + X1) / 2;
-  const anch = right ? 'end' : 'start', tx = right ? nx - 14 : nx + 14, ty = Math.min(ny, Y0 + 34);
-  g += `<text x="${tx.toFixed(1)}" y="${(ty - 16).toFixed(1)}" text-anchor="${anch}" font-weight="700" fill="var(--cam)">${esc(near.name)}</text>`;
-  g += `<text class="ax" x="${tx.toFixed(1)}" y="${(ty - 3).toFixed(1)}" text-anchor="${anch}">app ${near.app_pct}% · chờ ${fmtVi(near.wait, 1)} phút</text>`;
-  g += `<text class="ax" x="${X0}" y="${Y1 + 52}">Pearson r = ${fmtVi(V.r_app_wait, 4)} · R² = ${fmtVi(V.r2_app_wait, 4)} · đường đứt nét: xu hướng tuyến tính bình phương tối thiểu</text>`;
+  g += `<circle cx="${nx.toFixed(1)}" cy="${ny.toFixed(1)}" r="10" fill="none" stroke="var(--cam)" stroke-width="2" stroke-dasharray="3 2"/>`;
+  g += `<text x="${X0 + 12}" y="${Y1 - 28}" text-anchor="start" font-weight="700" font-size="12" fill="var(--cam)">${esc(near.name)}</text>`;
+  g += `<text class="ax" x="${X0 + 12}" y="${Y1 - 13}" text-anchor="start">app ${near.app_pct}% · chờ ${fmtVi(near.wait, 1)} phút</text>`;
+  g += `<text class="ax" x="${X0}" y="${Y1 + 50}" font-size="10">Pearson r = ${fmtVi(V.r_app_wait, 4)} · R² = ${fmtVi(V.r2_app_wait, 4)} · đường đứt nét: hồi quy OLS</text>`;
   $('#plot').innerHTML = g;
   $('#stat1').innerHTML = [
     `<b>${esc(String(v1))}</b><span>Tỷ lệ đơn qua app đang chọn (%)</span>`,
